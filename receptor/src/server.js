@@ -101,6 +101,11 @@ class VetusScp extends Scp {
     for (const uid of this.estudos || []) agendar(uid, 500);
   }
 
+  // o aparelho interrompeu a conexão (A-ABORT): os arquivos já recebidos serão processados normalmente
+  abort() {
+    log(`[AVISO]     conexão interrompida pelo aparelho`);
+  }
+
   cEchoRequest(request, callback) {
     log(`[ECHO]      teste de conexão de ${this.association.getCallingAeTitle().trim()}`);
     const res = CEchoResponse.fromRequest(request);
@@ -119,10 +124,8 @@ class VetusScp extends Scp {
       const dir = path.join(config.tempDir, pasta, formato);
       fs.mkdirSync(dir, { recursive: true });
 
-      // primeiro arquivo do exame: cria o exame.json com os dados do paciente
-      if (!exames.lerExameJson(pasta)) {
-        exames.gravarExameJson(pasta, { ...exames.dadosDoExame(el, pasta), recebidoEm: new Date().toISOString() });
-      }
+      // cria ou completa o exame.json com os dados do paciente
+      exames.atualizarDadosDoExame(pasta, el);
 
       const sop = exames.str(el.SOPInstanceUID) || request.getAffectedSopInstanceUid() || String(Date.now());
       const file = path.join(dir, sop.replace(/[^\w.-]/g, '_') + '.dcm');

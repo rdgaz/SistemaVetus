@@ -67,8 +67,10 @@ function enviar(requests) {
     StudyTime: '101500', StudyDescription: 'ABD', Modality: 'US', Manufacturer: 'Teste', ManufacturerModelName: 'CI',
   };
   const img = { Rows: 1, Columns: 1, SamplesPerPixel: 1, PhotometricInterpretation: 'MONOCHROME2', BitsAllocated: 8, BitsStored: 8, HighBit: 7, PixelRepresentation: 0 };
+  // monta o exame; imagensExtras > 0 acrescenta imagens novas (para o teste de reenvio)
+  const montar = (imagensExtras = 0) => {
   const reqs = [];
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 3 + imagensExtras; i++) {
     reqs.push(new CStoreRequest(new Dataset({ ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.6.1', SOPInstanceUID: `${uid}.3.${i}`,
       SeriesInstanceUID: uid + '.2', InstanceNumber: String(i), PixelData: [ab(JPG)], _vrMap: { PixelData: 'OB' } }, '1.2.840.10008.1.2.4.50')));
   }
@@ -84,8 +86,10 @@ function enviar(requests) {
       ContentSequence: [{ RelationshipType: 'CONTAINS', ValueType: 'NUM', ConceptNameCodeSequence: code('L', 'Comprimento'),
         MeasuredValueSequence: [{ NumericValue: '4.25', MeasurementUnitsCodeSequence: [{ CodeValue: 'cm', CodingSchemeDesignator: 'UCUM', CodeMeaning: 'centímetro' }] }] }] }],
   }, '1.2.840.10008.1.2.1')));
+  return reqs;
+  };
 
-  const st = await enviar(reqs);
+  const st = await enviar(montar());
   ok(st.length === 6 && st.every((s) => s === 0), `C-STORE de 6 objetos (${st.join(',')})`);
 
   // área web: login obrigatório
@@ -114,6 +118,21 @@ function enviar(requests) {
 
   const pagina = await (await fetch(`${WEB}/exame/${encodeURIComponent(exame.pasta)}`, h)).text();
   ok(pagina.includes('Comprimento') && pagina.includes('4.25'), 'medidas do SR exibidas');
+
+  // reenvio do MESMO exame com 1 imagem a mais: deve usar a mesma pasta, substituir e só acrescentar a nova
+  const antes = det.processadoEm;
+  const st2 = await enviar(montar(1));
+  ok(st2.length === 7 && st2.every((s) => s === 0), `reenvio: C-STORE de 7 objetos (${st2.join(',')})`);
+  let det2 = det;
+  for (let i = 0; i < 30 && det2.processadoEm === antes; i++) {
+    await sleep(1000);
+    det2 = await (await fetch(`${WEB}/api/exames/${encodeURIComponent(exame.pasta)}`, h)).json();
+  }
+  const lista2 = await (await fetch(`${WEB}/api/exames`, h)).json();
+  ok(lista2.filter((e) => e.studyInstanceUID === uid + '.1').length === 1 && !lista2.some((e) => e.pasta === `${exame.pasta}_2`), 'reenvio: mesma pasta, sem duplicar o exame');
+  ok(det2.fotos.length === 7, `reenvio: 6 fotos substituídas + 1 nova = 7 (${det2.fotos.length})`);
+  ok(det2.pdfs.length === 1, `reenvio: PDF substituído, sem cópia (${det2.pdfs.length})`);
+  ok((det2.medidas || []).length === 1, `reenvio: medidas substituídas, sem repetir (${(det2.medidas || []).length})`);
 
   console.log(falhas ? `\n${falhas} falha(s)` : '\nTudo certo');
   process.exitCode = falhas ? 1 : 0;

@@ -50,6 +50,7 @@ function listarExames() {
     .map((d) => {
       let j = {};
       try { j = JSON.parse(fs.readFileSync(path.join(TEMP_DIR, d.name, 'exame.json'), 'utf8')); } catch { /* sem dados */ }
+      delete j.arquivosPorSop; // controle interno do receptor
       return { pasta: d.name, ...j };
     })
     .sort((a, b) => String(b.recebidoEm || '').localeCompare(String(a.recebidoEm || '')));
@@ -123,7 +124,10 @@ app.get('/api/exames/:pasta', (req, res) => {
   let j = {};
   try { j = JSON.parse(fs.readFileSync(path.join(dir, 'exame.json'), 'utf8')); } catch { /* sem dados */ }
   const ls = (sub) => (fs.existsSync(path.join(dir, sub)) ? fs.readdirSync(path.join(dir, sub)).sort() : []);
-  res.json({ ...j, pasta: req.params.pasta, fotos: ls('fotosProcessadas'), pdfs: ls('pdf'), formatos: fs.readdirSync(dir).filter((n) => fs.statSync(path.join(dir, n)).isDirectory()) });
+  delete j.arquivosPorSop;
+  let medidas = [];
+  try { medidas = JSON.parse(fs.readFileSync(path.join(dir, 'sr', 'medidas.json'), 'utf8')); } catch { /* sem SR */ }
+  res.json({ ...j, pasta: req.params.pasta, medidas, fotos: ls('fotosProcessadas'), pdfs: ls('pdf'), formatos: fs.readdirSync(dir).filter((n) => fs.statSync(path.join(dir, n)).isDirectory()) });
 });
 
 // Arquivos do exame: só fotos e PDFs

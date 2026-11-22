@@ -30,7 +30,8 @@ dados/temp/<PACIENTE>_<DATA>_<EXAME>/        ex.: MAYA_20261106_ABD
 - O exame é processado quando o aparelho encerra o envio, ou após `IDLE_SECONDS` sem novos arquivos.
 - As fotos são o JPEG original do aparelho, **sem recompressão** (mesma qualidade).
 - Com `APAGAR_ORIGINAIS=true`, o `.dcm` de cada imagem, vídeo ou PDF é apagado depois de convertido. As subpastas que ficam vazias são removidas. O SR fica guardado junto do `medidas.json`.
-- Se dois exames diferentes gerarem o mesmo nome, o segundo recebe o sufixo `_2`, `_3`…
+- **Reenvio sem duplicar:** se o mesmo exame chegar de novo, ele usa a mesma pasta. As fotos, PDFs e medidas que já existem são **substituídos** e só o que falta é **acrescentado**. O terminal mostra quantas fotos são novas e quantas foram substituídas.
+- Só se for **outro** exame (outro StudyInstanceUID) com o mesmo paciente, data e tipo, ele recebe o sufixo `_2`, `_3`…
 
 O terminal mostra cada etapa:
 

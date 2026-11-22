@@ -1,5 +1,10 @@
 'use strict';
-// Processa os arquivos recebidos de um exame: gera as fotos, extrai PDF e medidas, atualiza o exame.json.
+/**
+ * Processa os arquivos recebidos de um exame: gera as fotos, extrai PDF e medidas, atualiza o exame.json.
+ *
+ * Reenvio sem duplicar: o exame.json guarda, para cada objeto DICOM (SOPInstanceUID), os arquivos que ele gerou.
+ * Quando o mesmo objeto chega de novo, os mesmos arquivos são SUBSTITUÍDOS; objetos novos são ACRESCENTADOS.
+ */
 const fs = require('fs');
 const path = require('path');
 const { Dataset } = require('dcmjs-dimse');
@@ -15,44 +20,77 @@ const toBuffer = (v) => {
   return Buffer.isBuffer(x) ? x : Buffer.from(x instanceof ArrayBuffer ? x : x.buffer || x);
 };
 
-function nomeLivre(dir, base, ext, sufixo) {
-  let nome = `${base}${ext}`;
-  if (fs.existsSync(path.join(dir, nome))) nome = `${base}_${sufixo}${ext}`;
-  return nome;
+/** Controle de quais arquivos pertencem a qual objeto DICOM. */
+class Mapa {
+  constructor(porSop) {
+    this.porSop = porSop || {}; // sop -> { tipo, arquivos: [caminho relativo à pasta do exame] }
+    this.dono = new Map();
+    for (const [sop, v] of Object.entries(this.porSop)) for (const a of v.arquivos) this.dono.set(a, sop);
+  }
+  /** true se o arquivo existe e foi gerado por OUTRO objeto (arquivos antigos sem dono podem ser substituídos). */
+  deOutro(rel, sop) {
+    const d = this.dono.get(rel);
+    return d !== undefined && d !== sop;
+  }
+  registrar(sop, tipo, arquivos, pastaExame) {
+    // remove arquivos que este objeto gerou antes e não gera mais (ex.: vídeo com menos quadros)
+    for (const a of (this.porSop[sop] || {}).arquivos || []) {
+      if (!arquivos.includes(a)) { fs.rmSync(path.join(pastaExame, a), { force: true }); this.dono.delete(a); }
+    }
+    this.porSop[sop] = { tipo, arquivos };
+    for (const a of arquivos) this.dono.set(a, sop);
+  }
 }
 
 /** Imagem ou vídeo em JPEG -> .jpg em fotosProcessadas (cópia exata, sem recompressão). */
-function gerarFotos(ds, el, pastaExame, formato) {
+function gerarFotos(ds, el, pastaExame, formato, mapa, r) {
   if (!JPEG_TS.includes(ds.getTransferSyntaxUid())) return { mantido: true, motivo: `sintaxe ${ds.getTransferSyntaxUid()} não é JPEG` };
   const frames = el.PixelData || [];
   if (!frames.length) throw new Error('sem dados de imagem');
   const dir = path.join(pastaExame, FOTOS);
   fs.mkdirSync(dir, { recursive: true });
+
+  const sop = str(el.SOPInstanceUID);
   const num = String(str(el.InstanceNumber) || '0').padStart(3, '0');
-  const tail = str(el.SOPInstanceUID).split('.').pop() || Date.now();
+  const tail = sop.split('.').pop() || String(Date.now());
   const prefixo = formato === FORMATOS.VIDEO ? `video_${num}` : `imagem_${num}`;
-  let base = prefixo;
-  if (fs.existsSync(path.join(dir, `${prefixo}.jpg`)) || fs.existsSync(path.join(dir, `${prefixo}_quadro001.jpg`))) base = `${prefixo}_${tail}`;
-  frames.forEach((f, i) => {
-    const nome = frames.length > 1 ? `${base}_quadro${String(i + 1).padStart(3, '0')}.jpg` : `${base}.jpg`;
-    fs.writeFileSync(path.join(dir, nome), toBuffer(f));
+  const nomes = (base) => frames.map((_, i) => (frames.length > 1 ? `${base}_quadro${String(i + 1).padStart(3, '0')}.jpg` : `${base}.jpg`));
+
+  // mesmo número de imagem já usado por outro objeto deste exame -> acrescenta o final do UID
+  let arquivos = nomes(prefixo);
+  if (arquivos.some((n) => mapa.deOutro(`${FOTOS}/${n}`, sop))) arquivos = nomes(`${prefixo}_${tail}`);
+
+  // fotos de vídeo da versão anterior do sistema (imagem_NNN_quadroMMM) são substituídas pelas novas
+  if (formato === FORMATOS.VIDEO) {
+    const antigo = new RegExp(`^imagem_${num}_quadro\\d+\\.jpg$`);
+    for (const n of fs.readdirSync(dir)) if (antigo.test(n) && !mapa.dono.has(`${FOTOS}/${n}`)) fs.rmSync(path.join(dir, n));
+  }
+
+  arquivos.forEach((nome, i) => {
+    const f = path.join(dir, nome);
+    if (fs.existsSync(f)) r.substituidas++; else r.novas++;
+    fs.writeFileSync(f, toBuffer(frames[i]));
   });
+  mapa.registrar(sop, 'foto', arquivos.map((n) => `${FOTOS}/${n}`), pastaExame);
   return { fotos: frames.length };
 }
 
-/** PDF encapsulado -> pdf/<titulo>.pdf */
-function extrairPdf(el, pastaExame) {
+/** PDF encapsulado -> pdf/<titulo>.pdf (substitui o do mesmo objeto) */
+function extrairPdf(el, pastaExame, mapa) {
   const buf = toBuffer(el.EncapsulatedDocument);
   if (!buf || !buf.length) throw new Error('PDF vazio');
-  const dir = path.join(pastaExame, FORMATOS.PDF);
+  const sop = str(el.SOPInstanceUID);
   const titulo = str(el.DocumentTitle).replace(/[^\wÀ-ÿ -]/g, '_').trim() || 'relatorio';
-  const nome = nomeLivre(dir, titulo, '.pdf', str(el.SOPInstanceUID).split('.').pop());
-  fs.writeFileSync(path.join(dir, nome), buf);
+  let nome = `${titulo}.pdf`;
+  if (mapa.deOutro(`${FORMATOS.PDF}/${nome}`, sop)) nome = `${titulo}_${sop.split('.').pop()}.pdf`;
+  fs.writeFileSync(path.join(pastaExame, FORMATOS.PDF, nome), buf);
+  mapa.registrar(sop, 'pdf', [`${FORMATOS.PDF}/${nome}`], pastaExame);
   return { pdf: nome };
 }
 
-/** Relatório estruturado -> lista de medidas (nome, valor, unidade) em sr/medidas.json */
+/** Relatório estruturado -> medidas em sr/medidas.json (substitui as medidas do mesmo relatório) */
 function extrairMedidas(el, pastaExame) {
+  const sop = str(el.SOPInstanceUID);
   const medidas = [];
   const andar = (itens, contexto) => {
     for (const it of [].concat(itens || [])) {
@@ -60,7 +98,7 @@ function extrairMedidas(el, pastaExame) {
       const mv = it.MeasuredValueSequence && [].concat(it.MeasuredValueSequence)[0];
       if (mv && mv.NumericValue !== undefined) {
         const un = mv.MeasurementUnitsCodeSequence && [].concat(mv.MeasurementUnitsCodeSequence)[0];
-        medidas.push({ grupo: contexto.join(' > '), nome, valor: Number(str(mv.NumericValue)), unidade: str(un?.CodeValue) });
+        medidas.push({ grupo: contexto.join(' > '), nome, valor: Number(str(mv.NumericValue)), unidade: str(un?.CodeValue), sop });
       }
       if (it.ContentSequence) andar(it.ContentSequence, nome ? [...contexto, nome] : contexto);
     }
@@ -69,7 +107,7 @@ function extrairMedidas(el, pastaExame) {
   const f = path.join(pastaExame, FORMATOS.SR, 'medidas.json');
   let atuais = [];
   try { atuais = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { /* primeiro SR */ }
-  fs.writeFileSync(f, JSON.stringify(atuais.concat(medidas), null, 2));
+  fs.writeFileSync(f, JSON.stringify(atuais.filter((m) => m.sop !== sop).concat(medidas), null, 2));
   return { medidas: medidas.length };
 }
 
@@ -80,9 +118,7 @@ function removerPastasVazias(pastaExame) {
   }
 }
 
-function contar(dir, filtro) {
-  return fs.existsSync(dir) ? fs.readdirSync(dir).filter(filtro).length : 0;
-}
+const contar = (dir, filtro) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter(filtro).length : 0);
 
 /**
  * Processa os arquivos recebidos de um exame.
@@ -91,20 +127,25 @@ function contar(dir, filtro) {
  */
 function processarExame(pasta, arquivos) {
   const pastaExame = path.join(config.tempDir, pasta);
-  const r = { imagens: 0, videos: 0, fotos: 0, pdfs: 0, medidas: 0, mantidos: 0, erros: 0 };
+  const dados = lerExameJson(pasta) || { pasta };
+  const mapa = new Mapa(dados.arquivosPorSop);
+  const r = { imagens: 0, videos: 0, novas: 0, substituidas: 0, pdfs: 0, medidas: 0, mantidos: 0, erros: 0 };
   log(`[PROCESSANDO] ${pasta}: ${arquivos.length} arquivo(s)`);
 
-  for (const { file, formato } of arquivos) {
+  // o mesmo arquivo pode ter chegado duas vezes no mesmo envio: processa uma vez só
+  const unicos = [...new Map(arquivos.map((a) => [a.file, a])).values()];
+
+  for (const { file, formato } of unicos) {
     if (!fs.existsSync(file)) continue;
     try {
       const ds = Dataset.fromFile(file);
       const el = ds.getElements();
       let res;
       if (formato === FORMATOS.IMAGEM || formato === FORMATOS.VIDEO) {
-        res = gerarFotos(ds, el, pastaExame, formato);
-        if (!res.mantido) { r.fotos += res.fotos; formato === FORMATOS.VIDEO ? r.videos++ : r.imagens++; }
+        res = gerarFotos(ds, el, pastaExame, formato, mapa, r);
+        if (!res.mantido) { formato === FORMATOS.VIDEO ? r.videos++ : r.imagens++; }
       } else if (formato === FORMATOS.PDF) {
-        res = extrairPdf(el, pastaExame);
+        res = extrairPdf(el, pastaExame, mapa);
         r.pdfs++;
       } else if (formato === FORMATOS.SR) {
         res = extrairMedidas(el, pastaExame);
@@ -126,21 +167,23 @@ function processarExame(pasta, arquivos) {
   }
   removerPastasVazias(pastaExame);
 
-  // atualiza o exame.json com o estado atual da pasta
-  const dados = lerExameJson(pasta) || { pasta };
-  dados.totais = {
+  // atualiza o exame.json com o estado atual da pasta (relê: o receptor pode tê-lo completado)
+  const final = { ...(lerExameJson(pasta) || dados) };
+  final.arquivosPorSop = mapa.porSop;
+  final.totais = {
     fotosProcessadas: contar(path.join(pastaExame, FOTOS), (n) => n.endsWith('.jpg')),
     pdfs: contar(path.join(pastaExame, FORMATOS.PDF), (n) => n.endsWith('.pdf')),
     originaisGuardados: Object.values(FORMATOS).reduce((s, sub) => s + contar(path.join(pastaExame, sub), (n) => n.endsWith('.dcm')), 0),
   };
-  dados.processadoEm = new Date().toISOString();
-  gravarExameJson(pasta, dados);
+  final.processadoEm = new Date().toISOString();
+  gravarExameJson(pasta, final);
 
   if (r.imagens) log(`[PRONTO]    ${r.imagens} imagem(ns) -> ${FOTOS}/`);
   if (r.videos) log(`[PRONTO]    ${r.videos} vídeo(s) -> quadros em ${FOTOS}/`);
   if (r.pdfs) log(`[PRONTO]    ${r.pdfs} PDF(s) -> ${FORMATOS.PDF}/`);
   if (r.medidas) log(`[PRONTO]    ${r.medidas} medida(s) -> ${FORMATOS.SR}/medidas.json`);
-  log(`[PRONTO]    Fotos convertidas e salvas em: ${path.join(pastaExame, FOTOS)} (${r.fotos} nova(s), ${dados.totais.fotosProcessadas} no total)` +
+  log(`[PRONTO]    Fotos convertidas e salvas em: ${path.join(pastaExame, FOTOS)}`);
+  log(`[PRONTO]    ${r.novas} foto(s) nova(s), ${r.substituidas} substituída(s), ${final.totais.fotosProcessadas} no total` +
     (r.erros ? ` | ${r.erros} com erro` : ''));
   return r;
 }

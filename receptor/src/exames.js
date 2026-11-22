@@ -66,14 +66,21 @@ function carregarPastasExistentes() {
   }
 }
 
-/** Pasta do exame para este estudo; evita misturar dois exames diferentes com o mesmo nome. */
+/**
+ * Pasta do exame para este estudo.
+ * Reenvio do mesmo exame (mesmo StudyInstanceUID) reaproveita a mesma pasta, sem duplicar.
+ * Uma pasta sem StudyInstanceUID (ex.: exame importado) também é reaproveitada.
+ * Só cria PACIENTE_DATA_EXAME_2 se a pasta pertencer a OUTRO exame (UID diferente).
+ */
 function pastaDoExame(el) {
   const uid = str(el.StudyInstanceUID) || 'sem-estudo';
   if (pastasPorEstudo.has(uid)) return pastasPorEstudo.get(uid);
   const base = nomeBase(el);
-  const usados = new Set(pastasPorEstudo.values());
+  const donos = new Map([...pastasPorEstudo].map(([u, p]) => [p, u]));
   let nome = base;
-  for (let i = 2; usados.has(nome) || fs.existsSync(path.join(config.tempDir, nome)); i++) {
+  for (let i = 2; ; i++) {
+    const dono = donos.get(nome) || (lerExameJson(nome) || {}).studyInstanceUID;
+    if (!dono || dono === uid) break; // pasta livre, importada ou do mesmo exame
     nome = `${base}_${i}`;
   }
   pastasPorEstudo.set(uid, nome);
@@ -107,6 +114,17 @@ function dadosDoExame(el, pasta) {
   };
 }
 
+/** Cria ou completa o exame.json com os dados do DICOM (mantém totais e mapeamentos existentes). */
+function atualizarDadosDoExame(pasta, el) {
+  const atual = lerExameJson(pasta);
+  if (atual && atual.studyInstanceUID) return; // já tem os dados deste exame
+  const novos = dadosDoExame(el, pasta);
+  const mesclado = { ...(atual || {}), recebidoEm: (atual && atual.recebidoEm) || new Date().toISOString() };
+  for (const [k, v] of Object.entries(novos)) if (v !== '' || mesclado[k] === undefined) mesclado[k] = v;
+  if (mesclado.origem) delete mesclado.origem;
+  gravarExameJson(pasta, mesclado);
+}
+
 function lerExameJson(pasta) {
   try {
     return JSON.parse(fs.readFileSync(path.join(config.tempDir, pasta, EXAME_JSON), 'utf8'));
@@ -124,5 +142,5 @@ function gravarExameJson(pasta, dados) {
 
 module.exports = {
   FORMATOS, FOTOS, EXAME_JSON, str, seguro, classificar,
-  carregarPastasExistentes, pastaDoExame, dadosDoExame, lerExameJson, gravarExameJson,
+  carregarPastasExistentes, pastaDoExame, dadosDoExame, atualizarDadosDoExame, lerExameJson, gravarExameJson,
 };
