@@ -1,0 +1,13 @@
+# dependências
+node_modules/
+
+# configuração local e segredos
+.env
+
+# dados de pacientes (NUNCA versionar)
+dados/
+
+# logs e sistema
+*.log
+.DS_Store
+Thumbs.db

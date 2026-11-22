@@ -1,0 +1,36 @@
+# Vetus: receptor DICOM + área administrativa
+# Uso: copie .env.example para .env, ajuste as senhas e rode:  docker compose up -d --build
+services:
+  receptor:
+    build: ./receptor
+    container_name: vetus-receptor
+    restart: unless-stopped
+    environment:
+      AE_TITLE: ${AE_TITLE:-MINIPACS}
+      DICOM_PORT: ${DICOM_PORT:-2345}
+      ALLOWED_AES: ${ALLOWED_AES:-}
+      APAGAR_ORIGINAIS: ${APAGAR_ORIGINAIS:-true}
+      IDLE_SECONDS: ${IDLE_SECONDS:-5}
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "${DICOM_PORT:-2345}:${DICOM_PORT:-2345}"
+    volumes:
+      - vetus-dados:/data
+
+  web:
+    build: ./web
+    container_name: vetus-web
+    restart: unless-stopped
+    depends_on:
+      - receptor
+    environment:
+      ADMIN_USER: ${ADMIN_USER:?defina ADMIN_USER no .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env}
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "${WEB_PORT:-8080}:3000"
+    volumes:
+      - vetus-dados:/data:ro
+
+volumes:
+  vetus-dados:

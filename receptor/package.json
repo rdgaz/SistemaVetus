@@ -1,0 +1,16 @@
+{
+  "name": "vetus-receptor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Receptor DICOM do Vetus: recebe exames do ultrassom e gera fotos, PDFs e medidas",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dcmjs-dimse": "^0.3.4"
+  }
+}
