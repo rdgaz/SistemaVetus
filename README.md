@@ -105,7 +105,7 @@ Abra `http://localhost:8080` neste PC, ou `http://<IP-deste-PC>:8080` em outro c
 
 ## Rodar com Docker (VPS ou Docker Desktop)
 
-Os dois programas rodam em containers, sobem juntos e reiniciam sozinhos (inclusive quando o servidor reinicia).
+Os dois programas rodam em containers, sobem juntos e reiniciam sozinhos (inclusive quando o servidor reinicia). Cada comando está explicado em [docs/COMANDOS-DOCKER.md](docs/COMANDOS-DOCKER.md).
 
 ```bash
 cp .env.example .env              # no Windows: copy .env.example .env
