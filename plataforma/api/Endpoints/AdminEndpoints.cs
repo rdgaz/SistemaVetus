@@ -7,6 +7,12 @@ namespace Vetus.Api.Endpoints;
 /// <summary>Administração do sistema: cadastro de clínicas.</summary>
 public static class AdminEndpoints
 {
+    /// <summary>
+    /// Prefixo do AE Title das clínicas novas (AutoLaudoVet). As primeiras clínicas ficaram com "VETUS_C"
+    /// (já configurado nos aparelhos) e continuam valendo.
+    /// </summary>
+    public const string PrefixoAe = "ALV_C";
+
     public record AdministradorReq(string? Nome, string? Email);
     public record NovaClinicaReq(string? Nome, string? Documento, string? Endereco, string? Telefone, string? Email,
         AdministradorReq? Administrador);
@@ -46,7 +52,7 @@ public static class AdminEndpoints
                 Endereco = Texto.Opcional(r.Endereco),
                 Telefone = Texto.Opcional(r.Telefone),
                 Email = Texto.Opcional(r.Email),
-                AeTitle = $"VETUS_C{numero:D4}",
+                AeTitle = $"{PrefixoAe}{numero:D4}",
                 TokenIngestaoHash = Seguranca.HashToken(token),
             };
             db.Clinicas.Add(clinica);

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { api } from '../api';
 import { useSessao } from '../sessao';
 import { Aviso, Botao, Campo, Cartao } from '../ui';
+import { Logo } from '../marca';
 
 /** Troca de senha. Obrigatória no primeiro acesso (senha provisória); também usada em "Minha conta". */
 export function TrocarSenha({ obrigatoria = false }: { obrigatoria?: boolean }) {
@@ -51,7 +52,7 @@ export function TrocarSenha({ obrigatoria = false }: { obrigatoria?: boolean }) 
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-md">
-        <div className="mb-4 text-2xl font-bold text-[#1f3b57]">Vetus</div>
+        <div className="mb-4 flex justify-center"><Logo className="h-12 w-auto" /></div>
         {formulario}
       </div>
     </div>

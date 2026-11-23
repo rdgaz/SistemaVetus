@@ -74,3 +74,19 @@ export async function api<T = void>(metodo: string, url: string, corpo?: unknown
   }
   return dados as T;
 }
+
+/** Envia um arquivo como corpo da requisição (pendrive: foto, PDF ou vídeo). */
+export async function enviarArquivo(url: string, arquivo: File) {
+  const headers: Record<string, string> = { 'Content-Type': arquivo.type || 'application/octet-stream' };
+  if (clinicaId) headers['X-Clinica-Id'] = clinicaId;
+  let r: Response;
+  try {
+    r = await fetch(url, { method: 'PUT', headers, body: arquivo, credentials: 'same-origin' });
+  } catch {
+    throw new ErroApi(0, 'Sem conexão com o servidor.');
+  }
+  if (!r.ok) {
+    const dados = await r.json().catch(() => undefined);
+    throw new ErroApi(r.status, dados?.erro ?? `Erro ${r.status} ao enviar ${arquivo.name}.`);
+  }
+}

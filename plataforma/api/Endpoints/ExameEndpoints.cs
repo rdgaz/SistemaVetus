@@ -96,7 +96,8 @@ public static class ExameEndpoints
             var lista = await q.OrderByDescending(e => e.Urgente).ThenByDescending(e => e.RecebidoEm).Take(200)
                 .Select(e => new
                 {
-                    e.Id, e.Status, e.Urgente, e.Tipo, e.Data, e.TotalFotos, e.TotalPdfs, e.RecebidoEm, e.Pasta,
+                    e.Id, e.Status, e.Urgente, e.Tipo, e.Data, e.TotalFotos, e.TotalPdfs, e.TotalVideos, e.RecebidoEm, e.Origem,
+                    arquivos = new Exame { Pasta = e.Pasta, PastaPendrive = e.PastaPendrive, FotosPendrive = e.FotosPendrive },
                     paciente = e.Paciente.Nome, especie = e.Paciente.Especie, tutor = e.Paciente.Tutor!.Nome,
                 })
                 .ToListAsync();
@@ -106,15 +107,15 @@ public static class ExameEndpoints
                 contagens,
                 exames = lista.Select(e => new
                 {
-                    e.Id, e.Status, e.Urgente, e.Tipo, e.Data, e.TotalFotos, e.TotalPdfs, e.RecebidoEm,
+                    e.Id, e.Status, e.Urgente, e.Tipo, e.Data, e.TotalFotos, e.TotalPdfs, e.TotalVideos, e.RecebidoEm, e.Origem,
                     e.paciente, e.especie, e.tutor,
-                    miniatura = arq.PrimeiraFoto(e.Pasta) is { } f ? $"/api/exames/{e.Id}/arquivos/jpg/{Uri.EscapeDataString(f)}" : null,
+                    miniatura = arq.PrimeiraFoto(e.arquivos) is { } f ? $"/api/exames/{e.Id}/arquivos/jpg/{Uri.EscapeDataString(f)}" : null,
                 }),
             });
         }).ExigirClinica();
 
         // Detalhe do exame: dados, paciente, fotos, PDFs e medidas
-        g.MapGet("/{id:guid}", async (Guid id, HttpContext http, VetusDb db, Arquivos arq, ConfiguracaoIa ia) =>
+        g.MapGet("/{id:guid}", async (Guid id, HttpContext http, VetusDb db, Arquivos arq, ConfiguracaoIa ia, Referencias referencias) =>
         {
             var clinicaId = http.VinculoAtual().ClinicaId;
             var e = await db.Exames.Include(x => x.Paciente).ThenInclude(p => p.Tutor)
@@ -130,14 +131,20 @@ public static class ExameEndpoints
                 imagensEnviadas = JsonSerializer.Deserialize<string[]>(l.ImagensEnviadas),
             };
 
-            var medidas = arq.LerJson(e.Pasta, "medidas.json") is { } json
+            var medidas = arq.LerJson(e, "medidas.json") is { } json
                 ? JsonSerializer.Deserialize<JsonElement>(json) : (JsonElement?)null;
             var url = (string sub, string nome) => $"/api/exames/{e.Id}/arquivos/{sub}/{Uri.EscapeDataString(nome)}";
+            var pesoKg = Referencias.PesoKg(e.Peso);
+            var refs = await referencias.Aplicaveis(e.Paciente.Especie, pesoKg);
 
             return Results.Ok(new
             {
+                pesoKg,
+                referencias = refs.Select(r => new { r.Id, r.Orgao, r.Medida, faixa = Referencias.Faixa(r), r.Observacao, r.Fonte }),
+                medidasComparadas = Referencias.Comparar(medidas, refs),
                 e.Id, e.Status, e.Urgente, e.Origem, e.Tipo, e.Data, e.Hora, e.EspecieAparelho, e.Idade, e.Peso,
-                e.MedicoSolicitante, e.Operador, e.Equipamento, e.RecebidoEm, e.AtualizadoEm, e.EnfileiradoEm, e.Pasta,
+                e.MedicoSolicitante, e.Operador, e.Equipamento, e.RecebidoEm, e.AtualizadoEm, e.EnfileiradoEm, e.Pasta, e.IdAnimal,
+                e.FotosPendrive, pendrive = e.PastaPendrive is not null,
                 e.TipoExame, e.SuspeitaClinica, e.Historico, e.Jejum, e.SolicitanteNome, e.SolicitanteCrmv,
                 e.SolicitanteClinica, e.InformacoesAdicionais, e.ErroGeracao, laudo,
                 iaAtiva = ia.Ativa,
@@ -150,8 +157,9 @@ public static class ExameEndpoints
                     e.Paciente.Castrado, e.Paciente.Nascimento,
                 },
                 tutor = e.Paciente.Tutor is null ? null : new { e.Paciente.Tutor.Id, e.Paciente.Tutor.Nome, e.Paciente.Tutor.Telefone, e.Paciente.Tutor.Email },
-                fotos = arq.Listar(e.Pasta, Arquivos.Jpg).Select(n => new { nome = n, url = url(Arquivos.Jpg, n) }),
-                pdfs = arq.Listar(e.Pasta, Arquivos.Pdf).Select(n => new { nome = n, url = url(Arquivos.Pdf, n) }),
+                fotos = arq.Listar(e, Arquivos.Jpg).Select(n => new { nome = n, url = url(Arquivos.Jpg, n) }),
+                pdfs = arq.Listar(e, Arquivos.Pdf).Select(n => new { nome = n, url = url(Arquivos.Pdf, n) }),
+                videos = arq.Listar(e, Arquivos.Mp4).Select(n => new { nome = n, url = url(Arquivos.Mp4, n) }),
                 medidas,
             });
         }).ExigirClinica();
@@ -207,11 +215,11 @@ public static class ExameEndpoints
             var e = await db.Exames.FirstOrDefaultAsync(x => x.Id == id && db.Vinculos.Any(v =>
                 v.ClinicaId == x.ClinicaId && v.UsuarioId == usuarioId && v.Ativo && v.Clinica.Ativa));
             if (e is null) return Results.NotFound();
-            var f = arq.Arquivo(e.Pasta, sub, nome);
+            var f = arq.Arquivo(e, sub, nome);
             if (f is null) return Results.NotFound();
             TiposArquivo.TryGetContentType(f, out var tipo);
             http.Response.Headers.CacheControl = "private, max-age=86400";
-            return Results.File(f, tipo ?? "application/octet-stream");
+            return Results.File(f, tipo ?? "application/octet-stream", enableRangeProcessing: true); // vídeos: avançar/voltar
         }).RequireAuthorization();
     }
 }

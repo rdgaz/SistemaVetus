@@ -69,8 +69,8 @@ public static class EnvioEndpoints
             if (!para.Contains('@')) return Erros.Invalido("Informe o e-mail de destino do teste.");
             try
             {
-                await email.Enviar(smtp, [para], "Vetus: e-mail de teste",
-                    $"Olá! Este é um e-mail de teste do Vetus.\n\nSe ele chegou, o envio de laudos pelo e-mail {smtp.RemetenteEmail} está funcionando.", null, ct);
+                await email.Enviar(smtp, [para], "AutoLaudoVet: e-mail de teste",
+                    $"Olá! Este é um e-mail de teste do AutoLaudoVet.\n\nSe ele chegou, o envio de laudos pelo e-mail {smtp.RemetenteEmail} está funcionando.", null, ct);
             }
             catch (ErroEnvio x) { return Erros.Invalido(x.Message); }
             return Results.Ok(new { enviado = true });

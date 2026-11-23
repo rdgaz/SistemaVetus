@@ -25,7 +25,8 @@ public record PlanoLaudo(
     int Repetidas = 0);
 
 /// <summary>Gera o pré-laudo de um exame: planeja, monta a entrada, tenta as IAs na ordem configurada e grava o resultado.</summary>
-public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumerable<IGeradorLaudo> geradores, Cobranca cobranca, ILogger<ServicoLaudo> log)
+public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumerable<IGeradorLaudo> geradores, Cobranca cobranca,
+    Referencias referencias, ILogger<ServicoLaudo> log)
 {
     /// <summary>
     /// Confere o saldo da clínica antes de gerar: análise completa exige saldo de pelo menos um pré-laudo médio;
@@ -55,7 +56,7 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
     public async Task<PlanoLaudo> Planejar(Exame e, CancellationToken ct = default)
     {
         var dados = DadosAtuais(e);
-        var hashes = HashesDasFotos(e.Pasta);
+        var hashes = HashesDasFotos(e);
         var anterior = await db.Laudos.Where(l => l.ExameId == e.Id).OrderByDescending(l => l.Versao).FirstOrDefaultAsync(ct);
 
         // primeira vez, pedido de análise completa, a anterior não analisou imagens de verdade (simulada),
@@ -135,9 +136,9 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         return Enumerable.Range(0, cfg.MaxImagens).Select(i => candidatas[(int)(i * passo)]);
     }
 
-    private Dictionary<string, string> HashesDasFotos(string pasta) =>
-        arq.Listar(pasta, Arquivos.Jpg).ToDictionary(n => n, n =>
-            arq.Arquivo(pasta, Arquivos.Jpg, n) is { } f ? Convert.ToHexString(SHA1.HashData(File.ReadAllBytes(f))) : "");
+    private Dictionary<string, string> HashesDasFotos(Exame e) =>
+        arq.Listar(e, Arquivos.Jpg).ToDictionary(n => n, n =>
+            arq.Arquivo(e, Arquivos.Jpg, n) is { } f ? Convert.ToHexString(SHA1.HashData(File.ReadAllBytes(f))) : "");
 
     /// <summary>Dados do exame que entram na análise (rótulo -> valor), na ordem em que aparecem para a IA.</summary>
     private Dictionary<string, string> DadosAtuais(Exame e)
@@ -161,17 +162,17 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
             ["Histórico"] = e.Historico ?? "",
             ["Solicitante"] = $"{e.SolicitanteNome} {e.SolicitanteCrmv}".Trim(),
             ["Informações adicionais"] = e.InformacoesAdicionais ?? "",
-            ["Medidas do aparelho"] = string.Join('\n', MedidasTexto(e.Pasta)),
+            ["Medidas do aparelho"] = string.Join('\n', MedidasTexto(e)),
         };
     }
 
-    private List<string> MedidasTexto(string pasta)
+    private List<string> MedidasTexto(Exame e)
     {
-        if (arq.LerJson(pasta, "medidas.json") is not { } json) return [];
+        if (arq.LerJson(e, "medidas.json") is not { } json) return [];
         try
         {
             return JsonSerializer.Deserialize<JsonElement>(json).EnumerateArray().Select(m =>
-                $"- {Txt(m, "grupo")} > {Txt(m, "nome")}: {(m.TryGetProperty("valor", out var v) ? v.ToString() : "")} {Txt(m, "unidade")}").ToList();
+                $"- {Txt(m, "grupo")} > {Txt(m, "nome")}: {(m.TryGetProperty("valor", out var v) ? v.ToString() : "")} {Txt(m, "unidade")} {Txt(m, "complemento")}".TrimEnd()).ToList();
         }
         catch (JsonException) { return []; }
         static string Txt(JsonElement m, string k) => m.TryGetProperty(k, out var v) ? v.ToString() : "";
@@ -203,7 +204,15 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
             return;
         }
 
-        var entrada = MontarEntrada(e, plano);
+        // valores de referência da espécie/peso e as medidas do aparelho já comparadas com eles
+        var pesoKg = Referencias.PesoKg(e.Peso);
+        var refs = await referencias.Aplicaveis(e.Paciente.Especie, pesoKg);
+        var textoRefs = Referencias.TextoParaIa(e.Paciente.Especie, pesoKg, refs);
+        var comparadas = Referencias.Comparar(MedidasJson(e), refs).Where(m => m.Situacao != Referencias.SemReferencia)
+            .Select(m => $"- {m.Grupo} > {m.Nome}: {m.Valor} {m.Unidade} → {m.Referencia} ({m.FaixaTexto}): {m.Situacao.ToUpperInvariant()}")
+            .ToList();
+
+        var entrada = MontarEntrada(e, plano, textoRefs, comparadas);
         var erros = new List<string>();
         foreach (var ia in Disponiveis())
         {
@@ -237,10 +246,13 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         await db.SaveChangesAsync(ct);
     }
 
-    private EntradaLaudo MontarEntrada(Exame e, PlanoLaudo plano)
+    private JsonElement? MedidasJson(Exame e) =>
+        arq.LerJson(e, "medidas.json") is { } json ? JsonSerializer.Deserialize<JsonElement>(json) : null;
+
+    private EntradaLaudo MontarEntrada(Exame e, PlanoLaudo plano, string textoRefs, List<string> comparadas)
     {
         var imagens = plano.Enviar
-            .Select(x => arq.Arquivo(e.Pasta, Arquivos.Jpg, x.Nome) is { } f ? new ImagemIa(x.Numero, x.Nome, File.ReadAllBytes(f)) : null)
+            .Select(x => arq.Arquivo(e, Arquivos.Jpg, x.Nome) is { } f ? new ImagemIa(x.Numero, x.Nome, File.ReadAllBytes(f)) : null)
             .OfType<ImagemIa>().ToList();
 
         var t = new StringBuilder();
@@ -273,6 +285,15 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         t.AppendLine();
         t.AppendLine("MEDIDAS FEITAS NO APARELHO:");
         t.AppendLine(plano.Dados["Medidas do aparelho"] is { Length: > 0 } med ? med : "(nenhuma)");
+        t.AppendLine();
+        t.AppendLine("VALORES DE REFERÊNCIA (cadastrados pela clínica/sistema):");
+        t.AppendLine(textoRefs);
+        if (comparadas.Count > 0)
+        {
+            t.AppendLine();
+            t.AppendLine("MEDIDAS DO APARELHO COMPARADAS COM A REFERÊNCIA:");
+            t.AppendLine(string.Join('\n', comparadas));
+        }
         t.AppendLine();
         t.AppendLine("ÓRGÃOS A AVALIAR (um item em \"orgaos\" para cada um, nesta ordem):");
         foreach (var o in ModeloLaudo.OrgaosAbdominal(e.Paciente.Sexo)) t.AppendLine($"- ORGAO: {o}");

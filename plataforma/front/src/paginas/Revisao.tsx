@@ -39,7 +39,7 @@ export function pranchaInicial(c: ConteudoLaudo, imagensEnviadas: string[]) {
 }
 
 const MAX_PRANCHA = 12;
-const area = 'w-full rounded-lg border border-slate-300 bg-white p-2.5 text-[15px] outline-none focus:border-[#1f3b57] focus:ring-2 focus:ring-[#1f3b57]/20';
+const area = 'w-full rounded-lg border border-slate-300 bg-white p-2.5 text-[15px] outline-none focus:border-[#0E4D64] focus:ring-2 focus:ring-[#0E4D64]/20';
 
 /**
  * Revisão do pré-laudo pelo veterinário: cada órgão editável (com "Normal"), conclusão, prancha;
@@ -166,7 +166,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-semibold text-slate-700">Prancha do laudo ({prancha.length} de até {MAX_PRANCHA} fotos)</span>
-            <button type="button" className="text-sm font-medium text-[#1f3b57] underline" onClick={() => setEscolhendo(!escolhendo)}>
+            <button type="button" className="text-sm font-medium text-[#0E4D64] underline" onClick={() => setEscolhendo(!escolhendo)}>
               {escolhendo ? 'Concluir escolha' : 'Escolher fotos'}
             </button>
           </div>
@@ -176,9 +176,9 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
                 const marcada = prancha.includes(f.nome);
                 return (
                   <button key={f.nome} type="button" onClick={() => alternarFoto(f.nome)}
-                    className={`relative overflow-hidden rounded-lg bg-black ring-offset-2 ${marcada ? 'ring-4 ring-[#1f3b57]' : ''}`}>
+                    className={`relative overflow-hidden rounded-lg bg-black ring-offset-2 ${marcada ? 'ring-4 ring-[#0E4D64]' : ''}`}>
                     <img src={f.url} alt={f.nome} loading="lazy" className="aspect-[4/3] w-full object-contain" />
-                    <span className={`absolute right-1 top-1 rounded-full px-1.5 text-xs font-bold ${marcada ? 'bg-[#1f3b57] text-white' : 'bg-white/80 text-slate-700'}`}>
+                    <span className={`absolute right-1 top-1 rounded-full px-1.5 text-xs font-bold ${marcada ? 'bg-[#0E4D64] text-white' : 'bg-white/80 text-slate-700'}`}>
                       {marcada ? `✓ ${prancha.indexOf(f.nome) + 1}` : '+'}
                     </span>
                   </button>

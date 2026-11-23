@@ -1,4 +1,6 @@
-# Vetus: especificação do sistema
+# AutoLaudoVet: especificação do sistema
+
+> Antigo nome de trabalho: Vetus. Produto da Moderno Tech.
 
 Plataforma para clínicas veterinárias e ultrassonografistas: recebe os exames de ultrassom, gera o pré-laudo com IA numa fila e o veterinário revisa, assina e envia. Funciona no **celular e no computador**.
 
@@ -372,7 +374,7 @@ Princípios da tela:
 2. ✅ Receptor DICOM identificando a clínica pelo AE Title, criando **paciente/tutor** e o exame no banco; endpoint de ingestão **desativado**.
 3. ✅ (parcial) Lista de exames por status (responsiva) e detalhe com fotos.
 4. ✅ Tela do exame: dados, **campo livre**, urgente, modo automático/manual, **Gerar pré-laudo** (entra na fila). A extração dos campos a partir do texto livre é feita pela IA no passo 5.
-5. ✅ Fila + geração do pré-laudo (Claude, Gemini de reserva, ordem configurável) com o modelo abdominal. Pendentes: máscaras editáveis por clínica e a tabela de valores de referência.
+5. ✅ Fila + geração do pré-laudo (Claude, Gemini de reserva, ordem configurável) com o modelo abdominal e os **valores de referência** (tabela editável, medidas × faixa na revisão, enviadas à IA). Pendentes: máscaras editáveis por clínica; referências próprias por clínica.
 6. ✅ Revisão por órgão (com "Normal") + prancha + **aprovar e assinar** + PDF com código de verificação e QR + retificação + página pública de verificação. Pendente: identidade própria do ultrassonografista no cabeçalho (hoje sai sempre a da clínica).
 7. ✅ **Compartilhar** (WhatsApp, e-mail pelo SMTP próprio do usuário, PDF, link público com validade e revogação) + canais configuráveis por usuário + histórico de envios. Retificação feita no passo 6.
 

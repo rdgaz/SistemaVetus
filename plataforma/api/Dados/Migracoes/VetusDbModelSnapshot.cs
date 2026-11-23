@@ -199,6 +199,9 @@ namespace Vetus.Api.Dados.Migracoes
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<bool>("FotosPendrive")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("GerarCompleto")
                         .HasColumnType("boolean");
 
@@ -209,6 +212,10 @@ namespace Vetus.Api.Dados.Migracoes
                     b.Property<string>("Hora")
                         .HasMaxLength(14)
                         .HasColumnType("character varying(14)");
+
+                    b.Property<string>("IdAnimal")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("Idade")
                         .HasMaxLength(20)
@@ -239,6 +246,10 @@ namespace Vetus.Api.Dados.Migracoes
 
                     b.Property<string>("Pasta")
                         .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("PastaPendrive")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
@@ -289,12 +300,17 @@ namespace Vetus.Api.Dados.Migracoes
                     b.Property<int>("TotalPdfs")
                         .HasColumnType("integer");
 
+                    b.Property<int>("TotalVideos")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("Urgente")
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
                     b.HasIndex("PacienteId");
+
+                    b.HasIndex("ClinicaId", "IdAnimal");
 
                     b.HasIndex("ClinicaId", "Status");
 
@@ -617,6 +633,71 @@ namespace Vetus.Api.Dados.Migracoes
                             EntradaUsdPorMilhao = 0m,
                             SaidaUsdPorMilhao = 0m
                         });
+                });
+
+            modelBuilder.Entity("Vetus.Api.Dados.Referencia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Especie")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Fonte")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal?>("Maximo")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("numeric(10,3)");
+
+                    b.Property<string>("Medida")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal?>("Minimo")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("numeric(10,3)");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Orgao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("PesoMaxKg")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("numeric(10,3)");
+
+                    b.Property<decimal?>("PesoMinKg")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("numeric(10,3)");
+
+                    b.Property<string>("Termos")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Unidade")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Especie", "Orgao");
+
+                    b.ToTable("referencias", (string)null);
                 });
 
             modelBuilder.Entity("Vetus.Api.Dados.Tutor", b =>

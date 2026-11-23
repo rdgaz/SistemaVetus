@@ -40,7 +40,7 @@ export function LaudoPublico() {
         {l && (
           <>
             <div className="text-center">
-              <div className="text-xl font-bold text-[#1f3b57]">{l.clinica}</div>
+              <div className="text-xl font-bold text-[#0E4D64]">{l.clinica}</div>
               <div className="text-sm text-slate-500">Laudo de ultrassonografia</div>
             </div>
             {l.emRetificacao && (
@@ -56,7 +56,7 @@ export function LaudoPublico() {
               <dt className="text-slate-500">Veterinário</dt><dd>{l.assinadoPor} · {l.crmv}</dd>
             </dl>
             <a href={l.pdf} target="_blank" rel="noreferrer"
-              className="flex min-h-12 w-full items-center justify-center rounded-lg bg-[#1f3b57] text-lg font-medium text-white hover:bg-[#2a4e72]">
+              className="flex min-h-12 w-full items-center justify-center rounded-lg bg-[#0E4D64] text-lg font-medium text-white hover:bg-[#0B3D50]">
               Abrir o laudo (PDF)
             </a>
             <p className="text-center text-xs text-slate-500">

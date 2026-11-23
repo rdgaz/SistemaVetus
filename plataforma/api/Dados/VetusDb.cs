@@ -18,6 +18,7 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
     public DbSet<ConfiguracaoCobranca> ConfiguracoesCobranca => Set<ConfiguracaoCobranca>();
     public DbSet<PrecoModelo> PrecosModelos => Set<PrecoModelo>();
     public DbSet<MovimentoSaldo> MovimentosSaldo => Set<MovimentoSaldo>();
+    public DbSet<Referencia> Referencias => Set<Referencia>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -49,6 +50,20 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.Property(x => x.SmtpSenhaProtegida).HasMaxLength(2000);
             e.Property(x => x.SmtpRemetenteNome).HasMaxLength(200);
             e.Property(x => x.SmtpRemetenteEmail).HasMaxLength(200);
+        });
+
+        b.Entity<Referencia>(e =>
+        {
+            e.ToTable("referencias");
+            e.HasIndex(x => new { x.Especie, x.Orgao });
+            e.Property(x => x.Especie).HasMaxLength(50);
+            e.Property(x => x.Orgao).HasMaxLength(100);
+            e.Property(x => x.Medida).HasMaxLength(200);
+            e.Property(x => x.Unidade).HasMaxLength(20);
+            e.Property(x => x.Termos).HasMaxLength(500);
+            e.Property(x => x.Observacao).HasMaxLength(500);
+            e.Property(x => x.Fonte).HasMaxLength(500);
+            foreach (var p in new[] { "PesoMinKg", "PesoMaxKg", "Minimo", "Maximo" }) e.Property(p).HasPrecision(10, 3);
         });
 
         b.Entity<ConfiguracaoCobranca>(e =>
@@ -156,6 +171,9 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
             e.Property(x => x.StudyInstanceUid).HasMaxLength(64);
             e.Property(x => x.Pasta).HasMaxLength(300);
+            e.HasIndex(x => new { x.ClinicaId, x.IdAnimal });
+            e.Property(x => x.IdAnimal).HasMaxLength(64);
+            e.Property(x => x.PastaPendrive).HasMaxLength(300);
             e.Property(x => x.Tipo).HasMaxLength(100);
             e.Property(x => x.Data).HasMaxLength(8);
             e.Property(x => x.Hora).HasMaxLength(14);

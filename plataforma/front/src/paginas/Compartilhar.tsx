@@ -122,7 +122,7 @@ export function Compartilhar({ exameId, paciente, tutor, telefone, emailTutor, c
   if (!pref) return erro ? <Aviso>{erro}</Aviso> : null;
   const nenhum = !pref.whatsapp && !pref.email && !pref.link && !pref.pdf;
   const botao = (ativo: boolean) =>
-    `min-h-11 rounded-lg border px-4 font-medium ${ativo ? 'border-[#1f3b57] bg-[#1f3b57] text-white' : 'border-slate-300 bg-white text-[#1f3b57] hover:bg-slate-50'}`;
+    `min-h-11 rounded-lg border px-4 font-medium ${ativo ? 'border-[#0E4D64] bg-[#0E4D64] text-white' : 'border-slate-300 bg-white text-[#0E4D64] hover:bg-slate-50'}`;
 
   return (
     <div className="space-y-3 border-t border-slate-100 pt-4">
@@ -150,7 +150,7 @@ export function Compartilhar({ exameId, paciente, tutor, telefone, emailTutor, c
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Mensagem</span>
             <textarea rows={3} value={mensagem} onChange={(e) => setMensagem(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-base outline-none focus:border-[#1f3b57]" />
+              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-base outline-none focus:border-[#0E4D64]" />
           </label>
           <p className="text-xs text-slate-500">
             {aberto === 'whatsapp' ? 'O link do laudo é colocado no fim da mensagem.' : 'O PDF vai anexado; o link entra no fim da mensagem.'}

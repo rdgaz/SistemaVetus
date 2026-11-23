@@ -27,6 +27,34 @@ public static class Inicializacao
             }
         }
 
+        // valores de referência iniciais (só na primeira vez; depois, editáveis pelo administrador)
+        if (!await db.Referencias.AnyAsync())
+        {
+            db.Referencias.AddRange(ReferenciasIniciais.Todas());
+            await db.SaveChangesAsync();
+            log.LogInformation("Valores de referência iniciais cadastrados (validar com um veterinário ultrassonografista).");
+        }
+
+        // exames recebidos antes do envio por pendrive: completa o ID do animal (do exame.json do receptor),
+        // para juntar com a pasta do pendrive do mesmo exame
+        var semId = await db.Exames.Where(e => e.IdAnimal == null && e.Pasta != "").ToListAsync();
+        if (semId.Count > 0)
+        {
+            var arq = escopo.ServiceProvider.GetRequiredService<Arquivos>();
+            foreach (var e in semId)
+            {
+                try
+                {
+                    if (arq.LerJsonDicom(e.Pasta, "exame.json") is not { } json) continue;
+                    using var d = System.Text.Json.JsonDocument.Parse(json);
+                    if (d.RootElement.TryGetProperty("exameId", out var id) && id.ValueKind == System.Text.Json.JsonValueKind.String)
+                        e.IdAnimal = Texto.Opcional(id.GetString());
+                }
+                catch (Exception x) { log.LogWarning("exame.json de {Pasta}: {Erro}", e.Pasta, x.Message); }
+            }
+            await db.SaveChangesAsync();
+        }
+
         if (await db.Usuarios.AnyAsync(u => u.AdministradorSistema)) return;
 
         var cfg = app.Configuration;

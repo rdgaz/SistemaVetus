@@ -11,7 +11,7 @@ public enum Perfil
 public class Clinica
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    /// <summary>Número sequencial da clínica; gera o AE Title (VETUS_C0001).</summary>
+    /// <summary>Número sequencial da clínica; gera o AE Title (ALV_C0002; as primeiras clínicas usam VETUS_C0001).</summary>
     public int Numero { get; set; }
     public string Nome { get; set; } = "";
     public string? Documento { get; set; }
@@ -118,8 +118,17 @@ public class Exame
     public Paciente Paciente { get; set; } = null!;
     /// <summary>Identificador do exame no DICOM; um reenvio com o mesmo UID atualiza o mesmo exame.</summary>
     public string StudyInstanceUid { get; set; } = "";
-    /// <summary>Pasta do exame, relativa à pasta de dados (ex.: VETUS_C0001/MAYA_20261106_ABD).</summary>
+    /// <summary>Pasta do exame, relativa à pasta de dados (ex.: VETUS_C0001/MAYA_20261106_ABD). Vazia se veio só pelo pendrive.</summary>
     public string Pasta { get; set; } = "";
+    /// <summary>ID do animal no aparelho (ex.: 20261121-103208-3E0C): junta o exame do DICOM com o do pendrive.</summary>
+    public string? IdAnimal { get; set; }
+    /// <summary>Pasta dos arquivos do pendrive, relativa à pasta de envios (ex.: VETUS_C0001/20261121-103208-3E0C_ABD20261121103432).</summary>
+    public string? PastaPendrive { get; set; }
+    /// <summary>
+    /// Usa as fotos do pendrive (melhor qualidade) no lugar das do DICOM. Só quando o pendrive chega antes do
+    /// primeiro pré-laudo: depois disso as fotos citadas no laudo continuam as mesmas.
+    /// </summary>
+    public bool FotosPendrive { get; set; }
     /// <summary>Tipo/descrição do exame como veio do aparelho (ex.: ABD).</summary>
     public string? Tipo { get; set; }
     /// <summary>Data e hora do exame (AAAAMMDD / HHMMSS, como no DICOM).</summary>
@@ -148,7 +157,7 @@ public class Exame
     /// <summary>Quando entrou na fila (a fila anda por ordem de entrada; urgentes primeiro).</summary>
     public DateTime? EnfileiradoEm { get; set; }
     public bool Urgente { get; set; }
-    /// <summary>dicom, upload ou ingestao.</summary>
+    /// <summary>dicom, pendrive, dicom+pendrive ou ingestao.</summary>
     public string Origem { get; set; } = "dicom";
     /// <summary>Pedido de análise completa (todas as fotos de novo) na próxima geração.</summary>
     public bool GerarCompleto { get; set; }
@@ -156,6 +165,7 @@ public class Exame
     public string? ErroGeracao { get; set; }
     public int TotalFotos { get; set; }
     public int TotalPdfs { get; set; }
+    public int TotalVideos { get; set; }
     public DateTime RecebidoEm { get; set; } = DateTime.UtcNow;
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 }
@@ -209,6 +219,37 @@ public class Laudo
     public bool Retificado { get; set; }
     /// <summary>Motivo, quando esta versão é uma retificação de uma versão assinada.</summary>
     public string? MotivoRetificacao { get; set; }
+}
+
+/// <summary>
+/// Valor de referência ultrassonográfico por espécie (e, quando importa, faixa de peso).
+/// Usado na revisão (medidas do aparelho × faixa normal) e enviado à IA.
+/// </summary>
+public class Referencia
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>Canina ou Felina (igual à espécie normalizada do paciente).</summary>
+    public string Especie { get; set; } = "";
+    /// <summary>Faixa de peso em kg em que vale (null = qualquer peso).</summary>
+    public decimal? PesoMinKg { get; set; }
+    public decimal? PesoMaxKg { get; set; }
+    /// <summary>Órgão, com o mesmo nome do laudo (ex.: "Alças intestinais").</summary>
+    public string Orgao { get; set; } = "";
+    /// <summary>O que se mede (ex.: "Espessura da parede do duodeno").</summary>
+    public string Medida { get; set; } = "";
+    public decimal? Minimo { get; set; }
+    public decimal? Maximo { get; set; }
+    /// <summary>mm, cm ou "razão".</summary>
+    public string Unidade { get; set; } = "mm";
+    /// <summary>
+    /// Palavras para reconhecer a medida do aparelho, separadas por vírgula; cada item pode ter várias palavras
+    /// que precisam aparecer juntas (ex.: "rim comprimento, kidney length").
+    /// </summary>
+    public string? Termos { get; set; }
+    public string? Observacao { get; set; }
+    /// <summary>Referência bibliográfica.</summary>
+    public string Fonte { get; set; } = "";
+    public bool Ativa { get; set; } = true;
 }
 
 /// <summary>Configuração da cobrança da IA (uma linha só, editada na página do administrador).</summary>

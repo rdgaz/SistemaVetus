@@ -78,6 +78,10 @@ public static class ModeloLaudo
         - Se um órgão não aparece em nenhuma imagem, marque "nao_visualizado" e diga o motivo provável
           (não incluído nas imagens, gases, obesidade etc.). Não descreva órgão que você não viu.
         - Use as medidas do aparelho quando existirem e cite-as com unidade. Não invente medidas.
+        - Compare as medidas com os VALORES DE REFERÊNCIA fornecidos (da espécie e do peso do paciente). Quando uma
+          medida estiver fora da faixa, diga isso no órgão (ex.: "espessura da parede do jejuno de 5,2 mm, acima do
+          limite de referência de 4,1 mm") e considere na impressão diagnóstica. Use só as referências fornecidas;
+          se não houver referência para uma medida, descreva-a sem classificar como normal ou alterada por número.
         - Na dúvida, prefira "não se descarta" e recomende correlação clínica ou outro exame.
 
         Escreva cada órgão com a terminologia usual: dimensões, contornos, margens, ecogenicidade, ecotextura,

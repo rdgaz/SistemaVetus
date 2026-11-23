@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { api } from '../api';
 import { dataBR } from '../exames';
+import { Logo } from '../marca';
 
 type Resultado = {
   valido: boolean;
@@ -35,8 +36,8 @@ export function Verificar() {
     <div className="flex min-h-dvh items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-md">
         <div className="mb-4 text-center">
-          <div className="text-2xl font-bold text-[#1f3b57]">Vetus</div>
-          <div className="text-sm text-slate-500">Verificação de laudo</div>
+          <div className="flex justify-center"><Logo className="h-12 w-auto" /></div>
+          <div className="mt-1 text-sm text-slate-500">Verificação de laudo</div>
         </div>
         {!r && !erro && <p className="text-center text-slate-500">Verificando…</p>}
         {erro && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-800">✗ {erro}</div>}
@@ -50,7 +51,7 @@ export function Verificar() {
             ) : (
               <div className="rounded-lg border border-green-300 bg-green-50 p-4 text-center text-green-900">
                 <div className="text-lg font-semibold">✓ Laudo autêntico</div>
-                <div className="text-sm">Emitido e assinado pelo sistema Vetus.</div>
+                <div className="text-sm">Emitido e assinado pelo sistema AutoLaudoVet.</div>
               </div>
             )}
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">

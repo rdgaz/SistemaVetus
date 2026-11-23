@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Receptor DICOM do Vetus.
+ * Receptor DICOM do AutoLaudoVet.
  * Recebe exames do ultrassom (C-ECHO e C-STORE), separa por formato numa pasta temporária
  * e, quando o exame termina de chegar, processa: fotos, PDFs e medidas.
  */
@@ -185,14 +185,14 @@ class VetusScp extends Scp {
 
   const ips = Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address);
   log('==============================================');
-  log(' Vetus - receptor DICOM ativo');
+  log(' AutoLaudoVet - receptor DICOM ativo');
   log(` AE Title  : ${config.aeTitle}`);
   log(` Porta     : ${config.port}`);
   log(` IP(s)     : ${ips.join(', ') || '127.0.0.1'}`);
   log(` Pasta temp: ${config.tempDir}`);
   log(` Originais : ${config.apagarOriginais ? 'apagados após processar' : 'guardados'}`);
   if (plataforma.ativa()) {
-    log(` Plataforma: ${config.plataformaUrl} (aceita o AE de cada clínica: VETUS_C0001...)`);
+    log(` Plataforma: ${config.plataformaUrl} (aceita o AE de cada clínica: ALV_C0002..., VETUS_C0001...)`);
     log(` AE ${config.aeTitle} : ${config.aeLegadoClinica ? `exames vão para a clínica ${config.aeLegadoClinica}` : 'exames ficam sem clínica'}`);
     if (!config.chaveInterna) log('[AVISO]     VETUS_CHAVE_INTERNA vazia: a plataforma vai recusar os avisos de exame');
   }

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useSessao } from '../sessao';
 import { Aviso, Botao, Campo } from '../ui';
+import { linkSuporte, Logo, Rodape } from '../marca';
 
 export function Entrar() {
   const { entrar } = useSessao();
@@ -23,11 +24,11 @@ export function Entrar() {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-4">
+    <div className="flex min-h-dvh flex-col">
+     <div className="flex flex-1 items-center justify-center p-4">
       <form onSubmit={enviar} className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-md">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-[#1f3b57]">Vetus</div>
-          <div className="text-sm text-slate-500">Laudos de ultrassom veterinário</div>
+        <div className="flex justify-center pb-1">
+          <Logo className="h-14 w-auto" />
         </div>
         {erro && <Aviso>{erro}</Aviso>}
         {/* no celular: sem maiúscula automática e sem corretor (alterariam o e-mail e a senha) */}
@@ -40,7 +41,14 @@ export function Entrar() {
         <Botao type="submit" disabled={enviando} className="w-full">
           {enviando ? 'Entrando…' : 'Entrar'}
         </Botao>
+        <div className="text-center text-sm">
+          <a href={linkSuporte('não consigo entrar')} target="_blank" rel="noreferrer" className="text-slate-500 underline">
+            Problemas para entrar? Fale com o suporte
+          </a>
+        </div>
       </form>
+     </div>
+     <Rodape />
     </div>
   );
 }

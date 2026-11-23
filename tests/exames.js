@@ -72,7 +72,7 @@ const variante = (n) => Buffer.concat([JPG, Buffer.from([n & 255, n >> 8])]);
  * Exame com 2 imagens (+ extras) e 1 vídeo de 3 quadros (= 5 fotos + extras), todas diferentes.
  * duplicadas = fotos a mais exatamente iguais à imagem 1 (outro objeto DICOM, mesmo conteúdo).
  */
-function montarExame(uid, paciente, tutor, imagensExtras = 0, duplicadas = 0) {
+function montarExame(uid, paciente, tutor, imagensExtras = 0, duplicadas = 0, comMedidas = false) {
   const comum = {
     SpecificCharacterSet: 'ISO_IR 192', PatientID: 'T-' + uid.slice(-6), PatientName: [{ Alphabetic: paciente }],
     PatientSpeciesDescription: 'Felinos', PatientSex: 'F', ResponsiblePerson: tutor, StudyInstanceUID: uid,
@@ -88,6 +88,18 @@ function montarExame(uid, paciente, tutor, imagensExtras = 0, duplicadas = 0) {
   }
   r.push(new CStoreRequest(new Dataset({ ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.3.1', SOPInstanceUID: `${uid}.2.1`,
     SeriesInstanceUID: `${uid}.1`, InstanceNumber: '3', NumberOfFrames: '3', PixelData: [ab(variante(100)), ab(variante(101)), ab(variante(102))] }, '1.2.840.10008.1.2.4.50')));
+  if (comMedidas) {
+    // relatório estruturado (SR) com 2 medidas: rim esquerdo 4,8 cm e parede do jejuno 2,0 mm
+    const code = (v, m) => [{ CodeValue: v, CodingSchemeDesignator: '99TESTE', CodeMeaning: m }];
+    const num = (nome, valor, un) => ({ RelationshipType: 'CONTAINS', ValueType: 'NUM', ConceptNameCodeSequence: code(nome, nome),
+      MeasuredValueSequence: [{ NumericValue: valor, MeasurementUnitsCodeSequence: [{ CodeValue: un, CodingSchemeDesignator: 'UCUM', CodeMeaning: un }] }] });
+    r.push(new CStoreRequest(new Dataset({ ...comum, SOPClassUID: '1.2.840.10008.5.1.4.1.1.88.33', SOPInstanceUID: `${uid}.6.1`,
+      SeriesInstanceUID: `${uid}.6`, InstanceNumber: '1', ValueType: 'CONTAINER', ConceptNameCodeSequence: code('R', 'Relatório'),
+      ContentSequence: [
+        { RelationshipType: 'CONTAINS', ValueType: 'CONTAINER', ConceptNameCodeSequence: code('RE', 'Rim E'), ContentSequence: [num('Comprimento', '4.8', 'cm')] },
+        { RelationshipType: 'CONTAINS', ValueType: 'CONTAINER', ConceptNameCodeSequence: code('AI', 'Alças intestinais'), ContentSequence: [num('Parede do jejuno', '2.0', 'mm')] },
+      ] }, '1.2.840.10008.1.2.1')));
+  }
   return r;
 }
 
@@ -131,13 +143,13 @@ async function esperarExame(nav, filtro, segundos = 40) {
   const n = Date.now();
   const X = await novaClinica(adm, `Clínica X ${n}`);
   const Y = await novaClinica(adm, `Clínica Y ${n}`);
-  ok(/^VETUS_C\d{4}$/.test(X.ae) && X.ae !== Y.ae, `duas clínicas com AE próprio (${X.ae}, ${Y.ae})`);
+  ok(/^ALV_C\d{4}$/.test(X.ae) && X.ae !== Y.ae, `duas clínicas com AE próprio (${X.ae}, ${Y.ae})`);
   const saldoInicial = (await Y.nav.req('GET', '/api/clinica/saldo')).dados;
   ok(saldoInicial.saldo === 40 && saldoInicial.laudosEstimados > 0 && saldoInicial.extrato.length === 1,
     `clínica nova começa com R$ 40 de crédito (≈ ${saldoInicial.laudosEstimados} pré-laudos)`);
 
   // AE desconhecido: o receptor recusa a conexão
-  const desconhecido = await enviar('VETUS_C9999', [new CEchoRequest()]);
+  const desconhecido = await enviar('ALV_C9999', [new CEchoRequest()]);
   ok(desconhecido.recusado && desconhecido.st.length === 0, 'AE que não é de nenhuma clínica: conexão recusada');
 
   // envio para a clínica X (modo automático, o padrão)
@@ -173,7 +185,7 @@ async function esperarExame(nav, filtro, segundos = 40) {
 
   // modo manual na clínica Y
   await Y.nav.req('PUT', '/api/clinica', { nome: `Clínica Y ${n}`, gerarAutomaticamente: false });
-  await enviar(Y.ae, montarExame(`1.2.826.0.1.3680043.8.498.${n}2`, 'TOBY', 'Carlos Teste'));
+  await enviar(Y.ae, montarExame(`1.2.826.0.1.3680043.8.498.${n}2`, 'TOBY', 'Carlos Teste', 0, 0, true));
   const { exame: exameY } = await esperarExame(Y.nav, (e) => e.paciente === 'TOBY');
   ok(exameY && exameY.status === 'AguardandoDados', `modo manual: aguardando dados (${exameY && exameY.status})`);
 
@@ -197,6 +209,22 @@ async function esperarExame(nav, filtro, segundos = 40) {
   ok(salvo.tutor.telefone === '(11) 99999-0000' && salvo.jejum === false && salvo.solicitanteCrmv === '12345-SP', 'tutor, jejum e solicitante salvos');
   ok(salvo.informacoesAdicionais.startsWith('Vômito'), 'campo livre (informações adicionais) salvo');
   ok(salvo.status === 'AguardandoDados', 'salvar não muda o status');
+
+  // ---- valores de referência: gato de 4,2 kg; rim 4,8 cm (ref. 3,0 a 4,5 cm) e jejuno 2,0 mm (ref. até 2,2 mm)
+  ok(salvo.pesoKg === 4.2 && salvo.referencias.some((r) => r.medida === 'Comprimento renal'), `referências do gato carregadas (peso ${salvo.pesoKg} kg, ${salvo.referencias.length} itens)`);
+  const rim = salvo.medidasComparadas.find((m) => m.nome === 'Comprimento');
+  const jejuno = salvo.medidasComparadas.find((m) => m.nome === 'Parede do jejuno');
+  ok(rim && rim.situacao === 'acima' && /3 a 4,5 cm/.test(rim.faixaTexto), `rim de 4,8 cm: acima da referência (${rim && rim.situacao}, ${rim && rim.faixaTexto})`);
+  ok(jejuno && jejuno.situacao === 'dentro', `parede do jejuno de 2,0 mm: dentro da referência (${jejuno && jejuno.situacao})`);
+
+  const refs = await adm.req('GET', '/api/admin/referencias');
+  ok(refs.status === 200 && refs.dados.length >= 20, `administrador lista as referências iniciais (${refs.dados.length})`);
+  ok((await adm.req('POST', '/api/admin/referencias', { especie: 'Canina', orgao: 'Baço', medida: 'Teste', maximo: 10, unidade: 'mm' })).status === 400, 'referência sem fonte: recusada');
+  const nova = await adm.req('POST', '/api/admin/referencias', { especie: 'Canina', orgao: 'Baço', medida: `Teste ${n}`, maximo: 10, unidade: 'mm', fonte: 'Teste' });
+  ok(nova.status === 201, 'cria uma referência');
+  ok((await adm.req('PUT', `/api/admin/referencias/${nova.dados.id}`, { ...nova.dados, maximo: 12 })).dados.maximo === 12, 'edita a referência');
+  ok((await adm.req('DELETE', `/api/admin/referencias/${nova.dados.id}`)).status === 204, 'apaga a referência');
+  ok((await Y.nav.req('GET', '/api/admin/referencias')).status === 403, 'clínica não edita as referências');
 
   ok((await Y.nav.req('POST', `/api/exames/${idY}/gerar`, { tipoExame: '' })).status === 400, 'gerar sem tipo de exame: 400');
   const gerar = await Y.nav.req('POST', `/api/exames/${idY}/gerar`, { tipoExame: 'abdominal' });

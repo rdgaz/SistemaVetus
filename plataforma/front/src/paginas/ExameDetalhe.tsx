@@ -36,7 +36,14 @@ type Detalhe = {
   tutor: { nome: string; telefone: string | null; email: string | null } | null;
   fotos: Arquivo[];
   pdfs: Arquivo[];
+  videos: Arquivo[];
   medidas: Medida[] | null;
+  pesoKg: number | null;
+  referencias: { id: string; orgao: string; medida: string; faixa: string; observacao: string | null; fonte: string }[];
+  medidasComparadas: {
+    grupo: string; nome: string; valor: number; unidade: string;
+    referencia: string | null; faixaTexto: string | null; situacao: 'dentro' | 'acima' | 'abaixo' | 'sem_referencia';
+  }[];
   erroGeracao: string | null;
   iaAtiva: boolean;
   laudo: Laudo | null;
@@ -203,7 +210,7 @@ export function ExameDetalhe() {
     <div className="space-y-4 pb-28 md:pb-0">
       {/* cabeçalho */}
       <div>
-        <Link to="/" onClick={sairSemSalvar} className="text-sm text-[#1f3b57] underline">← Exames</Link>
+        <Link to="/" onClick={sairSemSalvar} className="text-sm text-[#0E4D64] underline">← Exames</Link>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <h1 className="mr-1 text-2xl font-semibold text-slate-800">{d.paciente.nome}</h1>
           <SeloStatus status={d.status} />
@@ -258,7 +265,7 @@ export function ExameDetalhe() {
       {/* fotos */}
       <Cartao titulo={`Fotos (${d.fotos.length})`}
         acoes={d.fotos.length > 4 && (
-          <button className="text-sm font-medium text-[#1f3b57] underline" onClick={() => setGrade(!grade)}>
+          <button className="text-sm font-medium text-[#0E4D64] underline" onClick={() => setGrade(!grade)}>
             {grade ? 'Ver em faixa' : 'Ver todas'}
           </button>
         )}>
@@ -278,7 +285,7 @@ export function ExameDetalhe() {
       {/* dados do paciente e do exame */}
       <Cartao titulo="Dados do paciente e do exame"
         acoes={!somenteLeitura && (
-          <button className="text-sm font-medium text-[#1f3b57] underline" onClick={() => setEditando(!editando)}>
+          <button className="text-sm font-medium text-[#0E4D64] underline" onClick={() => setEditando(!editando)}>
             {editando ? 'Fechar' : '✎ Editar'}
           </button>
         )}>
@@ -309,7 +316,7 @@ export function ExameDetalhe() {
           rows={5}
           maxLength={8000}
           placeholder="Escreva ou dite o que souber: suspeita, histórico, o que o tutor relatou, se estava em jejum, observações do exame…"
-          className="w-full rounded-lg border border-slate-300 p-3 text-base outline-none focus:border-[#1f3b57] focus:ring-2 focus:ring-[#1f3b57]/20 disabled:bg-slate-100"
+          className="w-full rounded-lg border border-slate-300 p-3 text-base outline-none focus:border-[#0E4D64] focus:ring-2 focus:ring-[#0E4D64]/20 disabled:bg-slate-100"
         />
         <p className="mt-1 text-xs text-slate-500">
           Opcional. A IA organiza essas informações nos campos e as considera na análise das imagens.
@@ -317,31 +324,69 @@ export function ExameDetalhe() {
         </p>
       </Cartao>
 
+      {d.videos.length > 0 && (
+        <Cartao titulo={`Vídeos do aparelho (${d.videos.length})`}>
+          <div className="space-y-3">
+            {d.videos.map((v) => (
+              <div key={v.nome}>
+                <video controls preload="none" className="w-full max-w-xl rounded-lg bg-black" src={v.url} />
+                <div className="text-xs text-slate-500">{v.nome}</div>
+              </div>
+            ))}
+          </div>
+        </Cartao>
+      )}
+
       {d.pdfs.length > 0 && (
         <Cartao titulo="Relatórios do aparelho (PDF)">
           <ul className="space-y-1">
             {d.pdfs.map((p) => (
-              <li key={p.nome}><a className="text-[#1f3b57] underline" href={p.url} target="_blank" rel="noreferrer">{p.nome}</a></li>
+              <li key={p.nome}><a className="text-[#0E4D64] underline" href={p.url} target="_blank" rel="noreferrer">{p.nome}</a></li>
             ))}
           </ul>
         </Cartao>
       )}
 
-      {d.medidas && d.medidas.length > 0 && (
-        <Cartao titulo="Medidas do aparelho">
+      {d.medidasComparadas.length > 0 && (
+        <Cartao titulo="Medidas do aparelho × referência">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-slate-500"><th className="py-1 pr-3">Grupo</th><th className="py-1 pr-3">Medida</th><th className="py-1">Valor</th></tr></thead>
+              <thead><tr className="text-left text-slate-500">
+                <th className="py-1 pr-3">Medida</th><th className="py-1 pr-3">Valor</th><th className="py-1 pr-3">Referência</th><th className="py-1">Situação</th>
+              </tr></thead>
               <tbody>
-                {d.medidas.map((m, i) => (
-                  <tr key={i} className="border-t border-slate-100">
-                    <td className="py-1 pr-3">{m.grupo}</td><td className="py-1 pr-3">{m.nome}</td><td className="py-1">{m.valor} {m.unidade}</td>
+                {d.medidasComparadas.map((m, i) => (
+                  <tr key={i} className={`border-t border-slate-100 ${m.situacao === 'acima' || m.situacao === 'abaixo' ? 'bg-amber-50' : ''}`}>
+                    <td className="py-1 pr-3">{m.grupo}{m.grupo && ' > '}{m.nome}</td>
+                    <td className="py-1 pr-3 font-medium">{m.valor} {m.unidade}</td>
+                    <td className="py-1 pr-3 text-slate-600">{m.faixaTexto ?? '—'}</td>
+                    <td className="py-1"><SeloReferencia situacao={m.situacao} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </Cartao>
+      )}
+
+      {d.referencias.length > 0 && (
+        <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <summary className="cursor-pointer font-semibold text-slate-800">
+            Valores de referência ({d.paciente.especie}{d.pesoKg ? `, ${String(d.pesoKg).replace('.', ',')} kg` : ', peso não informado'})
+          </summary>
+          <table className="mt-3 w-full text-sm">
+            <tbody>
+              {d.referencias.map((r) => (
+                <tr key={r.id} className="border-t border-slate-100" title={r.fonte}>
+                  <td className="py-1 pr-3 text-slate-500">{r.orgao}</td>
+                  <td className="py-1 pr-3">{r.medida}{r.observacao && <span className="block text-xs text-slate-500">{r.observacao}</span>}</td>
+                  <td className="py-1 font-medium">{r.faixa}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-2 text-xs text-slate-500">Passe o mouse sobre uma linha para ver a fonte. Valores iniciais: confirme com a literatura adotada pela clínica.</p>
+        </details>
       )}
 
       {/* ações: barra fixa embaixo no celular */}
@@ -364,7 +409,7 @@ export function ExameDetalhe() {
           {d.laudo && podeGerar && (
             <p className="mx-auto mt-2 max-w-6xl text-center text-xs text-slate-500 md:text-right">
               "Atualizar" usa o pré-laudo atual e só o que mudou (sem reenviar fotos já analisadas).{' '}
-              <button className="font-medium text-[#1f3b57] underline" disabled={salvando} onClick={() => gerar(true)}>
+              <button className="font-medium text-[#0E4D64] underline" disabled={salvando} onClick={() => gerar(true)}>
                 Refazer análise completa
               </button>
             </p>
@@ -409,11 +454,11 @@ function LaudoAssinado({ exameId, laudo, aoMudar, compartilhar }: {
         </p>
         <p className="text-sm">
           Código de verificação: <span className="font-mono font-semibold">{laudo.codigoVerificacao}</span>{' '}
-          <a className="text-[#1f3b57] underline" href={`/verificar/${laudo.codigoVerificacao}`} target="_blank" rel="noreferrer">verificar</a>
+          <a className="text-[#0E4D64] underline" href={`/verificar/${laudo.codigoVerificacao}`} target="_blank" rel="noreferrer">verificar</a>
         </p>
         <div className="flex flex-wrap gap-2">
           <a href={`/api/exames/${exameId}/laudo.pdf`} target="_blank" rel="noreferrer"
-            className="inline-flex min-h-11 items-center rounded-lg bg-[#1f3b57] px-4 font-medium text-white hover:bg-[#2a4e72]">
+            className="inline-flex min-h-11 items-center rounded-lg bg-[#0E4D64] px-4 font-medium text-white hover:bg-[#0B3D50]">
             Abrir PDF
           </a>
           {podeRetificar && <Botao variante="secundario" onClick={retificar}>Retificar</Botao>}
@@ -497,6 +542,16 @@ function PreLaudo({ laudo, fotos, aoAbrirFoto }: { laudo: Laudo; fotos: Arquivo[
   );
 }
 
+function SeloReferencia({ situacao }: { situacao: 'dentro' | 'acima' | 'abaixo' | 'sem_referencia' }) {
+  const s = {
+    dentro: ['bg-green-100 text-green-900', 'Dentro'],
+    acima: ['bg-amber-500 text-white', '▲ Acima'],
+    abaixo: ['bg-amber-500 text-white', '▼ Abaixo'],
+    sem_referencia: ['bg-slate-100 text-slate-500', 'Sem referência'],
+  }[situacao];
+  return <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${s[0]}`}>{s[1]}</span>;
+}
+
 function Miniatura({ foto, onClick }: { foto: Arquivo; onClick: () => void }) {
   return (
     <button onClick={onClick} className="block w-full overflow-hidden rounded-lg bg-black">
@@ -517,7 +572,7 @@ function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
 function FormularioDados({ f, d, mudar }: {
   f: Form; d: Detalhe; mudar: (k: keyof Form) => (ev: { target: { value: string } }) => void;
 }) {
-  const areaTexto = 'min-h-11 w-full rounded-lg border border-slate-300 bg-white p-3 text-base outline-none focus:border-[#1f3b57]';
+  const areaTexto = 'min-h-11 w-full rounded-lg border border-slate-300 bg-white p-3 text-base outline-none focus:border-[#0E4D64]';
   return (
     <div className="space-y-5">
       <Grupo titulo="Paciente">

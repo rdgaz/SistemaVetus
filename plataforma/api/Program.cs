@@ -20,6 +20,34 @@ if (args.Contains("--saude"))
     catch { return 1; }
 }
 
+// "dotnet Vetus.Api.dll --ler-pdf <arquivo.pdf|pasta> [--texto]": mostra o que o sistema lê do PDF do aparelho
+// (manutenção: conferir a leitura em PDFs reais exportados para o pendrive)
+if (args.Length >= 2 && args[0] == "--ler-pdf")
+{
+    var arquivos = Directory.Exists(args[1])
+        ? Directory.EnumerateFiles(args[1], "*.pdf", new EnumerationOptions { RecurseSubdirectories = true, MatchCasing = MatchCasing.CaseInsensitive })
+        : [args[1]];
+    var json = new System.Text.Json.JsonSerializerOptions
+    {
+        WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+    Console.OutputEncoding = System.Text.Encoding.UTF8;
+    foreach (var a in arquivos)
+    {
+        Console.WriteLine($"== {a}");
+        try
+        {
+            using var f = File.OpenRead(a);
+            var d = RelatorioAparelho.Ler(f);
+            if (args.Contains("--texto")) Console.WriteLine(d.Texto);
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(d with { Texto = "" }, json));
+        }
+        catch (Exception e) { Console.WriteLine($"ERRO: {e.Message}"); }
+    }
+    return 0;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 
@@ -38,6 +66,7 @@ builder.Services.AddScoped<ServicoLaudo>();
 builder.Services.AddHostedService<FilaLaudos>();
 builder.Services.AddScoped<PdfLaudo>();
 builder.Services.AddScoped<Cobranca>();
+builder.Services.AddScoped<Referencias>();
 builder.Services.AddSingleton<EnvioEmail>();
 
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -117,6 +146,8 @@ LaudoEndpoints.Mapear(app);
 ImagemEndpoints.Mapear(app);
 EnvioEndpoints.Mapear(app);
 CobrancaEndpoints.Mapear(app);
+ReferenciaEndpoints.Mapear(app);
+PendriveEndpoints.Mapear(app);
 InternoEndpoints.Mapear(app);
 
 app.MapFallback("/api/{**resto}", () => Erros.NaoEncontrado("Rota não encontrada."));

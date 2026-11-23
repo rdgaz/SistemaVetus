@@ -93,8 +93,10 @@ services:
     volumes:
       - vetus-chaves:/keys
       - vetus-dados:/data:ro   # fotos e PDFs gravados pelo receptor (só leitura)
+      - vetus-pendrive:/pendrive   # exames enviados do pendrive pela tela (fotos, PDF, vídeos)
 
 volumes:
   vetus-dados:    # exames recebidos (fotos)
   vetus-banco:    # banco de dados PostgreSQL
   vetus-chaves:   # chaves do cookie de login
+  vetus-pendrive: # exames enviados do pendrive

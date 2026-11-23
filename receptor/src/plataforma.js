@@ -13,7 +13,8 @@ const log = require('./log');
 const { lerExameJson, gravarExameJson, EXAME_JSON } = require('./exames');
 
 const ativa = () => Boolean(config.plataformaUrl);
-const AE_CLINICA = /^VETUS_C\d{4,}$/;
+// AE das clínicas: ALV_C0002... (AutoLaudoVet); as primeiras clínicas usam o prefixo antigo VETUS_C0001
+const AE_CLINICA = /^(ALV|VETUS)_C\d{4,}$/;
 
 async function chamar(metodo, caminho, corpo) {
   const r = await fetch(config.plataformaUrl + caminho, {

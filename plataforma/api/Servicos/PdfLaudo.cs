@@ -16,7 +16,7 @@ namespace Vetus.Api.Servicos;
 /// </summary>
 public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
 {
-    private static readonly string Azul = "#1f3b57";
+    private static readonly string Azul = "#0E4D64"; // azul-petróleo da marca AutoLaudoVet
     private readonly string _urlPublica = (cfg["VETUS_URL_PUBLICA"] ?? "http://localhost:5080").TrimEnd('/');
 
     static PdfLaudo()
@@ -159,7 +159,7 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                     else f.Item().Text("Laudo não assinado (pré-visualização).").FontSize(8).FontColor(Colors.Grey.Darken1);
                     f.Item().Text(txt =>
                     {
-                        txt.Span($"Versão {l.Versao} · página ").FontSize(7).FontColor(Colors.Grey.Darken1);
+                        txt.Span($"Emitido com AutoLaudoVet · versão {l.Versao} do laudo · página ").FontSize(7).FontColor(Colors.Grey.Darken1);
                         txt.CurrentPageNumber().FontSize(7).FontColor(Colors.Grey.Darken1);
                         txt.Span(" de ").FontSize(7).FontColor(Colors.Grey.Darken1);
                         txt.TotalPages().FontSize(7).FontColor(Colors.Grey.Darken1);
@@ -183,7 +183,7 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                 .Select(x => x.GetInt32() - 1).Where(i => i >= 0 && i < enviadas.Count).Select(i => enviadas[i]).ToList();
         }
         return nomes.Take(12)
-            .Select(nm => arq.Arquivo(e.Pasta, Arquivos.Jpg, nm)).OfType<string>()
+            .Select(nm => arq.Arquivo(e, Arquivos.Jpg, nm)).OfType<string>()
             .Select(File.ReadAllBytes).ToList();
     }
 

@@ -8,7 +8,7 @@ const bool = (v) => ['1', 'true', 'sim', 'yes'].includes(String(v).toLowerCase()
 const DATA_DIR = path.resolve(env('DATA_DIR', path.join(__dirname, '..', '..', 'dados')));
 
 module.exports = {
-  // AE "antigo" do servidor (sem clínica). Com a plataforma, cada clínica tem o seu (VETUS_C0001...).
+  // AE "antigo" do servidor (sem clínica). Com a plataforma, cada clínica tem o seu (ALV_C0002...; as primeiras, VETUS_C0001...).
   aeTitle: env('AE_TITLE', 'MINIPACS'),
   // Exames enviados ao AE antigo vão para esta clínica (ex.: VETUS_C0001). Vazio = ficam sem clínica, como antes.
   aeLegadoClinica: env('AE_LEGADO_CLINICA', '').trim().toUpperCase(),

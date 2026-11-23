@@ -21,13 +21,14 @@ WORKDIR /app
 COPY --from=api /out ./
 COPY --from=front /front/dist ./wwwroot
 # libgssapi: o driver do PostgreSQL procura essa biblioteca ao conectar (sem ela, gera erro no log)
-# /keys: chaves do cookie de login (volume), gravável pelo usuário "app" da imagem
+# /keys: chaves do cookie de login (volume); /pendrive: exames enviados do pendrive (volume). Graváveis pelo usuário "app"
 # libfontconfig1 + fonts-dejavu: o gerador de PDF (QuestPDF/SkiaSharp) precisa de fontes no Linux
 RUN apt-get update && apt-get install -y --no-install-recommends libgssapi-krb5-2 libfontconfig1 fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /keys && chown app /keys
+    && mkdir -p /keys /pendrive && chown app /keys /pendrive
 ENV ASPNETCORE_HTTP_PORTS=8080 \
-    VETUS_CHAVES_DIR=/keys
+    VETUS_CHAVES_DIR=/keys \
+    VETUS_PENDRIVE_DIR=/pendrive
 EXPOSE 8080
 USER app
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \

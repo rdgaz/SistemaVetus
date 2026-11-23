@@ -52,7 +52,7 @@ export function Usuarios() {
               <b>{criado.nome}</b> ({criado.email}){' '}
               {criado.contaNova
                 ? 'já pode entrar com a senha provisória abaixo e criará a própria senha no primeiro acesso.'
-                : 'já tinha conta no Vetus e agora também acessa esta clínica com a mesma senha.'}
+                : 'já tinha conta no AutoLaudoVet e agora também acessa esta clínica com a mesma senha.'}
             </p>
             {criado.senhaProvisoria && <Segredo rotulo="Senha provisória" valor={criado.senhaProvisoria} />}
             <Botao variante="secundario" className="mt-3" onClick={() => setCriado(null)}>Fechar</Botao>
@@ -122,7 +122,7 @@ function NovoUsuario({ aoCancelar, aoCriar }: { aoCancelar: () => void; aoCriar:
       <form onSubmit={enviar} className="space-y-4">
         {erro && <Aviso>{erro}</Aviso>}
         <p className="text-sm text-slate-500">
-          Se o e-mail já tiver conta no Vetus (ex.: ultrassonografista que atende outras clínicas), ele só ganha
+          Se o e-mail já tiver conta no AutoLaudoVet (ex.: ultrassonografista que atende outras clínicas), ele só ganha
           acesso a esta clínica.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">

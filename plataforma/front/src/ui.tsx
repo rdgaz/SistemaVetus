@@ -7,8 +7,8 @@ export function Botao({
   ...p
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variante?: 'primario' | 'secundario' | 'perigo' }) {
   const cores = {
-    primario: 'bg-[#1f3b57] text-white hover:bg-[#2a4e72] disabled:bg-slate-400',
-    secundario: 'bg-white text-[#1f3b57] border border-slate-300 hover:bg-slate-50 disabled:text-slate-400',
+    primario: 'bg-[#0E4D64] text-white hover:bg-[#0B3D50] disabled:bg-slate-400',
+    secundario: 'bg-white text-[#0E4D64] border border-slate-300 hover:bg-slate-50 disabled:text-slate-400',
     perigo: 'bg-white text-red-700 border border-red-300 hover:bg-red-50',
   }[variante];
   return (
@@ -29,7 +29,7 @@ export function Campo({
       <span className="mb-1 block text-sm font-medium text-slate-700">{rotulo}</span>
       <input
         {...p}
-        className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base outline-none focus:border-[#1f3b57] focus:ring-2 focus:ring-[#1f3b57]/20 disabled:bg-slate-100"
+        className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base outline-none focus:border-[#0E4D64] focus:ring-2 focus:ring-[#0E4D64]/20 disabled:bg-slate-100"
       />
       {dica && <span className="mt-1 block text-xs text-slate-500">{dica}</span>}
     </label>
@@ -44,7 +44,7 @@ export function Selecao({
   const select = (
     <select
       {...p}
-      className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base outline-none focus:border-[#1f3b57]"
+      className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base outline-none focus:border-[#0E4D64]"
     >
       {children}
     </select>
@@ -94,7 +94,7 @@ export function Segredo({ rotulo, valor }: { rotulo: string; valor: string }) {
         <code className="break-all rounded bg-white px-2 py-1 font-mono text-sm">{valor}</code>
         <button
           type="button"
-          className="text-sm font-medium text-[#1f3b57] underline"
+          className="text-sm font-medium text-[#0E4D64] underline"
           onClick={() => navigator.clipboard?.writeText(valor)}
         >
           Copiar

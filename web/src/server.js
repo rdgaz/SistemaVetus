@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Área administrativa do Vetus (primeira versão).
+ * Área administrativa do AutoLaudoVet (primeira versão).
  * Lista os exames recebidos e mostra fotos, PDFs e medidas.
  * Protegida por usuário e senha (ADMIN_USER / ADMIN_PASSWORD).
  */
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
     const [u, ...p] = Buffer.from(valor, 'base64').toString('utf8').split(':');
     if (igual(u, USER) && igual(p.join(':'), PASS)) return next();
   }
-  res.set('WWW-Authenticate', 'Basic realm="Vetus", charset="UTF-8"').status(401).send('Login necessário');
+  res.set('WWW-Authenticate', 'Basic realm="AutoLaudoVet", charset="UTF-8"').status(401).send('Login necessário');
 });
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -64,7 +64,7 @@ function pastaSegura(nome) {
 }
 
 const pagina = (titulo, corpo) => `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(titulo)} · Vetus</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(titulo)} · AutoLaudoVet</title>
 <style>
  body{font-family:system-ui,sans-serif;margin:0;background:#f5f6f8;color:#1d2330}
  header{background:#1f3b57;color:#fff;padding:12px 20px} header a{color:#fff;text-decoration:none;font-weight:600}
@@ -76,7 +76,7 @@ const pagina = (titulo, corpo) => `<!DOCTYPE html><html lang="pt-BR"><head><meta
  .dados{background:#fff;padding:12px 16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 16px}
  .dados b{color:#5a6475;font-weight:500;font-size:13px;display:block}
  .vazio{color:#7a8392}
-</style></head><body><header><a href="/">Vetus</a> · Exames</header><main>${corpo}</main></body></html>`;
+</style></head><body><header><a href="/">AutoLaudoVet</a> · Exames (área antiga)</header><main>${corpo}</main></body></html>`;
 
 app.get('/', (req, res) => {
   const lista = listarExames();
@@ -141,4 +141,4 @@ app.get('/arquivos/:pasta/:sub/:arquivo', (req, res) => {
   res.sendFile(f);
 });
 
-app.listen(PORT, () => console.log(`Vetus web: http://localhost:${PORT} (dados em ${TEMP_DIR})`));
+app.listen(PORT, () => console.log(`AutoLaudoVet web (antiga): http://localhost:${PORT} (dados em ${TEMP_DIR})`));

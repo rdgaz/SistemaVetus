@@ -50,7 +50,7 @@ export function EnvioImagem({ titulo, explicacao, urlVer, urlEnviar, alt }: {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <label className="inline-flex min-h-11 cursor-pointer items-center rounded-lg bg-[#1f3b57] px-4 font-medium text-white hover:bg-[#2a4e72]">
+          <label className="inline-flex min-h-11 cursor-pointer items-center rounded-lg bg-[#0E4D64] px-4 font-medium text-white hover:bg-[#0B3D50]">
             {existe ? 'Trocar imagem' : 'Enviar imagem'}
             <input type="file" accept="image/png,image/jpeg" className="hidden"
               onChange={(e) => { enviar(e.target.files?.[0]); e.target.value = ''; }} />

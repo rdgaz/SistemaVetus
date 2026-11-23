@@ -69,7 +69,7 @@ class Navegador {
   const emailA = `adm.a.${n}@teste.local`;
   const emailB = `adm.b.${n}@teste.local`;
   const criarA = await adm.req('POST', '/api/admin/clinicas', { nome: `Clínica A ${n}`, administrador: { nome: 'Ana', email: emailA } });
-  ok(criarA.status === 201 && /^VETUS_C\d{4}$/.test(criarA.dados.aeTitle), `cria clínica A com AE Title (${criarA.dados.aeTitle})`);
+  ok(criarA.status === 201 && /^ALV_C\d{4}$/.test(criarA.dados.aeTitle), `cria clínica A com AE Title (${criarA.dados.aeTitle})`);
   ok(!!criarA.dados.administrador.senhaProvisoria && criarA.dados.tokenIngestao.length === 64, 'senha provisória e token de ingestão gerados');
   const criarB = await adm.req('POST', '/api/admin/clinicas', { nome: `Clínica B ${n}`, administrador: { nome: 'Bruno', email: emailB } });
   ok(criarB.status === 201 && criarB.dados.aeTitle !== criarA.dados.aeTitle, `cria clínica B com outro AE Title (${criarB.dados.aeTitle})`);

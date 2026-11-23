@@ -51,6 +51,20 @@ public static class InternoEndpoints
             if (uid is null) return Erros.Invalido("Exame sem studyInstanceUID.");
 
             var exame = await db.Exames.FirstOrDefaultAsync(e => e.ClinicaId == clinica.Id && e.StudyInstanceUid == uid);
+            var idAnimal = Campo(d, "exameId");
+            if (exame is null && idAnimal is not null)
+            {
+                // o mesmo exame já veio pelo pendrive (mesmo ID do animal, data e hora): junta os dois
+                var data = Campo(d, "data");
+                var hora = Campo(d, "hora") is { Length: >= 6 } h ? h[..6] : null;
+                exame = await db.Exames.FirstOrDefaultAsync(e => e.ClinicaId == clinica.Id && e.IdAnimal == idAnimal
+                    && e.Pasta == "" && e.Data == data && hora != null && e.Hora == hora);
+                if (exame is not null)
+                {
+                    exame.StudyInstanceUid = uid;
+                    exame.Origem = "dicom+pendrive";
+                }
+            }
             var novo = exame is null;
             if (exame is null)
             {
@@ -75,6 +89,7 @@ public static class InternoEndpoints
             }
 
             exame.Pasta = r.Pasta.Trim();
+            exame.IdAnimal ??= idAnimal;
             // dados do aparelho: num reenvio, só preenchem o que está vazio (não apagam o que a clínica corrigiu)
             exame.Tipo ??= Campo(d, "descricao");
             exame.Data ??= Campo(d, "data");
@@ -87,8 +102,9 @@ public static class InternoEndpoints
             exame.Equipamento ??= Texto.Opcional(string.Join(' ', new[] { Campo(d, "fabricante"), Campo(d, "modelo") }.Where(x => x is not null)));
             if (d.TryGetProperty("totais", out var t) && t.ValueKind == JsonValueKind.Object)
             {
-                exame.TotalFotos = t.TryGetProperty("fotos", out var f) && f.TryGetInt32(out var nf) ? nf : exame.TotalFotos;
-                exame.TotalPdfs = t.TryGetProperty("pdfs", out var p) && p.TryGetInt32(out var np) ? np : exame.TotalPdfs;
+                if (!exame.FotosPendrive) // fotos do pendrive no lugar das do DICOM: o total é o do pendrive
+                    exame.TotalFotos = t.TryGetProperty("fotos", out var f) && f.TryGetInt32(out var nf) ? nf : exame.TotalFotos;
+                exame.TotalPdfs = Math.Max(exame.TotalPdfs, t.TryGetProperty("pdfs", out var p) && p.TryGetInt32(out var np) ? np : 0);
             }
             exame.AtualizadoEm = DateTime.UtcNow;
             await db.SaveChangesAsync();
@@ -97,35 +113,47 @@ public static class InternoEndpoints
     }
 
     /// <summary>Paciente da clínica com o mesmo nome, espécie e tutor; se não houver, cria (e o tutor também).</summary>
-    private static async Task<Paciente> AcharOuCriarPaciente(VetusDb db, Guid clinicaId, JsonElement d)
+    private static Task<Paciente> AcharOuCriarPaciente(VetusDb db, Guid clinicaId, JsonElement d) =>
+        AcharOuCriarPaciente(db, clinicaId, Campo(d, "paciente"), Campo(d, "especie"), Campo(d, "responsavel"),
+            Campo(d, "raca"), Campo(d, "sexo"), null, Campo(d, "nascimento"));
+
+    /// <summary>Paciente da clínica com o mesmo nome, espécie e tutor; se não houver, cria (e o tutor também).</summary>
+    public static async Task<Paciente> AcharOuCriarPaciente(VetusDb db, Guid clinicaId, string? nomePaciente, string? especieAparelho,
+        string? nomeTutor, string? raca, string? sexo, bool? castrado, string? nascimento)
     {
         Tutor? tutor = null;
-        var nomeTutor = Campo(d, "responsavel");
+        nomeTutor = Texto.Opcional(nomeTutor);
         if (nomeTutor is not null)
         {
             var chave = nomeTutor.ToLower();
             tutor = await db.Tutores.FirstOrDefaultAsync(t => t.ClinicaId == clinicaId && t.Nome.ToLower() == chave)
+                    ?? db.Tutores.Local.FirstOrDefault(t => t.ClinicaId == clinicaId && t.Nome.ToLower() == chave)
                     ?? db.Tutores.Add(new Tutor { ClinicaId = clinicaId, Nome = nomeTutor }).Entity;
         }
 
-        var nome = Campo(d, "paciente") ?? "Sem nome";
-        var especie = NormalizarEspecie(Campo(d, "especie"));
+        var nome = Texto.Opcional(nomePaciente) ?? "Sem nome";
+        var especie = NormalizarEspecie(Texto.Opcional(especieAparelho));
         var chaveNome = nome.ToLower();
         var tutorId = tutor?.Id;
         var existente = await db.Pacientes.FirstOrDefaultAsync(p => p.ClinicaId == clinicaId
             && p.Nome.ToLower() == chaveNome && p.Especie == especie && p.TutorId == tutorId);
-        if (existente is not null) return existente;
+        if (existente is not null)
+        {
+            existente.Castrado ??= castrado;
+            return existente;
+        }
 
-        var sexo = Campo(d, "sexo")?.ToUpper();
+        sexo = sexo?.Trim().ToUpper();
         return db.Pacientes.Add(new Paciente
         {
             ClinicaId = clinicaId,
             Tutor = tutor,
             Nome = nome,
             Especie = especie,
-            Raca = Campo(d, "raca"),
+            Raca = Texto.Opcional(raca),
             Sexo = sexo is "M" or "F" or "O" ? sexo : null,
-            Nascimento = Campo(d, "nascimento"),
+            Castrado = castrado,
+            Nascimento = Texto.Opcional(nascimento),
         }).Entity;
     }
 
@@ -134,8 +162,8 @@ public static class InternoEndpoints
     {
         if (s is null) return null;
         var x = s.ToLowerInvariant();
-        if (x.Contains("canin") || x.Contains("cão") || x.Contains("cao") || x.Contains("canine") || x.Contains("dog")) return "Canina";
-        if (x.Contains("felin") || x.Contains("gato") || x.Contains("cat")) return "Felina";
+        if (x.Contains("canin") || x.Contains("cach") || x.Contains("cão") || x.Contains("cao") || x.Contains("canine") || x.Contains("dog")) return "Canina";
+        if (x.Contains("felin") || x.StartsWith("fel") || x.Contains("gato") || x.Contains("cat")) return "Felina";
         return s;
     }
 

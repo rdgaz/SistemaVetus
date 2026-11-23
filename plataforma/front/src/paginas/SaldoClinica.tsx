@@ -33,7 +33,7 @@ export function SaldoClinica({ comExtrato = false }: { comExtrato?: boolean }) {
 
       {comExtrato && s.extrato && s.extrato.length > 0 && (
         <details className="mt-3">
-          <summary className="cursor-pointer text-sm font-medium text-[#1f3b57]">Extrato</summary>
+          <summary className="cursor-pointer text-sm font-medium text-[#0E4D64]">Extrato</summary>
           <table className="mt-2 w-full text-sm">
             <tbody>
               {s.extrato.map((m, i) => (

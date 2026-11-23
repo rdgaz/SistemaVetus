@@ -1,6 +1,12 @@
-# Sistema Vetus
+# AutoLaudoVet
 
-Recebe exames do ultrassom veterinário (Mindray Vetus) por DICOM, gera as fotos automaticamente e oferece uma área administrativa para o veterinário.
+**Pré-laudos de ultrassom veterinário com IA** · um produto [Moderno Tech](https://modernotech.dev/)
+
+Recebe exames do ultrassom veterinário (ex.: Mindray Vetus E7) por DICOM, gera as fotos, faz o pré-laudo com IA, e o veterinário revisa, assina e envia.
+
+> O produto se chamava "Vetus" (nome que pertence a outra marca). Partes internas ainda usam o nome antigo: pasta do repositório, nomes dos containers (`vetus-*`), banco (`vetus`), variáveis `VETUS_*`. **AE Title das clínicas:** as novas recebem `ALV_C0002`, `ALV_C0003`...; as primeiras mantêm `VETUS_C0001` (já configurado no aparelho) e continuam funcionando.
+
+**Marca:** logos e cores em `plataforma/front/public/marca/` (guia em `/marca/guia.html`). **Ajuda:** página `/ajuda` para os usuários das clínicas, com manual, WhatsApp do suporte da Moderno Tech e a versão. A versão (`plataforma/front/package.json`) aparece no rodapé com a data do build.
 
 ```
 SistemaVetus/
@@ -18,6 +24,13 @@ SistemaVetus/
 ## Plataforma (clínicas, usuários e login)
 
 A plataforma é o sistema novo descrito em [docs/ESPECIFICACAO.md](docs/ESPECIFICACAO.md). Já tem os **passos 1 a 7**.
+
+**Valores de referência (por espécie e porte)**
+
+- Tabela de referências ultrassonográficas de cão e gato (rins, estômago, alças intestinais, adrenais, pâncreas, vesícula, baço, linfonodos, bexiga), cada uma com **faixa de peso** quando importa e a **fonte bibliográfica**. Os 27 valores iniciais vêm da literatura clássica (Nyland & Mattoon; Penninck & d'Anjou; Goggin 2000; Gladwin 2014; Mareschal 2007) e **devem ser validados por um veterinário ultrassonografista**.
+- **Referências (sistema)**: o administrador cria, edita, desativa e apaga. "Termos" reconhecem a medida do aparelho (ex.: `rim comp` combina com "Rim E > Comprimento").
+- Na tela do exame: **Medidas do aparelho × referência**, com a faixa e o destaque **▲ Acima / ▼ Abaixo** (converte cm/mm), e a lista das referências da espécie e do peso do paciente.
+- A IA recebe as referências do paciente e as medidas já comparadas, e é instruída a citar quando uma medida está fora da faixa.
 
 **Cobrança da IA (créditos das clínicas)**
 

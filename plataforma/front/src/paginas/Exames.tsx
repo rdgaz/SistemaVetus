@@ -73,6 +73,7 @@ export function Exames() {
     <>
       <Titulo>Exames</Titulo>
       <div className="mb-4"><SaldoClinica /></div>
+      <div className="mb-4"><Link to="/exames/pendrive" className="text-sm font-medium text-[#0E4D64] underline">Enviar exame do pendrive</Link></div>
 
       <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
         {abas.map((a) => (
@@ -80,7 +81,7 @@ export function Exames() {
             key={a.texto}
             onClick={() => setParams(a.valor ? { status: a.valor } : {})}
             className={`min-h-10 shrink-0 rounded-full border px-4 text-sm font-medium ${
-              status === a.valor ? 'border-[#1f3b57] bg-[#1f3b57] text-white' : 'border-slate-300 bg-white text-slate-700'
+              status === a.valor ? 'border-[#0E4D64] bg-[#0E4D64] text-white' : 'border-slate-300 bg-white text-slate-700'
             }`}
           >
             {a.texto} <span className="opacity-70">{a.n}</span>
@@ -95,7 +96,7 @@ export function Exames() {
         <div className="space-y-2">
           {lista.exames.map((e) => (
             <Link key={e.id} to={`/exames/${e.id}`}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:border-[#1f3b57]/40">
+              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:border-[#0E4D64]/40">
               <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-black sm:size-20">
                 {e.miniatura && <img src={e.miniatura} alt="" loading="lazy" className="size-full object-cover" />}
               </div>
@@ -140,7 +141,7 @@ function ConfigurarUltrassom({ dados }: { dados: DadosClinica }) {
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <dt className="text-slate-500">Endereço</dt>
-        <dd>IP do servidor Vetus</dd>
+        <dd>IP do servidor AutoLaudoVet</dd>
         <dt className="text-slate-500">Porta</dt>
         <dd>2345</dd>
         <dt className="text-slate-500">Título AE</dt>
