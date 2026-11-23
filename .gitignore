@@ -1,11 +1,16 @@
-# dependências
+# dependências e compilação
 node_modules/
+dist/
+bin/
+obj/
+.vs/
 
 # configuração local e segredos
 .env
 
-# dados de pacientes (NUNCA versionar)
-dados/
+# dados de pacientes (NUNCA versionar): só a pasta dados/ da raiz
+/dados/
+/dados-docker/
 
 # logs e sistema
 *.log

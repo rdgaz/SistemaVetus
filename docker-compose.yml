@@ -1,4 +1,4 @@
-# Vetus: receptor DICOM + área administrativa
+# Vetus: receptor DICOM + plataforma (API .NET + telas) + banco PostgreSQL + área web antiga
 # Uso: copie .env.example para .env, ajuste as senhas e rode:  docker compose up -d --build
 services:
   receptor:
@@ -11,12 +11,17 @@ services:
       ALLOWED_AES: ${ALLOWED_AES:-}
       APAGAR_ORIGINAIS: ${APAGAR_ORIGINAIS:-true}
       IDLE_SECONDS: ${IDLE_SECONDS:-5}
+      # plataforma: valida o AE de cada clínica e recebe o aviso de exame pronto
+      PLATAFORMA_URL: http://plataforma:8080
+      VETUS_CHAVE_INTERNA: ${VETUS_CHAVE_INTERNA:?defina VETUS_CHAVE_INTERNA no .env}
+      AE_LEGADO_CLINICA: ${AE_LEGADO_CLINICA:-}
       TZ: ${TZ:-America/Sao_Paulo}
     ports:
       - "${DICOM_PORT:-2345}:${DICOM_PORT:-2345}"
     volumes:
       - vetus-dados:/data
 
+  # Área web antiga (protótipo): lista as fotos recebidas. Será substituída pela plataforma.
   web:
     build: ./web
     container_name: vetus-web
@@ -32,5 +37,64 @@ services:
     volumes:
       - vetus-dados:/data:ro
 
+  postgres:
+    image: postgres:17-alpine
+    container_name: vetus-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vetus
+      POSTGRES_USER: vetus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - vetus-banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vetus -d vetus"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Plataforma: clínicas, usuários, login (e depois exames, fila e laudos)
+  plataforma:
+    build: ./plataforma
+    container_name: vetus-plataforma
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Vetus: Host=postgres;Database=vetus;Username=vetus;Password=${POSTGRES_PASSWORD}
+      VETUS_ADMIN_EMAIL: ${VETUS_ADMIN_EMAIL:-}
+      VETUS_ADMIN_SENHA: ${VETUS_ADMIN_SENHA:-}
+      INGESTAO_HABILITADA: ${INGESTAO_HABILITADA:-false}
+      VETUS_CHAVE_INTERNA: ${VETUS_CHAVE_INTERNA:?defina VETUS_CHAVE_INTERNA no .env}
+      VETUS_DADOS_DIR: /data
+      # endereço do sistema para quem está fora (vai no QR code de verificação do laudo)
+      VETUS_URL_PUBLICA: ${VETUS_URL_PUBLICA:-http://localhost:5080}
+      # só para testes: permite SMTP na rede interna (servidor de e-mail de teste)
+      VETUS_SMTP_PERMITIR_REDE_INTERNA: ${VETUS_SMTP_PERMITIR_REDE_INTERNA:-false}
+      # IA do pré-laudo (chaves só no .env, nunca no Git)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODELO: ${CLAUDE_MODELO:-claude-opus-5-5}
+      CLAUDE_ESFORCO: ${CLAUDE_ESFORCO:-high}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODELO: ${GEMINI_MODELO:-gemini-3.1-pro-preview}
+      GEMINI_PROJETO: ${GEMINI_PROJETO:-}
+      GEMINI_LOCAL: ${GEMINI_LOCAL:-global}
+      IA_ORDEM: ${IA_ORDEM:-claude,gemini}
+      IA_PARALELO: ${IA_PARALELO:-2}
+      IA_MAX_IMAGENS: ${IA_MAX_IMAGENS:-15}
+      IA_SIMULADA: ${IA_SIMULADA:-false}
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "${PLATAFORMA_PORT:-5080}:8080"
+    volumes:
+      - vetus-chaves:/keys
+      - vetus-dados:/data:ro   # fotos e PDFs gravados pelo receptor (só leitura)
+
 volumes:
-  vetus-dados:
+  vetus-dados:    # exames recebidos (fotos)
+  vetus-banco:    # banco de dados PostgreSQL
+  vetus-chaves:   # chaves do cookie de login

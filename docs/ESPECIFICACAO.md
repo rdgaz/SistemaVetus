@@ -16,7 +16,7 @@ Clínica A: ultrassom ──DICOM──┐
 Clínica B: ultrassom ──DICOM──┤
                               ▼
 ┌──────────────────────── Servidor (Docker) ────────────────────┐
-│  receptor-dicom  ── recebe, converte em fotos, identifica a   │
+│  receptor-dicom  ── recebe, extrai as fotos, identifica a     │
 │                     clínica e registra o exame                │
 │  api             ── cadastros, login, exames, fila, laudos    │
 │    └ /api/ingestao  (DESATIVADO por enquanto: ver seção 13)   │
@@ -69,6 +69,28 @@ Todas as clínicas enviam para o mesmo servidor e a mesma porta.
 - O receptor aceita só AE Titles cadastrados e ativos; os demais são rejeitados e registrados no log.
 - Opcional por clínica: restringir também pelo AE do aparelho (*calling AE*) e/ou pelo IP de origem.
 - O ultrassonografista volante que leva o próprio aparelho pode ter um **AE Title por clínica** no aparelho, ou um AE próprio e escolher a clínica do exame na tela.
+
+### Organização dos arquivos de cada exame
+
+Uma pasta por clínica e, dentro, uma pasta por exame (como hoje). Os **originais recebidos** ficam numa subpasta por **tipo**; os **arquivos extraídos** deles, numa subpasta com o **nome do formato**:
+
+```
+<dados>/<AE da clínica>/<PACIENTE>_<DATA>_<EXAME>/
+├── exame.json        dados do exame
+├── medidas.json      medidas extraídas do SR
+├── dicom-imagem/     originais .dcm (imagens)        ┐
+├── dicom-video/      originais .dcm (clipes)         │ recebidos do
+├── dicom-pdf/        originais .dcm (PDF)            │ ultrassom
+├── dicom-sr/         originais .dcm (medidas)        │
+├── dicom-outro/      outros objetos DICOM            ┘
+├── recebido-jpg/     fotos que chegaram prontas (ingestão / upload, futuro)
+├── jpg/              fotos extraídas dos .dcm        ┐ gerados pelo
+└── pdf/              PDFs extraídos dos .dcm         ┘ sistema
+```
+
+- O `.dcm` do Mindray é um "envelope" com os dados do exame e o JPEG de cada imagem; o receptor **extrai** o JPEG como está, sem recompressão.
+- Só o sistema grava em `jpg/` e `pdf/`. O que chega pronto de fora fica em `recebido-<formato>/` e nunca sobrescreve um arquivo extraído.
+- Reenvio do mesmo exame substitui os arquivos dele e acrescenta só o que falta, sem duplicar.
 
 ## 4. Paciente e tutor
 
@@ -346,15 +368,24 @@ Princípios da tela:
 
 ## 17. Ordem de construção
 
-1. Banco + clínicas, usuários e **vínculos** + login + escolha de clínica.
-2. Receptor DICOM identificando a clínica pelo AE Title, criando **paciente/tutor** e o exame no banco; endpoint de ingestão **desativado**.
-3. Lista de exames por status (responsiva).
-4. Tela do exame: dados, **campo livre**, modo automático/manual.
-5. Fila + geração do pré-laudo (Claude, Gemini de reserva) com modelo abdominal, máscaras e referências.
-6. Revisão por órgão + prancha + **aprovar e assinar** + PDF com código de verificação.
-7. **Compartilhar** (WhatsApp, e-mail, PDF, link) + retificação.
+1. ✅ Banco + clínicas, usuários e **vínculos** + login + escolha de clínica.
+2. ✅ Receptor DICOM identificando a clínica pelo AE Title, criando **paciente/tutor** e o exame no banco; endpoint de ingestão **desativado**.
+3. ✅ (parcial) Lista de exames por status (responsiva) e detalhe com fotos.
+4. ✅ Tela do exame: dados, **campo livre**, urgente, modo automático/manual, **Gerar pré-laudo** (entra na fila). A extração dos campos a partir do texto livre é feita pela IA no passo 5.
+5. ✅ Fila + geração do pré-laudo (Claude, Gemini de reserva, ordem configurável) com o modelo abdominal. Pendentes: máscaras editáveis por clínica e a tabela de valores de referência.
+6. ✅ Revisão por órgão (com "Normal") + prancha + **aprovar e assinar** + PDF com código de verificação e QR + retificação + página pública de verificação. Pendente: identidade própria do ultrassonografista no cabeçalho (hoje sai sempre a da clínica).
+7. ✅ **Compartilhar** (WhatsApp, e-mail pelo SMTP próprio do usuário, PDF, link público com validade e revogação) + canais configuráveis por usuário + histórico de envios. Retificação feita no passo 6.
 
-## 18. Fases seguintes (fora da 1ª versão)
+## 18. Cobrança da IA (créditos)
+
+- Saldo em R$ por clínica; crédito inicial configurável para clínicas novas (padrão R$ 40).
+- Débito por geração = custo real (tokens × preço do modelo × câmbio) × fator (padrão 2 = 100% de margem). Erro e "nada mudou" não cobram.
+- Bloqueio sem saldo; recargas e ajustes pelo administrador do sistema, com extrato.
+- A clínica vê saldo e estimativa de pré-laudos restantes (média dos últimos 20).
+- O administrador do sistema configura fator, câmbio, preços dos modelos e o próprio saldo no provedor (com alerta).
+- Futuro: recarga pela própria clínica (Pix automático), pacotes com desconto, nota fiscal.
+
+## 19. Fases seguintes (fora da 1ª versão)
 
 - Outros tipos de exame (gestacional, cervical, ocular, musculoesquelético, torácico, A-FAST/T-FAST).
 - Upload manual de imagens (aparelhos sem DICOM).

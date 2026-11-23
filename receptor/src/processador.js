@@ -10,7 +10,8 @@ const path = require('path');
 const { Dataset } = require('dcmjs-dimse');
 const config = require('./config');
 const log = require('./log');
-const { FORMATOS, FOTOS, str, lerExameJson, gravarExameJson } = require('./exames');
+const { FORMATOS, EXTRAIDOS, MEDIDAS_JSON, str, lerExameJson, gravarExameJson } = require('./exames');
+const FOTOS = EXTRAIDOS.JPG;
 
 const JPEG_TS = ['1.2.840.10008.1.2.4.50', '1.2.840.10008.1.2.4.51'];
 
@@ -42,7 +43,7 @@ class Mapa {
   }
 }
 
-/** Imagem ou vídeo em JPEG -> .jpg em fotosProcessadas (cópia exata, sem recompressão). */
+/** Imagem ou vídeo em JPEG -> .jpg em jpg/ (cópia exata dos bytes do JPEG, sem recompressão). */
 function gerarFotos(ds, el, pastaExame, formato, mapa, r) {
   if (!JPEG_TS.includes(ds.getTransferSyntaxUid())) return { mantido: true, motivo: `sintaxe ${ds.getTransferSyntaxUid()} não é JPEG` };
   const frames = el.PixelData || [];
@@ -75,20 +76,21 @@ function gerarFotos(ds, el, pastaExame, formato, mapa, r) {
   return { fotos: frames.length };
 }
 
-/** PDF encapsulado -> pdf/<titulo>.pdf (substitui o do mesmo objeto) */
+/** PDF encapsulado (dicom-pdf/) -> pdf/<titulo>.pdf (substitui o do mesmo objeto) */
 function extrairPdf(el, pastaExame, mapa) {
   const buf = toBuffer(el.EncapsulatedDocument);
   if (!buf || !buf.length) throw new Error('PDF vazio');
   const sop = str(el.SOPInstanceUID);
   const titulo = str(el.DocumentTitle).replace(/[^\wÀ-ÿ -]/g, '_').trim() || 'relatorio';
   let nome = `${titulo}.pdf`;
-  if (mapa.deOutro(`${FORMATOS.PDF}/${nome}`, sop)) nome = `${titulo}_${sop.split('.').pop()}.pdf`;
-  fs.writeFileSync(path.join(pastaExame, FORMATOS.PDF, nome), buf);
-  mapa.registrar(sop, 'pdf', [`${FORMATOS.PDF}/${nome}`], pastaExame);
+  if (mapa.deOutro(`${EXTRAIDOS.PDF}/${nome}`, sop)) nome = `${titulo}_${sop.split('.').pop()}.pdf`;
+  fs.mkdirSync(path.join(pastaExame, EXTRAIDOS.PDF), { recursive: true });
+  fs.writeFileSync(path.join(pastaExame, EXTRAIDOS.PDF, nome), buf);
+  mapa.registrar(sop, 'pdf', [`${EXTRAIDOS.PDF}/${nome}`], pastaExame);
   return { pdf: nome };
 }
 
-/** Relatório estruturado -> medidas em sr/medidas.json (substitui as medidas do mesmo relatório) */
+/** Relatório estruturado (dicom-sr/) -> medidas.json na pasta do exame (substitui as medidas do mesmo relatório) */
 function extrairMedidas(el, pastaExame) {
   const sop = str(el.SOPInstanceUID);
   const medidas = [];
@@ -104,7 +106,7 @@ function extrairMedidas(el, pastaExame) {
     }
   };
   andar(el.ContentSequence, []);
-  const f = path.join(pastaExame, FORMATOS.SR, 'medidas.json');
+  const f = path.join(pastaExame, MEDIDAS_JSON);
   let atuais = [];
   try { atuais = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { /* primeiro SR */ }
   fs.writeFileSync(f, JSON.stringify(atuais.filter((m) => m.sop !== sop).concat(medidas), null, 2));
@@ -150,7 +152,7 @@ function processarExame(pasta, arquivos) {
       } else if (formato === FORMATOS.SR) {
         res = extrairMedidas(el, pastaExame);
         r.medidas += res.medidas;
-        res.mantido = true; // o SR original fica guardado junto do medidas.json
+        res.mantido = true; // o SR original fica guardado em dicom-sr/
       } else {
         res = { mantido: true, motivo: 'formato sem conversão' };
       }
@@ -171,8 +173,8 @@ function processarExame(pasta, arquivos) {
   const final = { ...(lerExameJson(pasta) || dados) };
   final.arquivosPorSop = mapa.porSop;
   final.totais = {
-    fotosProcessadas: contar(path.join(pastaExame, FOTOS), (n) => n.endsWith('.jpg')),
-    pdfs: contar(path.join(pastaExame, FORMATOS.PDF), (n) => n.endsWith('.pdf')),
+    fotos: contar(path.join(pastaExame, FOTOS), (n) => n.endsWith('.jpg')),
+    pdfs: contar(path.join(pastaExame, EXTRAIDOS.PDF), (n) => n.endsWith('.pdf')),
     originaisGuardados: Object.values(FORMATOS).reduce((s, sub) => s + contar(path.join(pastaExame, sub), (n) => n.endsWith('.dcm')), 0),
   };
   final.processadoEm = new Date().toISOString();
@@ -180,10 +182,10 @@ function processarExame(pasta, arquivos) {
 
   if (r.imagens) log(`[PRONTO]    ${r.imagens} imagem(ns) -> ${FOTOS}/`);
   if (r.videos) log(`[PRONTO]    ${r.videos} vídeo(s) -> quadros em ${FOTOS}/`);
-  if (r.pdfs) log(`[PRONTO]    ${r.pdfs} PDF(s) -> ${FORMATOS.PDF}/`);
-  if (r.medidas) log(`[PRONTO]    ${r.medidas} medida(s) -> ${FORMATOS.SR}/medidas.json`);
-  log(`[PRONTO]    Fotos convertidas e salvas em: ${path.join(pastaExame, FOTOS)}`);
-  log(`[PRONTO]    ${r.novas} foto(s) nova(s), ${r.substituidas} substituída(s), ${final.totais.fotosProcessadas} no total` +
+  if (r.pdfs) log(`[PRONTO]    ${r.pdfs} PDF(s) -> ${EXTRAIDOS.PDF}/`);
+  if (r.medidas) log(`[PRONTO]    ${r.medidas} medida(s) -> ${MEDIDAS_JSON}`);
+  log(`[PRONTO]    Fotos extraídas e salvas em: ${path.join(pastaExame, FOTOS)}`);
+  log(`[PRONTO]    ${r.novas} foto(s) nova(s), ${r.substituidas} substituída(s), ${final.totais.fotos} no total` +
     (r.erros ? ` | ${r.erros} com erro` : ''));
   return r;
 }

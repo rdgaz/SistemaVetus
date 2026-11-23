@@ -16,6 +16,14 @@ jobs:
       ADMIN_PASSWORD: ci-senha-teste
       DICOM_PORT: "2345"
       WEB_PORT: "8080"
+      PLATAFORMA_PORT: "5080"
+      POSTGRES_PASSWORD: ci-senha-banco
+      VETUS_ADMIN_EMAIL: admin@ci.local
+      VETUS_ADMIN_SENHA: ci-senha-admin
+      VETUS_CHAVE_INTERNA: ci-chave-interna
+      IA_SIMULADA: "true"   # pré-laudo de exemplo, sem chamar IA de verdade (sem custo)
+      VETUS_SMTP_PERMITIR_REDE_INTERNA: "true"   # SMTP de teste (Mailpit) na rede do Docker
+      MAILPIT_URL: http://127.0.0.1:8025
 
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +38,7 @@ jobs:
 
       - name: Verificar sintaxe
         run: |
-          for f in receptor/src/*.js web/src/*.js tests/*.js; do node --check "$f"; done
+          for f in receptor/src/*.js web/src/*.js tests/*.js ferramentas/*.js; do node --check "$f"; done
 
       - name: Validar docker-compose.yml
         run: docker compose config --quiet
@@ -43,14 +51,22 @@ jobs:
 
       - name: Aguardar containers saudáveis
         run: |
-          for i in $(seq 1 60); do
+          for i in $(seq 1 90); do
             r=$(docker inspect -f '{{.State.Health.Status}}' vetus-receptor)
             w=$(docker inspect -f '{{.State.Health.Status}}' vetus-web)
-            echo "receptor=$r web=$w"
-            [ "$r" = healthy ] && [ "$w" = healthy ] && exit 0
+            p=$(docker inspect -f '{{.State.Health.Status}}' vetus-plataforma)
+            echo "receptor=$r web=$w plataforma=$p"
+            [ "$r" = healthy ] && [ "$w" = healthy ] && [ "$p" = healthy ] && exit 0
             sleep 2
           done
           exit 1
+
+      - name: Servidor de e-mail de teste (Mailpit) na rede dos containers
+        run: |
+          docker run -d --name vetus-mailpit --network "$(basename "$PWD" | tr '[:upper:]' '[:lower:]')_default" \
+            --network-alias mailpit -p 8025:8025 \
+            -e MP_SMTP_AUTH_ACCEPT_ANY=1 -e MP_SMTP_AUTH_ALLOW_INSECURE=1 axllent/mailpit
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8025/api/v1/messages >/dev/null && exit 0; sleep 1; done; exit 1
 
       - name: Dependências do teste
         run: npm ci --prefix receptor
@@ -58,10 +74,20 @@ jobs:
       - name: Teste ponta a ponta (envio DICOM -> fotos -> área web)
         run: node tests/e2e.js
 
+      - name: Teste da plataforma (login, clínicas, usuários, acesso)
+        run: node tests/plataforma.js
+
+      - name: Teste dos exames por clínica (DICOM -> plataforma)
+        run: node tests/exames.js
+
       - name: Logs dos containers
         if: always()
         run: docker compose logs --no-color
 
-      - name: Derrubar containers
+      - name: Remover o Mailpit
+        if: always()
+        run: docker rm -f vetus-mailpit || true
+
+      - name: Derrubar compose
         if: always()
         run: docker compose down -v

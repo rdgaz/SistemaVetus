@@ -83,7 +83,7 @@ app.get('/', (req, res) => {
   const linhas = lista.map((e) => `<tr>
     <td><a href="/exame/${encodeURIComponent(e.pasta)}">${esc(e.paciente || e.pasta)}</a></td>
     <td>${esc(e.especie)}</td><td>${dataBR(e.data)}</td><td>${esc(e.descricao)}</td>
-    <td>${e.totais ? e.totais.fotosProcessadas : '<span class="vazio">processando…</span>'}</td>
+    <td>${e.totais ? (e.totais.fotos ?? e.totais.fotosProcessadas) : '<span class="vazio">processando…</span>'}</td>
     <td>${e.totais && e.totais.pdfs ? e.totais.pdfs : ''}</td></tr>`).join('');
   res.send(pagina('Exames', lista.length
     ? `<table><tr><th>Paciente</th><th>Espécie</th><th>Data</th><th>Exame</th><th>Fotos</th><th>PDFs</th></tr>${linhas}</table>`
@@ -97,10 +97,10 @@ app.get('/exame/:pasta', (req, res) => {
   try { j = JSON.parse(fs.readFileSync(path.join(dir, 'exame.json'), 'utf8')); } catch { /* sem dados */ }
   const base = `/arquivos/${encodeURIComponent(req.params.pasta)}`;
   const ls = (sub, ext) => (fs.existsSync(path.join(dir, sub)) ? fs.readdirSync(path.join(dir, sub)).filter((n) => n.endsWith(ext)).sort() : []);
-  const fotos = ls('fotosProcessadas', '.jpg');
+  const fotos = ls('jpg', '.jpg');
   const pdfs = ls('pdf', '.pdf');
   let medidas = [];
-  try { medidas = JSON.parse(fs.readFileSync(path.join(dir, 'sr', 'medidas.json'), 'utf8')); } catch { /* sem SR */ }
+  try { medidas = JSON.parse(fs.readFileSync(path.join(dir, 'medidas.json'), 'utf8')); } catch { /* sem SR */ }
 
   const campos = [['Paciente', j.paciente], ['Espécie', j.especie], ['Raça', j.raca], ['Sexo', j.sexo], ['Idade', j.idade],
     ['Peso', j.peso], ['Responsável', j.responsavel], ['Data', dataBR(j.data)], ['Exame', j.descricao],
@@ -113,7 +113,7 @@ app.get('/exame/:pasta', (req, res) => {
     ${pdfs.length ? `<h3>Relatórios (PDF)</h3><ul>${pdfs.map((p) => `<li><a href="${base}/pdf/${encodeURIComponent(p)}" target="_blank">${esc(p)}</a></li>`).join('')}</ul>` : ''}
     ${medidas.length ? `<h3>Medidas</h3><table><tr><th>Grupo</th><th>Medida</th><th>Valor</th></tr>${medidas.map((m) => `<tr><td>${esc(m.grupo)}</td><td>${esc(m.nome)}</td><td>${esc(m.valor)} ${esc(m.unidade)}</td></tr>`).join('')}</table>` : ''}
     <h3>Fotos (${fotos.length})</h3>
-    ${fotos.length ? `<div class="grade">${fotos.map((f) => `<a href="${base}/fotosProcessadas/${encodeURIComponent(f)}" target="_blank"><img loading="lazy" src="${base}/fotosProcessadas/${encodeURIComponent(f)}" alt="${esc(f)}"></a>`).join('')}</div>` : '<p class="vazio">Nenhuma foto.</p>'}`));
+    ${fotos.length ? `<div class="grade">${fotos.map((f) => `<a href="${base}/jpg/${encodeURIComponent(f)}" target="_blank"><img loading="lazy" src="${base}/jpg/${encodeURIComponent(f)}" alt="${esc(f)}"></a>`).join('')}</div>` : '<p class="vazio">Nenhuma foto.</p>'}`));
 });
 
 // API (JSON): lista de exames e detalhes, base para as próximas telas (laudo com IA etc.)
@@ -126,14 +126,14 @@ app.get('/api/exames/:pasta', (req, res) => {
   const ls = (sub) => (fs.existsSync(path.join(dir, sub)) ? fs.readdirSync(path.join(dir, sub)).sort() : []);
   delete j.arquivosPorSop;
   let medidas = [];
-  try { medidas = JSON.parse(fs.readFileSync(path.join(dir, 'sr', 'medidas.json'), 'utf8')); } catch { /* sem SR */ }
-  res.json({ ...j, pasta: req.params.pasta, medidas, fotos: ls('fotosProcessadas'), pdfs: ls('pdf'), formatos: fs.readdirSync(dir).filter((n) => fs.statSync(path.join(dir, n)).isDirectory()) });
+  try { medidas = JSON.parse(fs.readFileSync(path.join(dir, 'medidas.json'), 'utf8')); } catch { /* sem SR */ }
+  res.json({ ...j, pasta: req.params.pasta, medidas, fotos: ls('jpg'), pdfs: ls('pdf'), formatos: fs.readdirSync(dir).filter((n) => fs.statSync(path.join(dir, n)).isDirectory()) });
 });
 
-// Arquivos do exame: só fotos e PDFs
+// Arquivos do exame: só os extraídos (jpg/ e pdf/)
 app.get('/arquivos/:pasta/:sub/:arquivo', (req, res) => {
   const { pasta, sub, arquivo } = req.params;
-  if (!['fotosProcessadas', 'pdf'].includes(sub)) return res.sendStatus(404);
+  if (!['jpg', 'pdf'].includes(sub)) return res.sendStatus(404);
   const dir = pastaSegura(pasta);
   if (!dir) return res.sendStatus(404);
   const f = path.resolve(dir, sub, arquivo);

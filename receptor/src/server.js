@@ -11,6 +11,7 @@ const dimse = require('dcmjs-dimse');
 const config = require('./config');
 const log = require('./log');
 const exames = require('./exames');
+const plataforma = require('./plataforma');
 const { processarExame } = require('./processador');
 
 dimse.log.setLevel(config.debug ? 'info' : 'error');
@@ -27,13 +28,13 @@ const ACCEPTED_TS = [
 ].filter(Boolean);
 
 // ------------------------------------------------------------ exames em recebimento
-// StudyInstanceUID -> { pasta, arquivos: [{file, formato}], timer }
+// "<AE da clínica>|<StudyInstanceUID>" -> { ae, pasta, arquivos: [{file, formato}], timer }
 const recebendo = new Map();
 
-function registrarRecebido(uid, pasta, file, formato) {
+function registrarRecebido(uid, ae, pasta, file, formato) {
   let s = recebendo.get(uid);
   if (!s) {
-    s = { pasta, arquivos: [], timer: null };
+    s = { ae, pasta, arquivos: [], timer: null };
     recebendo.set(uid, s);
     log.linha();
     log(`[RECEBENDO] Recebendo dados: ${pasta}`);
@@ -57,17 +58,38 @@ function finalizar(uid) {
   const porFormato = {};
   for (const a of s.arquivos) porFormato[a.formato] = (porFormato[a.formato] || 0) + 1;
   log(`[RECEBIDO]  ${s.pasta}: ${s.arquivos.length} arquivo(s) (${Object.entries(porFormato).map(([f, n]) => `${f}: ${n}`).join(', ')})`);
+  let processado = false;
   try {
     processarExame(s.pasta, s.arquivos);
+    processado = true;
   } catch (e) {
     log(`[ERRO]      falha ao processar ${s.pasta}: ${e.message}`);
   }
-  log.linha();
+  // exame de uma clínica: avisa a plataforma (que cria/atualiza o exame no banco)
+  const aviso = processado && s.ae && plataforma.ativa() ? plataforma.registrarExame(s.ae, s.pasta) : Promise.resolve();
+  aviso.catch((e) => log(`[ERRO]      ${s.pasta}: ${e.message}`)).finally(() => log.linha());
 }
 
 // ------------------------------------------------------------ SCP
+/**
+ * Clínica do exame pelo AE Title chamado pelo ultrassom.
+ * Retorna { aceito, ae } — ae = pasta da clínica ('' = sem clínica, AE antigo) — ou { aceito: false, motivo }.
+ */
+async function clinicaDoAe(called) {
+  const ae = called.toUpperCase();
+  if (ae === config.aeTitle.toUpperCase()) return { aceito: true, ae: config.aeLegadoClinica };
+  if (!plataforma.ativa()) return { aceito: false, motivo: `AE chamado "${called}" diferente de "${config.aeTitle}"` };
+  const situacao = await plataforma.consultarAe(ae);
+  if (situacao === 'ativa') return { aceito: true, ae };
+  if (situacao === 'indisponivel' && plataforma.aceitarSemPlataforma(ae)) {
+    log(`[AVISO]     aceitando "${ae}" sem confirmar com a plataforma (fora do ar); o exame será registrado depois`);
+    return { aceito: true, ae };
+  }
+  return { aceito: false, motivo: situacao === 'bloqueada' ? `clínica "${ae}" está bloqueada` : `AE "${called}" não pertence a nenhuma clínica` };
+}
+
 class VetusScp extends Scp {
-  associationRequested(association) {
+  async associationRequested(association) {
     this.association = association;
     const calling = association.getCallingAeTitle().trim();
     const called = association.getCalledAeTitle().trim();
@@ -75,10 +97,17 @@ class VetusScp extends Scp {
       log(`[REJEITADO] AE "${calling}" não está em ALLOWED_AES`);
       return this.sendAssociationReject(RejectResult.Permanent, RejectSource.ServiceUser, RejectReason.CallingAeNotRecognized);
     }
-    if (called !== config.aeTitle) {
-      log(`[REJEITADO] AE chamado "${called}" diferente de "${config.aeTitle}"`);
+    let clinica;
+    try {
+      clinica = await clinicaDoAe(called);
+    } catch (e) {
+      clinica = { aceito: false, motivo: e.message };
+    }
+    if (!clinica.aceito) {
+      log(`[REJEITADO] ${clinica.motivo}`);
       return this.sendAssociationReject(RejectResult.Permanent, RejectSource.ServiceUser, RejectReason.CalledAeNotRecognized);
     }
+    this.aeClinica = clinica.ae;
     for (const c of association.getPresentationContexts()) {
       const ctx = association.getPresentationContext(c.id);
       const as = ctx.getAbstractSyntaxUid();
@@ -91,7 +120,7 @@ class VetusScp extends Scp {
       if (ts) ctx.setResult(PresentationContextResult.Accept, ts);
       else ctx.setResult(PresentationContextResult.RejectTransferSyntaxesNotSupported);
     }
-    log(`[CONEXÃO]  ${calling} -> ${called} (${this.socket ? this.socket.remoteAddress : '?'})`);
+    log(`[CONEXÃO]  ${calling} -> ${called}${this.aeClinica && this.aeClinica !== called ? ` (clínica ${this.aeClinica})` : ''} (${this.socket ? this.socket.remoteAddress : '?'})`);
     this.sendAssociationAccept();
   }
 
@@ -118,8 +147,8 @@ class VetusScp extends Scp {
     try {
       const ds = request.getDataset();
       const el = ds.getElements();
-      const uid = exames.str(el.StudyInstanceUID) || 'sem-estudo';
-      const pasta = exames.pastaDoExame(el);
+      const uid = `${this.aeClinica}|${exames.str(el.StudyInstanceUID) || 'sem-estudo'}`;
+      const pasta = exames.pastaDoExame(el, this.aeClinica);
       const formato = exames.classificar(el);
       const dir = path.join(config.tempDir, pasta, formato);
       fs.mkdirSync(dir, { recursive: true });
@@ -133,7 +162,7 @@ class VetusScp extends Scp {
       if (config.debug) log(`[C-STORE]   ${pasta} | ${formato} | ${sop}`);
 
       (this.estudos || (this.estudos = new Set())).add(uid);
-      registrarRecebido(uid, pasta, file, formato);
+      registrarRecebido(uid, this.aeClinica, pasta, file, formato);
       res.setStatus(Status.Success);
     } catch (e) {
       log('[ERRO]      ao receber arquivo:', e.message);
@@ -162,7 +191,17 @@ class VetusScp extends Scp {
   log(` IP(s)     : ${ips.join(', ') || '127.0.0.1'}`);
   log(` Pasta temp: ${config.tempDir}`);
   log(` Originais : ${config.apagarOriginais ? 'apagados após processar' : 'guardados'}`);
+  if (plataforma.ativa()) {
+    log(` Plataforma: ${config.plataformaUrl} (aceita o AE de cada clínica: VETUS_C0001...)`);
+    log(` AE ${config.aeTitle} : ${config.aeLegadoClinica ? `exames vão para a clínica ${config.aeLegadoClinica}` : 'exames ficam sem clínica'}`);
+    if (!config.chaveInterna) log('[AVISO]     VETUS_CHAVE_INTERNA vazia: a plataforma vai recusar os avisos de exame');
+  }
   log('==============================================');
+
+  // exames de clínicas que ainda não foram avisados à plataforma (ela estava fora do ar)
+  const sincronizar = () => plataforma.sincronizarPendentes().catch((e) => log('[ERRO] sincronização:', e.message));
+  setTimeout(sincronizar, 10 * 1000);
+  setInterval(sincronizar, 5 * 60 * 1000);
 
   const parar = () => {
     log('Encerrando: processando exames pendentes...');

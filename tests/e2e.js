@@ -3,7 +3,7 @@
  * Teste ponta a ponta: simula o ultrassom enviando um exame e confere o resultado pela área web.
  *
  * Envia (numa única conexão DICOM): 3 imagens JPEG, 1 vídeo com 3 quadros, 1 PDF e 1 relatório estruturado (SR).
- * Espera: 6 fotos em fotosProcessadas, 1 PDF, medidas extraídas, login exigido na área web.
+ * Espera: 6 fotos em jpg/, 1 PDF em pdf/, medidas extraídas, login exigido na área web.
  *
  * Uso: node tests/e2e.js
  * Variáveis: DICOM_HOST (127.0.0.1), DICOM_PORT (2345), AE_TITLE (MINIPACS),
@@ -109,11 +109,11 @@ function enviar(requests) {
   ok(exame.especie === 'Felino', 'exame.json com espécie');
 
   const det = await (await fetch(`${WEB}/api/exames/${encodeURIComponent(exame.pasta)}`, h)).json();
-  ok(det.fotos.length === 6, `6 fotos em fotosProcessadas (${det.fotos.length})`);
+  ok(det.fotos.length === 6, `6 fotos em jpg/ (${det.fotos.length})`);
   ok(det.pdfs.length === 1, `1 PDF extraído (${det.pdfs.length})`);
-  ok(det.formatos.includes('fotosProcessadas') && det.formatos.includes('pdf') && det.formatos.includes('sr'), `pastas por formato (${det.formatos.join(', ')})`);
+  ok(['jpg', 'pdf', 'dicom-sr'].every((d) => det.formatos.includes(d)) && !det.formatos.includes('dicom-imagem'), `pastas por formato (${det.formatos.join(', ')})`);
 
-  const foto = await fetch(`${WEB}/arquivos/${encodeURIComponent(exame.pasta)}/fotosProcessadas/${encodeURIComponent(det.fotos[0])}`, h);
+  const foto = await fetch(`${WEB}/arquivos/${encodeURIComponent(exame.pasta)}/jpg/${encodeURIComponent(det.fotos[0])}`, h);
   ok(foto.ok && (foto.headers.get('content-type') || '').includes('image/jpeg'), 'foto acessível pela web');
 
   const pagina = await (await fetch(`${WEB}/exame/${encodeURIComponent(exame.pasta)}`, h)).text();

@@ -1,0 +1,624 @@
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link, useParams } from 'react-router';
+import { api } from '../api';
+import { dataBR, nomeSexo, SeloStatus, type StatusExame } from '../exames';
+import { useSessao } from '../sessao';
+import { Aviso, Botao, Campo, Cartao, Selecao } from '../ui';
+import { corSituacao, nomeSituacao, pranchaInicial, Revisao, type ConteudoLaudo } from './Revisao';
+import { Compartilhar } from './Compartilhar';
+import { reais } from '../dinheiro';
+
+type Arquivo = { nome: string; url: string };
+type Medida = { grupo: string; nome: string; valor: number; unidade: string };
+
+type Detalhe = {
+  id: string;
+  status: StatusExame;
+  urgente: boolean;
+  tipo: string | null;
+  data: string | null;
+  especieAparelho: string | null;
+  idade: string | null;
+  peso: string | null;
+  operador: string | null;
+  equipamento: string | null;
+  enfileiradoEm: string | null;
+  tipoExame: string | null;
+  suspeitaClinica: string | null;
+  historico: string | null;
+  jejum: boolean | null;
+  solicitanteNome: string | null;
+  solicitanteCrmv: string | null;
+  solicitanteClinica: string | null;
+  informacoesAdicionais: string | null;
+  tiposExame: { codigo: string; nome: string }[];
+  paciente: { nome: string; especie: string | null; raca: string | null; sexo: string | null; castrado: boolean | null };
+  tutor: { nome: string; telefone: string | null; email: string | null } | null;
+  fotos: Arquivo[];
+  pdfs: Arquivo[];
+  medidas: Medida[] | null;
+  erroGeracao: string | null;
+  iaAtiva: boolean;
+  laudo: Laudo | null;
+  mascaras: Record<string, string>;
+};
+
+type Laudo = {
+  versao: number;
+  cobradoBrl: number;
+  modo: 'completa' | 'dados' | 'imagens' | 'retificacao';
+  assinadoPorNome: string | null;
+  assinadoCrmv: string | null;
+  assinadoEm: string | null;
+  codigoVerificacao: string | null;
+  retificado: boolean;
+  motivoRetificacao: string | null;
+  revisado: boolean;
+  ia: string;
+  modelo: string;
+  geradoEm: string;
+  duracaoMs: number;
+  conteudo: ConteudoLaudo;
+  imagensEnviadas: string[];
+};
+
+/** Valores do formulário (tudo texto; '' = vazio). */
+type Form = {
+  nome: string; especie: string; raca: string; sexo: string; castrado: string;
+  tutorNome: string; tutorTelefone: string; tutorEmail: string;
+  idade: string; peso: string; tipoExame: string; suspeitaClinica: string; historico: string; jejum: string;
+  solicitanteNome: string; solicitanteCrmv: string; solicitanteClinica: string; informacoesAdicionais: string;
+};
+
+const simNao = (b: boolean | null) => (b === null ? '' : b ? 'sim' : 'nao');
+
+function paraForm(d: Detalhe): Form {
+  return {
+    nome: d.paciente.nome, especie: d.paciente.especie ?? '', raca: d.paciente.raca ?? '', sexo: d.paciente.sexo ?? '',
+    castrado: simNao(d.paciente.castrado),
+    tutorNome: d.tutor?.nome ?? '', tutorTelefone: d.tutor?.telefone ?? '', tutorEmail: d.tutor?.email ?? '',
+    idade: d.idade ?? '', peso: d.peso ?? '', tipoExame: d.tipoExame ?? '', suspeitaClinica: d.suspeitaClinica ?? '',
+    historico: d.historico ?? '', jejum: simNao(d.jejum), solicitanteNome: d.solicitanteNome ?? '',
+    solicitanteCrmv: d.solicitanteCrmv ?? '', solicitanteClinica: d.solicitanteClinica ?? '',
+    informacoesAdicionais: d.informacoesAdicionais ?? '',
+  };
+}
+
+function paraApi(f: Form) {
+  return {
+    paciente: {
+      nome: f.nome, especie: f.especie, raca: f.raca, sexo: f.sexo,
+      castrado: f.castrado === '' ? null : f.castrado === 'sim',
+    },
+    tutor: { nome: f.tutorNome, telefone: f.tutorTelefone, email: f.tutorEmail },
+    idade: f.idade, peso: f.peso, tipoExame: f.tipoExame, suspeitaClinica: f.suspeitaClinica, historico: f.historico,
+    jejum: f.jejum === '' ? null : f.jejum === 'sim', limparJejum: f.jejum === '',
+    solicitanteNome: f.solicitanteNome, solicitanteCrmv: f.solicitanteCrmv, solicitanteClinica: f.solicitanteClinica,
+    informacoesAdicionais: f.informacoesAdicionais,
+  };
+}
+
+/** Tela do exame: dados do paciente, informações para a IA e "Gerar pré-laudo". */
+export function ExameDetalhe() {
+  const { id } = useParams();
+  const { clinica } = useSessao();
+  const [d, setD] = useState<Detalhe | null>(null);
+  const [f, setF] = useState<Form | null>(null);
+  const [editando, setEditando] = useState(false);
+  const [erro, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
+  const [salvando, setSalvando] = useState(false);
+  const [fotoAberta, setFotoAberta] = useState<number | null>(null);
+  const [grade, setGrade] = useState(false);
+
+  const carregar = async () => {
+    const det = await api<Detalhe>('GET', `/api/exames/${id}`);
+    setD(det);
+    setF(paraForm(det));
+    // sem os dados mínimos para gerar, já abre o formulário
+    if (!det.paciente.especie || !det.tipoExame) setEditando(true);
+  };
+
+  useEffect(() => {
+    carregar().catch((x) => setErro(x.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, clinica]);
+
+  // enquanto a IA trabalha, atualiza sozinho (sem perder o que está sendo digitado)
+  const aguardandoIa = d?.status === 'NaFila' || d?.status === 'Gerando';
+  useEffect(() => {
+    if (!aguardandoIa) return;
+    const t = setInterval(async () => {
+      try {
+        const det = await api<Detalhe>('GET', `/api/exames/${id}`);
+        if (det.status !== 'NaFila' && det.status !== 'Gerando') {
+          setD(det);
+          setF(paraForm(det));
+        } else {
+          setD((atual) => (atual ? { ...atual, status: det.status } : det));
+        }
+      } catch { /* tenta de novo no próximo ciclo */ }
+    }, 4000);
+    return () => clearInterval(t);
+  }, [aguardandoIa, id]);
+
+  const inicial = useMemo(() => (d ? JSON.stringify(paraForm(d)) : ''), [d]);
+  const alterado = !!f && !!d && JSON.stringify(f) !== inicial;
+
+  // fechar a aba ou recarregar com alterações não salvas: o navegador pede confirmação
+  useEffect(() => {
+    if (!alterado) return;
+    const avisar = (ev: BeforeUnloadEvent) => ev.preventDefault();
+    window.addEventListener('beforeunload', avisar);
+    return () => window.removeEventListener('beforeunload', avisar);
+  }, [alterado]);
+
+  if (!d || !f) return erro ? <Aviso>{erro}</Aviso> : <p className="text-slate-500">Carregando…</p>;
+  const sairSemSalvar = (ev: { preventDefault: () => void }) => {
+    if (alterado && !confirm('Há alterações não salvas. Sair mesmo assim?')) ev.preventDefault();
+  };
+  const somenteLeitura = d.status === 'Pronto' || d.status === 'Gerando';
+  const mudar = (k: keyof Form) => (ev: { target: { value: string } }) => setF({ ...f, [k]: ev.target.value });
+
+  const faltaParaGerar = [!f.especie && 'espécie', !f.tipoExame && 'tipo de exame'].filter(Boolean) as string[];
+  const recomendados = [
+    !f.sexo && 'sexo', !f.castrado && 'castrado', !f.idade && 'idade', !f.peso && 'peso', !f.raca && 'raça',
+    !f.tutorNome && 'tutor', !f.suspeitaClinica && 'suspeita clínica', !f.solicitanteNome && 'solicitante',
+    !f.jejum && 'jejum',
+  ].filter(Boolean) as string[];
+
+  const executar = async (acao: () => Promise<unknown>, mensagem: string) => {
+    setErro('');
+    setAviso('');
+    setSalvando(true);
+    try {
+      const r = await acao();
+      await carregar();
+      setAviso(typeof r === 'string' ? r : mensagem);
+    } catch (x) {
+      setErro((x as Error).message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const salvar = () => executar(() => api('PUT', `/api/exames/${d.id}`, paraApi(f)), 'Dados salvos.');
+  const gerar = (completa = false) => {
+    if (completa && !confirm('Refazer a análise completa? A IA vai olhar todas as fotos de novo (custo de um pré-laudo novo).')) return;
+    return executar(async () => {
+      const r = await api<{ modo: string; mudancas: string[]; imagensNovas: number }>(
+        'POST', `/api/exames/${d.id}/gerar`, { ...paraApi(f), completa });
+      if (r.modo === 'dados') return `Atualizando o pré-laudo só com o que mudou (${r.mudancas.length} item(ns)), sem reenviar as fotos.`;
+      if (r.modo === 'imagens') return `Atualizando o pré-laudo com ${r.imagensNovas} foto(s) nova(s); as já analisadas não são reenviadas.`;
+      return 'Exame colocado na fila: a IA vai analisar as fotos.';
+    }, '');
+  };
+  const alternarUrgente = () =>
+    executar(() => api('PUT', `/api/exames/${d.id}`, { urgente: !d.urgente }), d.urgente ? 'Urgência removida.' : 'Marcado como urgente: passa na frente na fila.');
+
+  const textoGerar = d.laudo ? 'Atualizar pré-laudo' : d.status === 'Erro' ? 'Gerar de novo' : 'Gerar pré-laudo';
+  const podeGerar = d.status !== 'NaFila' && !somenteLeitura;
+
+  return (
+    <div className="space-y-4 pb-28 md:pb-0">
+      {/* cabeçalho */}
+      <div>
+        <Link to="/" onClick={sairSemSalvar} className="text-sm text-[#1f3b57] underline">← Exames</Link>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <h1 className="mr-1 text-2xl font-semibold text-slate-800">{d.paciente.nome}</h1>
+          <SeloStatus status={d.status} />
+          {d.status !== 'Pronto' && (
+            <button onClick={alternarUrgente} disabled={salvando}
+              className={`rounded-full border px-3 py-0.5 text-xs font-bold ${d.urgente ? 'border-red-600 bg-red-600 text-white' : 'border-slate-300 text-slate-600'}`}>
+              {d.urgente ? 'Urgente ✓' : 'Marcar urgente'}
+            </button>
+          )}
+        </div>
+        <div className="mt-1 text-sm text-slate-500">
+          {[d.paciente.especie, d.tutor?.nome && `Tutor: ${d.tutor.nome}`, dataBR(d.data), `${d.fotos.length} foto(s)`].filter(Boolean).join(' · ')}
+        </div>
+      </div>
+
+      {erro && <Aviso>{erro}</Aviso>}
+      {aviso && <Aviso tipo="ok">{aviso}</Aviso>}
+      {d.status === 'NaFila' && (
+        <Aviso tipo="info">
+          Na fila do pré-laudo{d.enfileiradoEm && ` desde ${new Date(d.enfileiradoEm).toLocaleString('pt-BR')}`}.{' '}
+          {d.iaAtiva
+            ? 'A IA vai começar em instantes; esta tela se atualiza sozinha.'
+            : 'A IA não está configurada no servidor (chave do Claude ou do Gemini no .env); o exame fica aguardando.'}
+        </Aviso>
+      )}
+      {d.status === 'Gerando' && (
+        <Aviso tipo="info">⏳ A IA está analisando as imagens e escrevendo o pré-laudo. Leva de segundos a alguns minutos.</Aviso>
+      )}
+      {d.status === 'Erro' && (
+        <Aviso>
+          <b>Não foi possível gerar o pré-laudo.</b> {d.erroGeracao}
+          <br />Confira os dados e toque em "Gerar de novo".
+        </Aviso>
+      )}
+
+      {d.laudo && d.status === 'Pronto' && (
+        <LaudoAssinado exameId={d.id} laudo={d.laudo} aoMudar={() => carregar()}
+          compartilhar={<Compartilhar exameId={d.id} paciente={d.paciente.nome} tutor={d.tutor?.nome ?? null}
+            telefone={d.tutor?.telefone ?? null} emailTutor={d.tutor?.email ?? null} clinica={clinica?.nome ?? ''} />} />
+      )}
+      {d.laudo && d.laudo.motivoRetificacao && d.status !== 'Pronto' && (
+        <Aviso tipo="info">Retificação do laudo assinado. Motivo: {d.laudo.motivoRetificacao}</Aviso>
+      )}
+      {d.laudo && (d.status === 'AguardandoRevisao' ? (
+        <Revisao exameId={d.id} conteudoInicial={d.laudo.conteudo} imagensEnviadas={d.laudo.imagensEnviadas}
+          fotos={d.fotos} mascaras={d.mascaras} aoMudar={() => carregar()}
+          aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))} />
+      ) : (
+        <PreLaudo laudo={d.laudo} fotos={d.fotos} aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))} />
+      ))}
+
+      {/* fotos */}
+      <Cartao titulo={`Fotos (${d.fotos.length})`}
+        acoes={d.fotos.length > 4 && (
+          <button className="text-sm font-medium text-[#1f3b57] underline" onClick={() => setGrade(!grade)}>
+            {grade ? 'Ver em faixa' : 'Ver todas'}
+          </button>
+        )}>
+        {d.fotos.length === 0 ? <p className="text-slate-500">Nenhuma foto.</p> : grade ? (
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+            {d.fotos.map((foto, i) => <Miniatura key={foto.nome} foto={foto} onClick={() => setFotoAberta(i)} />)}
+          </div>
+        ) : (
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            {d.fotos.map((foto, i) => (
+              <div key={foto.nome} className="w-32 shrink-0 sm:w-40"><Miniatura foto={foto} onClick={() => setFotoAberta(i)} /></div>
+            ))}
+          </div>
+        )}
+      </Cartao>
+
+      {/* dados do paciente e do exame */}
+      <Cartao titulo="Dados do paciente e do exame"
+        acoes={!somenteLeitura && (
+          <button className="text-sm font-medium text-[#1f3b57] underline" onClick={() => setEditando(!editando)}>
+            {editando ? 'Fechar' : '✎ Editar'}
+          </button>
+        )}>
+        {faltaParaGerar.length > 0 && !somenteLeitura && (
+          <div className="mb-3"><Aviso>Para gerar o pré-laudo, informe: <b>{faltaParaGerar.join(' e ')}</b>.</Aviso></div>
+        )}
+        {editando && !somenteLeitura ? (
+          <FormularioDados f={f} d={d} mudar={mudar} />
+        ) : (
+          <Resumo f={f} d={d} />
+        )}
+        {recomendados.length > 0 && !somenteLeitura && (
+          <p className="mt-3 text-sm text-amber-800">
+            ⚠ Falta (recomendado): {recomendados.join(', ')}.{' '}
+            {f.informacoesAdicionais.trim()
+              ? 'O que estiver escrito em "Informações adicionais" é organizado pela IA nesses campos quando o pré-laudo for gerado.'
+              : 'Preencha em ✎ Editar, ou escreva no campo "Informações adicionais" que a IA organiza ao gerar o pré-laudo.'}
+          </p>
+        )}
+      </Cartao>
+
+      {/* campo livre para a IA */}
+      <Cartao titulo="Informações adicionais">
+        <textarea
+          value={f.informacoesAdicionais}
+          onChange={mudar('informacoesAdicionais')}
+          disabled={somenteLeitura}
+          rows={5}
+          maxLength={8000}
+          placeholder="Escreva ou dite o que souber: suspeita, histórico, o que o tutor relatou, se estava em jejum, observações do exame…"
+          className="w-full rounded-lg border border-slate-300 p-3 text-base outline-none focus:border-[#1f3b57] focus:ring-2 focus:ring-[#1f3b57]/20 disabled:bg-slate-100"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Opcional. A IA organiza essas informações nos campos e as considera na análise das imagens.
+          No celular, use o microfone 🎤 do teclado para ditar.
+        </p>
+      </Cartao>
+
+      {d.pdfs.length > 0 && (
+        <Cartao titulo="Relatórios do aparelho (PDF)">
+          <ul className="space-y-1">
+            {d.pdfs.map((p) => (
+              <li key={p.nome}><a className="text-[#1f3b57] underline" href={p.url} target="_blank" rel="noreferrer">{p.nome}</a></li>
+            ))}
+          </ul>
+        </Cartao>
+      )}
+
+      {d.medidas && d.medidas.length > 0 && (
+        <Cartao titulo="Medidas do aparelho">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-slate-500"><th className="py-1 pr-3">Grupo</th><th className="py-1 pr-3">Medida</th><th className="py-1">Valor</th></tr></thead>
+              <tbody>
+                {d.medidas.map((m, i) => (
+                  <tr key={i} className="border-t border-slate-100">
+                    <td className="py-1 pr-3">{m.grupo}</td><td className="py-1 pr-3">{m.nome}</td><td className="py-1">{m.valor} {m.unidade}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Cartao>
+      )}
+
+      {/* ações: barra fixa embaixo no celular */}
+      {!somenteLeitura && (
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0">
+          {alterado && (
+            <p className="mx-auto mb-2 max-w-6xl text-center text-sm font-medium text-amber-800 md:text-right">
+              ● Alterações não salvas
+            </p>
+          )}
+          <div className="mx-auto flex max-w-6xl gap-2 md:justify-end">
+            <Botao variante="secundario" className="flex-1 md:flex-none" disabled={!alterado || salvando} onClick={salvar}>
+              Salvar
+            </Botao>
+            <Botao className="flex-[2] md:flex-none" disabled={!podeGerar || salvando || faltaParaGerar.length > 0} onClick={() => gerar()}
+              title={faltaParaGerar.length ? `Informe: ${faltaParaGerar.join(' e ')}` : undefined}>
+              {d.status === 'NaFila' ? 'Na fila…' : salvando ? 'Aguarde…' : textoGerar}
+            </Botao>
+          </div>
+          {d.laudo && podeGerar && (
+            <p className="mx-auto mt-2 max-w-6xl text-center text-xs text-slate-500 md:text-right">
+              "Atualizar" usa o pré-laudo atual e só o que mudou (sem reenviar fotos já analisadas).{' '}
+              <button className="font-medium text-[#1f3b57] underline" disabled={salvando} onClick={() => gerar(true)}>
+                Refazer análise completa
+              </button>
+            </p>
+          )}
+        </div>
+      )}
+
+      {fotoAberta !== null && (
+        <Visualizador fotos={d.fotos} indice={fotoAberta} aoMudar={setFotoAberta} aoFechar={() => setFotoAberta(null)} />
+      )}
+    </div>
+  );
+}
+
+const nomeIa: Record<string, string> = { claude: 'Claude', gemini: 'Gemini', simulado: 'IA simulada', retificacao: 'retificação' };
+
+/** Laudo assinado: quem assinou, código de verificação, PDF e retificação. */
+function LaudoAssinado({ exameId, laudo, aoMudar, compartilhar }: {
+  exameId: string; laudo: Laudo; aoMudar: () => Promise<void>; compartilhar: ReactNode;
+}) {
+  const { clinica } = useSessao();
+  const [erro, setErro] = useState('');
+  const podeRetificar = clinica?.perfil === 'Veterinario' || clinica?.perfil === 'AdministradorClinica';
+  const retificar = async () => {
+    const motivo = prompt('Motivo da retificação (fica registrado no laudo):');
+    if (!motivo?.trim()) return;
+    setErro('');
+    try {
+      await api('POST', `/api/exames/${exameId}/laudo/retificar`, { motivo });
+      await aoMudar();
+    } catch (x) {
+      setErro((x as Error).message);
+    }
+  };
+  return (
+    <Cartao titulo="Laudo assinado">
+      <div className="space-y-3">
+        {erro && <Aviso>{erro}</Aviso>}
+        <p className="text-sm">
+          Assinado por <b>{laudo.assinadoPorNome}</b> ({laudo.assinadoCrmv}) em{' '}
+          {laudo.assinadoEm && new Date(laudo.assinadoEm).toLocaleString('pt-BR')} · versão {laudo.versao}
+        </p>
+        <p className="text-sm">
+          Código de verificação: <span className="font-mono font-semibold">{laudo.codigoVerificacao}</span>{' '}
+          <a className="text-[#1f3b57] underline" href={`/verificar/${laudo.codigoVerificacao}`} target="_blank" rel="noreferrer">verificar</a>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href={`/api/exames/${exameId}/laudo.pdf`} target="_blank" rel="noreferrer"
+            className="inline-flex min-h-11 items-center rounded-lg bg-[#1f3b57] px-4 font-medium text-white hover:bg-[#2a4e72]">
+            Abrir PDF
+          </a>
+          {podeRetificar && <Botao variante="secundario" onClick={retificar}>Retificar</Botao>}
+        </div>
+        {compartilhar}
+      </div>
+    </Cartao>
+  );
+}
+
+/** Pré-laudo / laudo em modo leitura. */
+function PreLaudo({ laudo, fotos, aoAbrirFoto }: { laudo: Laudo; fotos: Arquivo[]; aoAbrirFoto: (nome: string) => void }) {
+  const c = laudo.conteudo;
+  const prancha = pranchaInicial(c, laudo.imagensEnviadas)
+    .map((nome) => fotos.find((f) => f.nome === nome))
+    .filter((f): f is Arquivo => !!f);
+
+  return (
+    <Cartao titulo="Pré-laudo">
+      <div className="space-y-4">
+        <p className="text-xs text-slate-500">
+          Gerado por {nomeIa[laudo.ia] ?? laudo.ia} ({laudo.modelo}) em {new Date(laudo.geradoEm).toLocaleString('pt-BR')}
+          {laudo.duracaoMs > 0 && ` · ${(laudo.duracaoMs / 1000).toFixed(0)} s`} · versão {laudo.versao}
+          {laudo.modo === 'dados' && ' · atualização sem reenviar as fotos'}
+          {laudo.modo === 'imagens' && ' · atualização com as fotos novas'}
+          {laudo.cobradoBrl > 0 && ` · cobrado ${reais(laudo.cobradoBrl)}`}.
+          Rascunho: precisa da revisão e assinatura do veterinário.
+        </p>
+
+        {c.achadoUrgente && (
+          <Aviso><b>⚠ Achado que pede atenção imediata:</b> {c.motivoUrgencia}</Aviso>
+        )}
+
+        {c.condicoesTecnicas && (
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700">Condições técnicas</h3>
+            <p className="text-sm">{c.condicoesTecnicas}</p>
+          </div>
+        )}
+
+        <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
+          {c.orgaos.map((o) => (
+            <div key={o.orgao} className="p-3">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <span className="font-medium">{o.orgao}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${corSituacao[o.situacao] ?? ''}`}>
+                  {nomeSituacao[o.situacao] ?? o.situacao}
+                </span>
+              </div>
+              <p className="text-sm text-slate-700">{o.descricao}</p>
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-slate-700">Impressão diagnóstica</h3>
+          <p className="text-sm">{c.impressaoDiagnostica}</p>
+        </div>
+        {c.diferenciais?.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700">Diagnósticos diferenciais</h3>
+            <ul className="list-disc pl-5 text-sm">{c.diferenciais.map((x) => <li key={x}>{x}</li>)}</ul>
+          </div>
+        )}
+        {c.recomendacoes?.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700">Recomendações</h3>
+            <ul className="list-disc pl-5 text-sm">{c.recomendacoes.map((x) => <li key={x}>{x}</li>)}</ul>
+          </div>
+        )}
+        {prancha.length > 0 && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-slate-700">Prancha sugerida ({prancha.length} fotos)</h3>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              {prancha.map((f) => <Miniatura key={f.nome} foto={f} onClick={() => aoAbrirFoto(f.nome)} />)}
+            </div>
+          </div>
+        )}
+      </div>
+    </Cartao>
+  );
+}
+
+function Miniatura({ foto, onClick }: { foto: Arquivo; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="block w-full overflow-hidden rounded-lg bg-black">
+      <img src={foto.url} alt={foto.nome} loading="lazy" className="aspect-[4/3] w-full object-contain" />
+    </button>
+  );
+}
+
+function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <fieldset className="space-y-3">
+      <legend className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">{titulo}</legend>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    </fieldset>
+  );
+}
+
+function FormularioDados({ f, d, mudar }: {
+  f: Form; d: Detalhe; mudar: (k: keyof Form) => (ev: { target: { value: string } }) => void;
+}) {
+  const areaTexto = 'min-h-11 w-full rounded-lg border border-slate-300 bg-white p-3 text-base outline-none focus:border-[#1f3b57]';
+  return (
+    <div className="space-y-5">
+      <Grupo titulo="Paciente">
+        <Campo rotulo="Nome *" value={f.nome} onChange={mudar('nome')} />
+        <div>
+          <Campo rotulo="Espécie *" list="especies" value={f.especie} onChange={mudar('especie')}
+            dica={d.especieAparelho && d.especieAparelho !== f.especie ? `No aparelho: ${d.especieAparelho}` : undefined} />
+          <datalist id="especies"><option value="Canina" /><option value="Felina" /></datalist>
+        </div>
+        <Campo rotulo="Raça" value={f.raca} onChange={mudar('raca')} />
+        <Selecao rotulo="Sexo" value={f.sexo} onChange={mudar('sexo')}>
+          <option value="">Não informado</option><option value="M">Macho</option><option value="F">Fêmea</option><option value="O">Outro</option>
+        </Selecao>
+        <Selecao rotulo="Castrado" value={f.castrado} onChange={mudar('castrado')}>
+          <option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option>
+        </Selecao>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo rotulo="Idade" value={f.idade} onChange={mudar('idade')} placeholder="ex.: 9 anos" />
+          <Campo rotulo="Peso" value={f.peso} onChange={mudar('peso')} placeholder="ex.: 12,5 kg" />
+        </div>
+      </Grupo>
+
+      <Grupo titulo="Tutor">
+        <Campo rotulo="Nome" value={f.tutorNome} onChange={mudar('tutorNome')} />
+        <Campo rotulo="Telefone (WhatsApp)" type="tel" value={f.tutorTelefone} onChange={mudar('tutorTelefone')} />
+        <Campo rotulo="E-mail" type="email" value={f.tutorEmail} onChange={mudar('tutorEmail')} />
+      </Grupo>
+
+      <Grupo titulo="Exame">
+        <Selecao rotulo="Tipo de exame *" value={f.tipoExame} onChange={mudar('tipoExame')}>
+          <option value="">Escolha…</option>
+          {d.tiposExame.map((t) => <option key={t.codigo} value={t.codigo}>{t.nome}</option>)}
+        </Selecao>
+        <Selecao rotulo="Jejum" value={f.jejum} onChange={mudar('jejum')}>
+          <option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option>
+        </Selecao>
+        <Campo rotulo="Suspeita clínica" value={f.suspeitaClinica} onChange={mudar('suspeitaClinica')} />
+        <Campo rotulo="Solicitante" value={f.solicitanteNome} onChange={mudar('solicitanteNome')} />
+        <Campo rotulo="CRMV do solicitante" value={f.solicitanteCrmv} onChange={mudar('solicitanteCrmv')} placeholder="ex.: 12345-SP" />
+        <Campo rotulo="Clínica solicitante" value={f.solicitanteClinica} onChange={mudar('solicitanteClinica')} />
+        <label className="block sm:col-span-2 lg:col-span-3">
+          <span className="mb-1 block text-sm font-medium text-slate-700">Histórico</span>
+          <textarea rows={3} className={areaTexto} value={f.historico} onChange={mudar('historico')} />
+        </label>
+      </Grupo>
+      <p className="text-xs text-slate-500">* Necessário para gerar o pré-laudo. O resto é recomendado e pode ser completado depois.</p>
+    </div>
+  );
+}
+
+function Resumo({ f, d }: { f: Form; d: Detalhe }) {
+  const tipo = d.tiposExame.find((t) => t.codigo === f.tipoExame)?.nome;
+  const itens: [string, string][] = [
+    ['Espécie', f.especie], ['Raça', f.raca], ['Sexo', f.sexo ? nomeSexo[f.sexo] ?? f.sexo : ''],
+    ['Castrado', f.castrado === 'sim' ? 'Sim' : f.castrado === 'nao' ? 'Não' : ''], ['Idade', f.idade], ['Peso', f.peso],
+    ['Tutor', [f.tutorNome, f.tutorTelefone].filter(Boolean).join(' · ')], ['Exame', tipo ?? ''],
+    ['Suspeita clínica', f.suspeitaClinica], ['Jejum', f.jejum === 'sim' ? 'Sim' : f.jejum === 'nao' ? 'Não' : ''],
+    ['Solicitante', [f.solicitanteNome, f.solicitanteCrmv].filter(Boolean).join(' · ')],
+    ['Equipamento', d.equipamento ?? ''], ['Operador', d.operador ?? ''],
+  ];
+  const preenchidos = itens.filter(([, v]) => v);
+  return (
+    <>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3 lg:grid-cols-4">
+        {preenchidos.map(([k, v]) => (
+          <div key={k}><dt className="text-slate-500">{k}</dt><dd className="font-medium">{v}</dd></div>
+        ))}
+      </dl>
+      {f.historico && <p className="mt-3 text-sm"><span className="text-slate-500">Histórico: </span>{f.historico}</p>}
+    </>
+  );
+}
+
+/** Foto em tela cheia, com anterior/próxima (setas do teclado também funcionam). */
+function Visualizador({ fotos, indice, aoMudar, aoFechar }: {
+  fotos: Arquivo[]; indice: number; aoMudar: (i: number) => void; aoFechar: () => void;
+}) {
+  useEffect(() => {
+    const tecla = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') aoFechar();
+      if (ev.key === 'ArrowRight') aoMudar(Math.min(fotos.length - 1, indice + 1));
+      if (ev.key === 'ArrowLeft') aoMudar(Math.max(0, indice - 1));
+    };
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, [indice, fotos.length, aoMudar, aoFechar]);
+
+  const botao = 'min-h-12 min-w-12 rounded-full bg-white/15 text-2xl text-white disabled:opacity-30';
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-black/95" onClick={aoFechar}>
+      <div className="flex items-center justify-between p-3 text-sm text-white/80">
+        <span>{indice + 1} / {fotos.length} · {fotos[indice].nome}</span>
+        <button className={botao} aria-label="Fechar">×</button>
+      </div>
+      <div className="flex min-h-0 flex-1 items-center justify-center px-2" onClick={(ev) => ev.stopPropagation()}>
+        <img src={fotos[indice].url} alt={fotos[indice].nome} className="max-h-full max-w-full object-contain" />
+      </div>
+      <div className="flex justify-center gap-6 p-4" onClick={(ev) => ev.stopPropagation()}>
+        <button className={botao} disabled={indice === 0} onClick={() => aoMudar(indice - 1)} aria-label="Anterior">‹</button>
+        <button className={botao} disabled={indice === fotos.length - 1} onClick={() => aoMudar(indice + 1)} aria-label="Próxima">›</button>
+      </div>
+    </div>
+  );
+}
