@@ -91,6 +91,69 @@ public class Arquivos(IConfiguration cfg)
         return vazio;
     }
 
+    /// <summary>Descrição de cada foto (nome do arquivo -> texto), do exame.json do receptor; só as que têm descrição.</summary>
+    public Dictionary<string, string> Descricoes(Exame e)
+    {
+        var r = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (LerJsonDicom(e.Pasta, "exame.json") is not { } json) return r;
+        try
+        {
+            using var d = System.Text.Json.JsonDocument.Parse(json);
+            if (!d.RootElement.TryGetProperty("arquivosPorSop", out var mapa) || mapa.ValueKind != System.Text.Json.JsonValueKind.Object) return r;
+            foreach (var sop in mapa.EnumerateObject())
+            {
+                var desc = new[] { "descricao", "legenda" }.Select(k => sop.Value.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString()?.Trim() : null)
+                    .FirstOrDefault(x => !string.IsNullOrEmpty(x));
+                if (desc is null || !sop.Value.TryGetProperty("arquivos", out var arqs) || arqs.ValueKind != System.Text.Json.JsonValueKind.Array) continue;
+                foreach (var a in arqs.EnumerateArray())
+                    if (a.GetString() is { } caminho) r[Path.GetFileName(caminho)] = desc;
+            }
+        }
+        catch (System.Text.Json.JsonException) { /* exame.json ilegível: sem descrições */ }
+        return r;
+    }
+
+
+    /// <summary>
+    /// Medições feitas em cada imagem (nome do arquivo -> texto): o medidas.json do DICOM traz, em cada medida, o objeto
+    /// da imagem em que ela foi feita. Medidas lidas do PDF do pendrive não têm imagem associada e não entram aqui.
+    /// </summary>
+    public Dictionary<string, string> Medicoes(Exame e)
+    {
+        var r = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (LerJsonDicom(e.Pasta, "medidas.json") is not { } mjson || LerJsonDicom(e.Pasta, "exame.json") is not { } ejson) return r;
+        try
+        {
+            using var m = System.Text.Json.JsonDocument.Parse(mjson);
+            using var ex = System.Text.Json.JsonDocument.Parse(ejson);
+            if (m.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array
+                || !ex.RootElement.TryGetProperty("arquivosPorSop", out var mapa) || mapa.ValueKind != System.Text.Json.JsonValueKind.Object) return r;
+            var porSop = new Dictionary<string, List<string>>();
+            foreach (var med in m.RootElement.EnumerateArray())
+            {
+                if (!med.TryGetProperty("sop", out var s) || s.ValueKind != System.Text.Json.JsonValueKind.String || s.GetString() is not { Length: > 0 } sop) continue;
+                string T(string k) => med.TryGetProperty(k, out var v) ? v.ToString() : "";
+                var texto = $"{T("nome")} {T("valor")} {T("unidade")}".Trim();
+                if (!porSop.TryGetValue(sop, out var l)) porSop[sop] = l = [];
+                l.Add(texto);
+            }
+            foreach (var (sop, medidas) in porSop)
+                if (mapa.TryGetProperty(sop, out var entrada) && entrada.TryGetProperty("arquivos", out var arqs) && arqs.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    foreach (var a in arqs.EnumerateArray())
+                        if (a.GetString() is { } caminho) r[Path.GetFileName(caminho)] = "medidas feitas nesta imagem: " + string.Join("; ", medidas);
+        }
+        catch (System.Text.Json.JsonException) { /* arquivo ilegível: sem medições por imagem */ }
+        return r;
+    }
+
+    /// <summary>Informação do aparelho por imagem: descrição e/ou medições (as fotos que têm alguma das duas são prioritárias).</summary>
+    public Dictionary<string, string> InfoImagens(Exame e)
+    {
+        var info = new Dictionary<string, string>(Descricoes(e), StringComparer.Ordinal);
+        foreach (var (foto, medicao) in Medicoes(e))
+            info[foto] = info.TryGetValue(foto, out var d) ? $"{d}; {medicao}" : medicao;
+        return info;
+    }
     /// <summary>exame.json do receptor (só leitura), para completar dados de exames antigos.</summary>
     public string? LerJsonDicom(string pasta, string nome) =>
         Seguro(_dicom, pasta, nome) is { } f && File.Exists(f) ? File.ReadAllText(f) : null;

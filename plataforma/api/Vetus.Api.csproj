@@ -15,6 +15,13 @@
     <PackageReference Include="PdfPig" Version="0.1.16" />
     <PackageReference Include="QRCoder" Version="1.9.0" />
     <PackageReference Include="QuestPDF" Version="2026.9.2" />
+    <PackageReference Include="SkiaSharp" Version="4.157.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.157.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- banco de frases do "Laudo Fácil" (modelos de texto por órgão e condição) -->
+    <Content Update="Recursos/frases.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

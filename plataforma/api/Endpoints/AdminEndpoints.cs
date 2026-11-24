@@ -22,6 +22,13 @@ public static class AdminEndpoints
     {
         var g = app.MapGroup("/api/admin").ExigirAdministradorSistema();
 
+        // Discordâncias dos veterinários com alertas da IA (material para melhorar a IA), da mais recente para a mais antiga
+        g.MapGet("/discordancias", async (VetusDb db) => Results.Ok(await db.DiscordanciasAlerta
+            .OrderByDescending(d => d.CriadaEm).Take(500).ToListAsync()));
+
+        // Textos ditados e padronizados (pares relato falado -> texto do laudo -> texto final): base para um agente que escreve como o médico
+        g.MapGet("/ditados", async (VetusDb db) => Results.Ok(await db.DitadosOrgao.OrderByDescending(d => d.CriadoEm).Take(1000).ToListAsync()));
+
         g.MapGet("/clinicas", async (VetusDb db) => Results.Ok(await db.Clinicas
             .OrderBy(c => c.Numero)
             .Select(c => new

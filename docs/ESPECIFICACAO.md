@@ -32,7 +32,7 @@ Clínica B: ultrassom ──DICOM──┤
    armazenamento (disco / R2)     Claude (principal), Gemini (reserva)
 ```
 
-- Os dados dos exames **não têm informações sensíveis** no sentido da LGPD. O nome do tutor, telefone e e-mail ainda são **dados pessoais**: acesso só com login, termo de uso e privacidade, exclusão a pedido.
+- Os dados dos exames **não têm informações sensíveis** no sentido da LGPD. O nome do responsável, telefone e e-mail ainda são **dados pessoais**: acesso só com login, termo de uso e privacidade, exclusão a pedido.
 - Tecnologia **(a confirmar)**: API e worker em **.NET** + **PostgreSQL** + telas em **React/TypeScript**. O receptor DICOM atual (Node) é reaproveitado e passa a registrar os exames no banco.
 
 ## 2. Clínicas, profissionais e acessos
@@ -94,14 +94,14 @@ Uma pasta por clínica e, dentro, uma pasta por exame (como hoje). Os **originai
 - Só o sistema grava em `jpg/` e `pdf/`. O que chega pronto de fora fica em `recebido-<formato>/` e nunca sobrescreve um arquivo extraído.
 - Reenvio do mesmo exame substitui os arquivos dele e acrescenta só o que falta, sem duplicar.
 
-## 4. Paciente e tutor
+## 4. Paciente e responsável
 
 O ultrassom só manda os dados digitados pelo operador, muitas vezes com erros.
 
-- Cada exame é **vinculado a um paciente** da clínica. Ao chegar, o sistema sugere o paciente existente (mesmo nome + tutor + espécie); se não houver, cria um novo.
+- Cada exame é **vinculado a um paciente** da clínica. Ao chegar, o sistema sugere o paciente existente (mesmo nome + responsável + espécie); se não houver, cria um novo.
 - Os dados do paciente podem ser **corrigidos** na tela do exame, e dois cadastros duplicados podem ser **unificados**.
 - **Paciente:** nome, espécie, raça, sexo, **castrado**, data de nascimento ou idade, peso (o peso é por exame).
-- **Tutor:** nome, telefone (WhatsApp), e-mail.
+- **Responsável:** nome, telefone (WhatsApp), e-mail.
 - Na tela do exame aparece o **histórico de exames do mesmo animal**, com acesso aos laudos anteriores. A IA recebe a conclusão do último laudo para comparar ("redução da lesão em relação ao exame de 10/08").
 
 ## 5. Ciclo de vida do exame
@@ -143,7 +143,7 @@ Recebido ──> Aguardando dados ──┐
 Um único campo de texto, **bem simples**, na tela do exame:
 
 > **Informações adicionais** *(opcional)*
-> "Escreva ou dite o que souber: suspeita, histórico, o que o tutor relatou, observações do exame..."
+> "Escreva ou dite o que souber: suspeita, histórico, o que o responsável relatou, observações do exame..."
 
 - Aceita qualquer texto. No celular, o **microfone do teclado** permite ditar.
 - Exemplos: *"Lulu, 9 anos, castrada, vômito há 3 dias, sem jejum, muito agitada. Suspeita de corpo estranho. Solicitante Dra. Ana CRMV-SP 12345."*
@@ -159,7 +159,7 @@ Podem ser preenchidos **à mão** ou deixados para a IA extrair do campo livre.
 | Momento | Obrigatório |
 |---|---|
 | Para **gerar** o pré-laudo | Espécie e tipo de exame (definem os valores de referência e o modelo) |
-| Para **assinar** o laudo | Nome do paciente, espécie, sexo, tutor, tipo de exame, ultrassonografista com CRMV |
+| Para **assinar** o laudo | Nome do paciente, espécie, sexo, responsável, tipo de exame, ultrassonografista com CRMV |
 
 Campos recomendados (o sistema avisa se faltarem, mas não bloqueia): raça, idade, peso, castrado, suspeita clínica, solicitante, jejum.
 
@@ -176,12 +176,12 @@ Campos recomendados (o sistema avisa se faltarem, mas não bloqueia): raça, ida
   - a conclusão do **laudo anterior** do mesmo animal, se houver.
 - **Saída em formato estruturado** (JSON por seção), convertida no texto do laudo:
   - campos extraídos do texto livre;
-  - achados **por órgão**, cada um com um indicador "normal / alterado / não visualizado";
+  - achados **por órgão**, cada um com um indicador "normal / alterado / não visibilizado";
   - **condições técnicas e limitações**;
   - **impressão diagnóstica**, diagnósticos diferenciais e recomendações;
   - sugestão das **imagens para a prancha**;
   - sinal de **achado urgente** (para alertar a clínica).
-- **Regras para a IA:** nunca descrever achados de órgão que não aparece nas imagens (marcar como "não visualizado" e dizer o motivo); usar a terminologia da seção 9.
+- **Regras para a IA:** nunca descrever achados de órgão que não aparece nas imagens (marcar como "não visibilizado" e dizer o motivo); usar a terminologia da seção 9.
 - O pré-laudo fica sempre em **"Aguardando revisão"**; nunca é liberado sem aprovação humana.
 - Fica guardada a **diferença entre o texto da IA e o texto aprovado**, para melhorar os modelos e os prompts com o tempo.
 
@@ -190,9 +190,9 @@ Campos recomendados (o sistema avisa se faltarem, mas não bloqueia): raça, ida
 Estrutura usual dos laudos ultrassonográficos veterinários no Brasil. Deve ser validada por um veterinário ultrassonografista antes do uso com clientes.
 
 1. **Cabeçalho:** identidade do laudo (clínica ou ultrassonografista: seção 2).
-2. **Identificação:** paciente (nome, espécie, raça, sexo, castrado, idade, peso), tutor, clínica e veterinário solicitante (com CRMV), data do exame.
+2. **Identificação:** paciente (nome, espécie, raça, sexo, castrado, idade, peso), responsável, clínica e veterinário solicitante (com CRMV), data do exame.
 3. **Exame:** tipo (ex.: ultrassonografia abdominal), equipamento, **suspeita clínica**.
-4. **Condições técnicas:** jejum, repleção vesical, gases, obesidade, agitação, sedação. Lista dos **órgãos não visualizados** e o motivo.
+4. **Condições técnicas:** jejum, repleção vesical, gases, obesidade, agitação, sedação. Lista dos **órgãos não visibilizados** e o motivo.
 5. **Achados por órgão**, sempre com os mesmos critérios: **dimensões, contornos, margens, ecogenicidade, ecotextura, arquitetura**, e os específicos de cada órgão:
 
 | Órgão | Critérios específicos |
@@ -257,8 +257,8 @@ Quando o laudo está **Pronto**, o botão **Compartilhar** abre as opções:
 
 | Opção | Como funciona |
 |---|---|
-| **WhatsApp** | Abre o WhatsApp com a mensagem pronta: "Olá! O laudo do exame de *Lulu* está disponível: *link*". O número do tutor ou do solicitante vem preenchido, se cadastrado. No **celular**, também dá para enviar o **próprio PDF** pela tela de compartilhamento do aparelho. |
-| **E-mail** | O sistema envia o e-mail com o **PDF anexado** e o link, para o tutor e/ou o solicitante (endereços editáveis antes de enviar). |
+| **WhatsApp** | Abre o WhatsApp com a mensagem pronta: "Olá! O laudo do exame de *Lulu* está disponível: *link*". O número do responsável ou do solicitante vem preenchido, se cadastrado. No **celular**, também dá para enviar o **próprio PDF** pela tela de compartilhamento do aparelho. |
+| **E-mail** | O sistema envia o e-mail com o **PDF anexado** e o link, para o responsável e/ou o solicitante (endereços editáveis antes de enviar). |
 | **Baixar PDF** | Baixa o arquivo. |
 | **Copiar link** | Copia o link público do laudo. |
 
@@ -271,8 +271,8 @@ Uma única aplicação web **responsiva**, que pode ser **instalada como app** n
 
 ### 15.1 Lista de exames
 - Abas por status: **Aguardando dados · Na fila/Gerando · Aguardando revisão · Prontos**, com contador em cada uma.
-- Cada item: miniatura, nome do paciente, espécie, tutor, data, clínica (para o volante) e selo de **Urgente**.
-- Busca por paciente ou tutor; filtro por data e clínica.
+- Cada item: miniatura, nome do paciente, espécie, responsável, data, clínica (para o volante) e selo de **Urgente**.
+- Busca por paciente ou responsável; filtro por data e clínica.
 
 ### 15.2 Tela do exame (edição simplificada)
 
@@ -287,7 +287,7 @@ A mesma tela serve para preencher, gerar e revisar. No **celular** é uma coluna
 │ [foto][foto][foto][foto] →  │  fotos: toque amplia
 ├─────────────────────────────┤
 │ Dados do paciente      ✎    │  resumo; toque abre os campos
-│ Tutor: Maria · Abdominal    │
+│ Responsável: Maria · Abdominal    │
 │ ⚠ falta: solicitante        │
 ├─────────────────────────────┤
 │ Informações adicionais      │
@@ -356,8 +356,8 @@ Princípios da tela:
 | Clinica | nome, documento, endereço, contato, logo, AE Title, token de ingestão, modo automático, ativa |
 | Usuario | nome, e-mail, senha (hash), CRMV, UF, imagem da assinatura, logo próprio |
 | Vinculo | usuário, clínica, perfil, identidade do laudo (clínica ou própria), ativo |
-| Tutor | clínica, nome, telefone, e-mail |
-| Paciente | clínica, tutor, nome, espécie, raça, sexo, castrado, nascimento |
+| Responsável (tutor) | clínica, nome, telefone, e-mail |
+| Paciente | clínica, responsável, nome, espécie, raça, sexo, castrado, nascimento |
 | Exame | clínica, paciente, StudyInstanceUID, tipo, data, peso, suspeita clínica, histórico, jejum, limitações, solicitante (nome, CRMV, clínica), informações adicionais (texto livre), urgente, status, modo, origem (dicom/upload/ingestão) |
 | Imagem | exame, arquivo, número, é vídeo, imagem-chave, na prancha |
 | Medida | exame, grupo, nome, valor, unidade |
@@ -371,7 +371,7 @@ Princípios da tela:
 ## 17. Ordem de construção
 
 1. ✅ Banco + clínicas, usuários e **vínculos** + login + escolha de clínica.
-2. ✅ Receptor DICOM identificando a clínica pelo AE Title, criando **paciente/tutor** e o exame no banco; endpoint de ingestão **desativado**.
+2. ✅ Receptor DICOM identificando a clínica pelo AE Title, criando **paciente/responsável** e o exame no banco; endpoint de ingestão **desativado**.
 3. ✅ (parcial) Lista de exames por status (responsiva) e detalhe com fotos.
 4. ✅ Tela do exame: dados, **campo livre**, urgente, modo automático/manual, **Gerar pré-laudo** (entra na fila). A extração dos campos a partir do texto livre é feita pela IA no passo 5.
 5. ✅ Fila + geração do pré-laudo (Claude, Gemini de reserva, ordem configurável) com o modelo abdominal e os **valores de referência** (tabela editável, medidas × faixa na revisão, enviadas à IA). Pendentes: máscaras editáveis por clínica; referências próprias por clínica.

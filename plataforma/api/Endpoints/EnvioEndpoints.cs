@@ -168,7 +168,7 @@ public static class EnvioEndpoints
             return Results.Ok(new { enviado = para.Count });
         }).ExigirClinica();
 
-        // ---------------------------------------------------------------- páginas públicas do tutor
+        // ---------------------------------------------------------------- páginas públicas do responsável
         app.MapGet("/api/publico/laudo/{token}", async (string token, VetusDb db) =>
         {
             var (link, laudo, e) = await LinkValido(db, token);
@@ -182,7 +182,7 @@ public static class EnvioEndpoints
                 tipoExame = e.TipoExame is { } t && TiposExame.Todos.TryGetValue(t, out var n) ? n : e.Tipo,
                 dataExame = e.Data, clinica = e.Clinica.Nome, clinicaTelefone = e.Clinica.Telefone,
                 assinadoPor = laudo.AssinadoPorNome, crmv = laudo.AssinadoCrmv, laudo.AssinadoEm, laudo.Versao,
-                laudo.CodigoVerificacao, emRetificacao = laudo.Retificado, link.ExpiraEm,
+                CodigoVerificacao = e.Clinica.VerificacaoOnline ? laudo.CodigoVerificacao : null, emRetificacao = laudo.Retificado, link.ExpiraEm,
                 pdf = $"/api/publico/laudo/{token}/pdf",
             });
         }).RequireRateLimiting(LaudoEndpoints.LimitePublico);

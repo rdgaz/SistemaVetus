@@ -54,6 +54,12 @@ namespace Vetus.Api.Dados.Migracoes
                     b.Property<bool>("GerarAutomaticamente")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("InformacoesObrigatorias")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LayoutLaudo")
+                        .HasColumnType("text");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -61,6 +67,11 @@ namespace Vetus.Api.Dados.Migracoes
 
                     b.Property<int>("Numero")
                         .HasColumnType("integer");
+
+                    b.Property<string>("PosicaoLogo")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<decimal>("SaldoBrl")
                         .HasPrecision(14, 4)
@@ -72,6 +83,12 @@ namespace Vetus.Api.Dados.Migracoes
 
                     b.Property<string>("TokenIngestaoHash")
                         .HasColumnType("text");
+
+                    b.Property<bool>("UsarLogo")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("VerificacaoOnline")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -121,6 +138,204 @@ namespace Vetus.Api.Dados.Migracoes
                     b.HasIndex("ExameId");
 
                     b.ToTable("compartilhamentos", (string)null);
+                });
+
+            modelBuilder.Entity("Vetus.Api.Dados.RotuloImagem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClinicaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ExameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Foto")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("HashFoto")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("LaudoVersao")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OrgaoCorreto")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("OrgaoIa")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UsuarioNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HashFoto");
+
+                    b.HasIndex("ExameId", "Foto")
+                        .IsUnique();
+
+                    b.ToTable("rotulos_imagem", (string)null);
+                });
+
+            modelBuilder.Entity("Vetus.Api.Dados.DitadoOrgao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Aceito")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ClinicaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DescricaoAnterior")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ExameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Ia")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("LaudoVersao")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Orgao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TextoBruto")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("TextoFinal")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("TextoPadronizado")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UsuarioNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicaId", "CriadoEm");
+
+                    b.ToTable("ditados_orgao", (string)null);
+                });
+
+            modelBuilder.Entity("Vetus.Api.Dados.DiscordanciaAlerta", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AlertaConfianca")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("AlertaEvidencia")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AlertaFotos")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("AlertaMotivo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ClinicaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comentario")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ExameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Ia")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("LaudoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LaudoVersao")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UsuarioNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicaId", "CriadaEm");
+
+                    b.ToTable("discordancias_alerta", (string)null);
                 });
 
             modelBuilder.Entity("Vetus.Api.Dados.ConfiguracaoCobranca", b =>
@@ -815,6 +1030,9 @@ namespace Vetus.Api.Dados.Migracoes
                         .HasColumnType("character varying(200)");
 
                     b.Property<bool>("TrocarSenha")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("UsarAssinatura")
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");

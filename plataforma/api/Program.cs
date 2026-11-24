@@ -48,6 +48,24 @@ if (args.Length >= 2 && args[0] == "--ler-pdf")
     return 0;
 }
 
+// "dotnet Vetus.Api.dll --detectar-anotacoes <pasta|arquivo.jpg>": mostra quais fotos têm anotação do operador escrita na imagem
+// (manutenção: conferir a detecção em fotos reais)
+if (args.Length >= 2 && args[0] == "--detectar-anotacoes")
+{
+    var fotos = Directory.Exists(args[1])
+        ? Directory.EnumerateFiles(args[1], "*.jpg", new EnumerationOptions { RecurseSubdirectories = true, MatchCasing = MatchCasing.CaseInsensitive }).Order().ToList()
+        : [args[1]];
+    var com = 0;
+    foreach (var f in fotos)
+    {
+        var tem = Vetus.Api.Servicos.Ia.DetectorAnotacoes.TemAnotacao(f);
+        if (tem) com++;
+        Console.WriteLine($"{(tem ? "ANOTADA " : "sem      ")} {Path.GetFileName(f)}");
+    }
+    Console.WriteLine($"{com} de {fotos.Count} com anotação");
+    return 0;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 
@@ -65,9 +83,12 @@ builder.Services.AddSingleton<IGeradorLaudo, GeradorSimulado>();
 builder.Services.AddScoped<ServicoLaudo>();
 builder.Services.AddHostedService<FilaLaudos>();
 builder.Services.AddScoped<PdfLaudo>();
+builder.Services.AddScoped<Padronizador>();
+builder.Services.AddScoped<Aprendizados>();
 builder.Services.AddScoped<Cobranca>();
 builder.Services.AddScoped<Referencias>();
 builder.Services.AddSingleton<EnvioEmail>();
+builder.Services.AddSingleton<BancoFrases>();
 
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -148,6 +169,9 @@ EnvioEndpoints.Mapear(app);
 CobrancaEndpoints.Mapear(app);
 ReferenciaEndpoints.Mapear(app);
 PendriveEndpoints.Mapear(app);
+LayoutEndpoints.Mapear(app);
+FrasesEndpoints.Mapear(app);
+RotulosEndpoints.Mapear(app);
 InternoEndpoints.Mapear(app);
 
 app.MapFallback("/api/{**resto}", () => Erros.NaoEncontrado("Rota não encontrada."));

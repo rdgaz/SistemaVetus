@@ -14,13 +14,13 @@ type Laudo = {
   assinadoPor: string;
   crmv: string;
   assinadoEm: string;
-  codigoVerificacao: string;
+  codigoVerificacao: string | null;
   emRetificacao: boolean;
   expiraEm: string;
   pdf: string;
 };
 
-/** Página do tutor (link público, sem login): dados do exame e o PDF do laudo. */
+/** Página do responsável (link público, sem login): dados do exame e o PDF do laudo. */
 export function LaudoPublico() {
   const { token } = useParams();
   const [l, setL] = useState<Laudo | null>(null);
@@ -50,7 +50,7 @@ export function LaudoPublico() {
             )}
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
               <dt className="text-slate-500">Paciente</dt><dd className="font-medium">{l.paciente}{l.especie && ` (${l.especie})`}</dd>
-              {l.tutor && <><dt className="text-slate-500">Tutor</dt><dd>{l.tutor}</dd></>}
+              {l.tutor && <><dt className="text-slate-500">Responsável</dt><dd>{l.tutor}</dd></>}
               <dt className="text-slate-500">Exame</dt><dd>{l.tipoExame}</dd>
               <dt className="text-slate-500">Data</dt><dd>{dataBR(l.dataExame)}</dd>
               <dt className="text-slate-500">Veterinário</dt><dd>{l.assinadoPor} · {l.crmv}</dd>
@@ -60,7 +60,7 @@ export function LaudoPublico() {
               Abrir o laudo (PDF)
             </a>
             <p className="text-center text-xs text-slate-500">
-              Código de verificação: <span className="font-mono">{l.codigoVerificacao}</span> · link válido até{' '}
+              {l.codigoVerificacao && <>Código de verificação: <span className="font-mono">{l.codigoVerificacao}</span> · </>}link válido até{' '}
               {new Date(l.expiraEm).toLocaleDateString('pt-BR')}
               {l.clinicaTelefone && <><br />Dúvidas: {l.clinicaTelefone}</>}
             </p>

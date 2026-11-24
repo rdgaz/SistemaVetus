@@ -18,7 +18,7 @@ public class GeradorGemini(ConfiguracaoIa cfg, IHttpClientFactory http) : IGerad
         var partes = new List<object> { new { text = entrada.Texto } };
         foreach (var img in entrada.Imagens)
         {
-            partes.Add(new { text = $"Imagem {img.Numero} ({img.Nome}):" });
+            partes.Add(new { text = $"Imagem {img.Numero} ({img.Nome}){(img.Descricao is null ? "" : $" — descrição do aparelho: {img.Descricao}")}:" });
             partes.Add(new { inlineData = new { mimeType = "image/jpeg", data = Convert.ToBase64String(img.Bytes) } });
         }
 
@@ -51,6 +51,33 @@ public class GeradorGemini(ConfiguracaoIa cfg, IHttpClientFactory http) : IGerad
 
         int Uso(string nome) => el.TryGetProperty("usageMetadata", out var u) && u.TryGetProperty(nome, out var v) ? v.GetInt32() : 0;
         return new RespostaIa(Nome, cfg.GeminiModelo, json, Uso("promptTokenCount"), Uso("candidatesTokenCount") + Uso("thoughtsTokenCount"));
+    }
+
+    public async Task<RespostaIa> Texto(string sistema, string pedido, CancellationToken ct)
+    {
+        var corpo = new
+        {
+            systemInstruction = new { parts = new[] { new { text = sistema } } },
+            contents = new[] { new { role = "user", parts = new[] { new { text = pedido } } } },
+            generationConfig = new { maxOutputTokens = 8000 },
+        };
+        var url = cfg.GeminiProjeto is { } projeto
+            ? $"https://aiplatform.googleapis.com/v1/projects/{projeto}/locations/{cfg.GeminiLocal}/publishers/google/models/{cfg.GeminiModelo}:generateContent"
+            : $"https://generativelanguage.googleapis.com/v1beta/models/{cfg.GeminiModelo}:generateContent";
+        using var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = JsonContent.Create(corpo) };
+        req.Headers.Add("x-goog-api-key", cfg.GeminiChave);
+        using var r = await http.CreateClient("gemini").SendAsync(req, ct);
+        var texto = await r.Content.ReadAsStringAsync(ct);
+        if (!r.IsSuccessStatusCode) throw new InvalidOperationException($"Gemini respondeu {(int)r.StatusCode}: {Resumo(texto)}");
+        var el = JsonSerializer.Deserialize<JsonElement>(texto);
+        var candidato = el.GetProperty("candidates")[0];
+        if (candidato.TryGetProperty("finishReason", out var fim) && fim.GetString() is { } motivo and not "STOP")
+            throw new InvalidOperationException($"Gemini terminou com {motivo}.");
+        var saida = string.Concat(candidato.GetProperty("content").GetProperty("parts").EnumerateArray()
+            .Where(p => p.TryGetProperty("text", out _) && !(p.TryGetProperty("thought", out var t) && t.GetBoolean()))
+            .Select(p => p.GetProperty("text").GetString()));
+        int Uso(string nome) => el.TryGetProperty("usageMetadata", out var u) && u.TryGetProperty(nome, out var v) ? v.GetInt32() : 0;
+        return new RespostaIa(Nome, cfg.GeminiModelo, saida.Trim(), Uso("promptTokenCount"), Uso("candidatesTokenCount") + Uso("thoughtsTokenCount"));
     }
 
     private static string Resumo(string s) => s.Length > 300 ? s[..300] + "…" : s;

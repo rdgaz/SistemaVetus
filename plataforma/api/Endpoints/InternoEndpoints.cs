@@ -76,7 +76,8 @@ public static class InternoEndpoints
                     StudyInstanceUid = uid,
                     Origem = "dicom",
                     // modo da clínica: automático entra direto na fila; manual espera os dados
-                    Status = clinica.GerarAutomaticamente ? StatusExame.NaFila : StatusExame.AguardandoDados,
+                    // automático entra direto na fila, salvo se a clínica exige "Informações adicionais" (ainda vazias)
+                    Status = clinica.GerarAutomaticamente && !clinica.InformacoesObrigatorias ? StatusExame.NaFila : StatusExame.AguardandoDados,
                     RecebidoEm = DateTime.TryParse(Campo(d, "recebidoEm"), null,
                         System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
                         out var rec) ? rec : DateTime.UtcNow,
@@ -112,12 +113,12 @@ public static class InternoEndpoints
         });
     }
 
-    /// <summary>Paciente da clínica com o mesmo nome, espécie e tutor; se não houver, cria (e o tutor também).</summary>
+    /// <summary>Paciente da clínica com o mesmo nome, espécie e responsável; se não houver, cria (e o responsável também).</summary>
     private static Task<Paciente> AcharOuCriarPaciente(VetusDb db, Guid clinicaId, JsonElement d) =>
         AcharOuCriarPaciente(db, clinicaId, Campo(d, "paciente"), Campo(d, "especie"), Campo(d, "responsavel"),
             Campo(d, "raca"), Campo(d, "sexo"), null, Campo(d, "nascimento"));
 
-    /// <summary>Paciente da clínica com o mesmo nome, espécie e tutor; se não houver, cria (e o tutor também).</summary>
+    /// <summary>Paciente da clínica com o mesmo nome, espécie e responsável; se não houver, cria (e o responsável também).</summary>
     public static async Task<Paciente> AcharOuCriarPaciente(VetusDb db, Guid clinicaId, string? nomePaciente, string? especieAparelho,
         string? nomeTutor, string? raca, string? sexo, bool? castrado, string? nascimento)
     {

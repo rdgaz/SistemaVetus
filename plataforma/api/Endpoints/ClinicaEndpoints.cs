@@ -8,7 +8,7 @@ namespace Vetus.Api.Endpoints;
 public static class ClinicaEndpoints
 {
     public record DadosClinicaReq(string? Nome, string? Documento, string? Endereco, string? Telefone, string? Email,
-        bool? GerarAutomaticamente);
+        bool? GerarAutomaticamente, bool? InformacoesObrigatorias, bool? VerificacaoOnline);
     public record NovoUsuarioReq(string? Nome, string? Email, Perfil? Perfil, string? Crmv, string? CrmvUf);
     public record AlterarVinculoReq(Perfil? Perfil, bool? Ativo, bool? IdentidadePropria);
 
@@ -22,7 +22,7 @@ public static class ClinicaEndpoints
             var c = v.Clinica;
             return Results.Ok(new
             {
-                c.Id, c.Nome, c.Documento, c.Endereco, c.Telefone, c.Email, c.AeTitle, c.GerarAutomaticamente,
+                c.Id, c.Nome, c.Documento, c.Endereco, c.Telefone, c.Email, c.AeTitle, c.GerarAutomaticamente, c.InformacoesObrigatorias, c.VerificacaoOnline,
                 meuPerfil = v.Perfil,
             });
         }).ExigirClinica();
@@ -37,6 +37,8 @@ public static class ClinicaEndpoints
             c.Telefone = Texto.Opcional(r.Telefone);
             c.Email = Texto.Opcional(r.Email);
             if (r.GerarAutomaticamente is { } auto) c.GerarAutomaticamente = auto;
+            if (r.InformacoesObrigatorias is { } obrig) c.InformacoesObrigatorias = obrig;
+            if (r.VerificacaoOnline is { } verif) c.VerificacaoOnline = verif;
             await db.SaveChangesAsync();
             return Results.NoContent();
         }).ExigirClinica(Perfil.AdministradorClinica);

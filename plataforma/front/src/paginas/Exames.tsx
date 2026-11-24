@@ -106,7 +106,7 @@ export function Exames() {
                   {e.urgente && <span className="rounded-full bg-red-600 px-2 text-xs font-bold text-white">Urgente</span>}
                 </div>
                 <div className="truncate text-sm text-slate-500">
-                  {[e.especie, e.tutor && `Tutor: ${e.tutor}`].filter(Boolean).join(' · ')}
+                  {[e.especie, e.tutor && `Responsável: ${e.tutor}`].filter(Boolean).join(' · ')}
                 </div>
                 <div className="text-sm text-slate-500">
                   {[e.tipo, dataBR(e.data), `${e.totalFotos} foto(s)`].filter(Boolean).join(' · ')}

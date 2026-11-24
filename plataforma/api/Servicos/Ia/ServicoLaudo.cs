@@ -26,7 +26,7 @@ public record PlanoLaudo(
 
 /// <summary>Gera o pré-laudo de um exame: planeja, monta a entrada, tenta as IAs na ordem configurada e grava o resultado.</summary>
 public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumerable<IGeradorLaudo> geradores, Cobranca cobranca,
-    Referencias referencias, ILogger<ServicoLaudo> log)
+    Referencias referencias, BancoFrases frases, Aprendizados aprendizados, ILogger<ServicoLaudo> log)
 {
     /// <summary>
     /// Confere o saldo da clínica antes de gerar: análise completa exige saldo de pelo menos um pré-laudo médio;
@@ -65,8 +65,9 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         {
             // fotos exatamente iguais (mesma impressão digital) vão uma vez só; depois, a amostra até o limite
             var candidatas = Candidatas(hashes.Keys);
-            var unicas = SemRepetidas(candidatas, hashes, []);
-            var escolhidas = Amostra(unicas).ToList();
+            var info = InfoCompleta(e, candidatas);
+            var unicas = SemRepetidas(candidatas, hashes, [], info.Keys);
+            var escolhidas = Amostra(unicas, info).ToList();
             return new PlanoLaudo(Completa, anterior, escolhidas, escolhidas.Select((n, i) => (i + 1, n)).ToList(), [], dados, hashes,
                 candidatas.Count - unicas.Count);
         }
@@ -88,7 +89,7 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         // ou a outra nova
         var novasCandidatas = Candidatas(hashes.Where(h => !hashesAntes.TryGetValue(h.Key, out var antes) || antes != h.Value).Select(h => h.Key));
         var jaAnalisadas = consideradas.Where(hashesAntes.ContainsKey).Select(n => hashesAntes[n]).ToHashSet();
-        var novasUnicas = SemRepetidas(novasCandidatas, hashes, jaAnalisadas);
+        var novasUnicas = SemRepetidas(novasCandidatas, hashes, jaAnalisadas, InfoCompleta(e, novasCandidatas).Keys);
         var repetidas = novasCandidatas.Count - novasUnicas.Count;
         var novas = novasUnicas.Take(cfg.MaxImagens).ToList();
 
@@ -109,11 +110,19 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
     /// Tira as fotos exatamente iguais (mesma impressão digital SHA-1): fica a primeira pela ordem do nome.
     /// <paramref name="vistas"/> = impressões digitais já usadas (ex.: fotos analisadas na versão anterior).
     /// </summary>
-    private static List<string> SemRepetidas(List<string> nomes, Dictionary<string, string> hashes, HashSet<string> vistas)
+    private static List<string> SemRepetidas(List<string> nomes, Dictionary<string, string> hashes, HashSet<string> vistas, ICollection<string>? prioritarias = null)
     {
+        // entre fotos idênticas fica a que tem descrição ou medição do aparelho; senão, a primeira pela ordem do nome
+        var escolhida = new Dictionary<string, string>();
+        foreach (var n in nomes)
+            if (hashes.TryGetValue(n, out var h) && h != "" && prioritarias is not null && prioritarias.Contains(n) && !escolhida.ContainsKey(h)) escolhida[h] = n;
         var unicas = new List<string>();
         foreach (var n in nomes)
-            if (!hashes.TryGetValue(n, out var h) || h == "" || vistas.Add(h)) unicas.Add(n);
+        {
+            if (!hashes.TryGetValue(n, out var h) || h == "") { unicas.Add(n); continue; }
+            if (escolhida.TryGetValue(h, out var par)) { if (par == n && vistas.Add(h)) unicas.Add(n); continue; }
+            if (vistas.Add(h)) unicas.Add(n);
+        }
         return unicas;
     }
 
@@ -128,12 +137,43 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         return paradas.Concat(videos).Order(StringComparer.Ordinal).ToList();
     }
 
-    /// <summary>Acima do limite, uma amostra espalhada por todo o exame.</summary>
-    private IEnumerable<string> Amostra(List<string> candidatas)
+    /// <summary>Teto de segurança para fotos com descrição ou medição enviadas de uma vez (controla o custo).</summary>
+    private const int MaxImagensComInfo = 40;
+
+    /// <summary>
+    /// Escolhe as fotos que vão à IA. As que têm descrição ou medição do aparelho SEMPRE vão (identificam o órgão ou
+    /// mostram o que foi medido), mesmo acima do limite, até <see cref="MaxImagensComInfo"/>; o que sobrar do limite é
+    /// preenchido com uma amostra espalhada pelas demais. Mantém a ordem do exame.
+    /// </summary>
+    private IEnumerable<string> Amostra(List<string> candidatas, Dictionary<string, string> info)
     {
-        if (candidatas.Count <= cfg.MaxImagens) return candidatas;
-        var passo = (double)candidatas.Count / cfg.MaxImagens;
-        return Enumerable.Range(0, cfg.MaxImagens).Select(i => candidatas[(int)(i * passo)]);
+        var comInfo = candidatas.Where(info.ContainsKey).ToList();
+        if (candidatas.Count <= cfg.MaxImagens && comInfo.Count <= candidatas.Count) return candidatas;
+        static List<string> Espalhar(List<string> l, int n)
+        {
+            if (n <= 0) return [];
+            if (n >= l.Count) return l;
+            var passo = (double)l.Count / n;
+            return Enumerable.Range(0, n).Select(i => l[(int)(i * passo)]).ToList();
+        }
+        var obrigatorias = Espalhar(comInfo, Math.Min(MaxImagensComInfo, comInfo.Count));
+        var restantes = candidatas.Where(n => !info.ContainsKey(n)).ToList();
+        var escolhidas = obrigatorias.Concat(Espalhar(restantes, cfg.MaxImagens - obrigatorias.Count)).ToList();
+        var ordem = candidatas.Select((n, i) => (n, i)).ToDictionary(x => x.n, x => x.i);
+        return escolhidas.OrderBy(n => ordem[n]).ToList();
+    }
+
+    /// <summary>
+    /// Informação do aparelho por foto: descrição, medições do relatório DICOM e anotação do operador escrita na própria
+    /// imagem (detectada nos pixels). Quem tem qualquer uma das três é prioritária e sempre vai para a análise.
+    /// </summary>
+    private Dictionary<string, string> InfoCompleta(Exame e, IEnumerable<string> nomes)
+    {
+        var info = arq.InfoImagens(e);
+        foreach (var n in nomes)
+            if (!info.ContainsKey(n) && arq.Arquivo(e, Arquivos.Jpg, n) is { } caminho && DetectorAnotacoes.TemAnotacao(caminho))
+                info[n] = "anotação do operador escrita na própria imagem (rótulo do órgão e/ou medida): leia o texto da imagem";
+        return info;
     }
 
     private Dictionary<string, string> HashesDasFotos(Exame e) =>
@@ -212,7 +252,8 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
             .Select(m => $"- {m.Grupo} > {m.Nome}: {m.Valor} {m.Unidade} → {m.Referencia} ({m.FaixaTexto}): {m.Situacao.ToUpperInvariant()}")
             .ToList();
 
-        var entrada = MontarEntrada(e, plano, textoRefs, comparadas);
+        var aprendizado = await aprendizados.TextoParaIa(e.ClinicaId, ct);
+        var entrada = MontarEntrada(e, plano, textoRefs, comparadas, aprendizado);
         var erros = new List<string>();
         foreach (var ia in Disponiveis())
         {
@@ -249,10 +290,11 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
     private JsonElement? MedidasJson(Exame e) =>
         arq.LerJson(e, "medidas.json") is { } json ? JsonSerializer.Deserialize<JsonElement>(json) : null;
 
-    private EntradaLaudo MontarEntrada(Exame e, PlanoLaudo plano, string textoRefs, List<string> comparadas)
+    private EntradaLaudo MontarEntrada(Exame e, PlanoLaudo plano, string textoRefs, List<string> comparadas, string aprendizado)
     {
+        var descricoes = InfoCompleta(e, plano.Enviar.Select(x => x.Nome));
         var imagens = plano.Enviar
-            .Select(x => arq.Arquivo(e, Arquivos.Jpg, x.Nome) is { } f ? new ImagemIa(x.Numero, x.Nome, File.ReadAllBytes(f)) : null)
+            .Select(x => arq.Arquivo(e, Arquivos.Jpg, x.Nome) is { } f ? new ImagemIa(x.Numero, x.Nome, File.ReadAllBytes(f), descricoes.GetValueOrDefault(x.Nome)) : null)
             .OfType<ImagemIa>().ToList();
 
         var t = new StringBuilder();
@@ -301,7 +343,15 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         t.AppendLine(imagens.Count > 0
             ? $"IMAGENS: {imagens.Count} imagem(ns) a seguir, numeradas (o exame tem {plano.Hashes.Count} fotos no total)."
             : "IMAGENS: nenhuma enviada nesta atualização.");
-        return new EntradaLaudo(ModeloLaudo.Sistema, t.ToString(), imagens);
+        // banco de frases padrão: só quando a IA vai olhar fotos (nas atualizações só com dados, o laudo anterior já está no estilo)
+        var sistema = ModeloLaudo.Sistema;
+        if (imagens.Count > 0 && frases.ParaIa(e.TipoExame, e.Paciente.Sexo) is { Length: > 0 } banco)
+            sistema += "\n\n" + ModeloLaudo.InstrucaoBancoFrases + "\n\n" + banco;
+        // aprendizados da clínica (correções dos veterinários): vão sempre que a IA olha fotos
+        if (imagens.Count > 0 && aprendizado.Length > 0)
+            sistema += "\n\nAPRENDIZADOS DESTA CLÍNICA (correções feitas pelos veterinários em laudos anteriores). " +
+                "Leve-os em conta; não copie números nem nomes de outros pacientes:\n" + aprendizado;
+        return new EntradaLaudo(sistema, t.ToString(), imagens);
     }
 
     private async Task Gravar(Exame e, PlanoLaudo plano, RespostaIa r, JsonElement conteudo, int ms, CancellationToken ct)

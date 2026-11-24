@@ -1,0 +1,1093 @@
+{
+ "fonte": "Laudo Fácil (modelo da clínica)",
+ "blocos": [
+  {
+   "nome": "Vesícula urinária",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Vesícula urinária: em baixa/moderada/acentuada distensão, parede preservada medindo 0,0 cm em sua porção ventral/dorsal, mucosa regular e conteúdo anecogênico homogêneo. Não há sinais de litíases.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Muito vazia",
+     "descricao": "Vesícula urinária: em baixíssima distensão, parede preservada medindo 0,0 cm em sua porção ventral/dorsal), mucosa regular/irregular e conteúdo anecogênico homogêneo. Não há sinais de litíases.",
+     "impressoes": [
+      "Espessamento parietal de vesícula urinária, devendo-se considerar processo inflamatório (cistite) ou superestimação por baixo grau de distensão vesical."
+     ]
+    },
+    {
+     "titulo": "Cistite SEM sedimento",
+     "descricao": "Vesícula urinária: em baixa/moderada/acentuada distensão, parede espessada (0,0 cm em sua porção ventral/dorsal), mucosa regular/irregular e conteúdo anecogênico homogêneo. Não há sinais de litíases.",
+     "impressoes": [
+      "Alteração de espessura da parede da vesícula urinária está relacionada à cistite.",
+      "Achados em vesícula urinária sugestivos de processo inflamatório (cistite)."
+     ]
+    },
+    {
+     "titulo": "Cistite + sedimento",
+     "descricao": "Vesícula urinária: em baixa/moderada/acentuada distensão, parede espessada (0,0 cm em sua porção ventral/dorsal) e mucosa irregular. Conteúdo predominantemente anecogênico com presença de partículas ecogênicas em suspensão, sem formação de sombra acústica. Não há evidências de litíases.",
+     "impressoes": [
+      "Alterações em vesícula urinária estão relacionadas à cistite associada à presença de sedimento / cristais."
+     ]
+    },
+    {
+     "titulo": "Sedimento / cristais",
+     "descricao": "Conteúdo predominantemente anecogênico com presença de discretos/moderados/acentuados pontos ecogênicos em suspensão, não formadores de sombra acústica. Não há sinais de litíases.",
+     "impressoes": [
+      "Imagens em vesícula urinária compatíveis com sedimento / cristais."
+     ]
+    },
+    {
+     "titulo": "Litíase",
+     "descricao": "Presença de uma/inúmeras/ pelo menos x estrutura\novalada/arredondada, hiperecogênica, medindo x cm/até x cm, formando sombra acústica.",
+     "impressoes": [
+      "Litíase vesical."
+     ]
+    },
+    {
+     "titulo": "Nódulo / Neoplasia",
+     "descricao": "Presença de um/pelo menos x nódulo de aspecto polipoide aderido à parede ventral/dorsal OU região de trígono/margem cranial de ecotextura heterogênea, medindo 0, cm.",
+     "impressoes": [
+      "Imagem em vesícula urinária está relacionada à neoplasia, tendo como diferencial pólipo e/ou coágulo."
+     ]
+    },
+    {
+     "titulo": "Cálculo em Trajeto de Uretra",
+     "descricao": "Presença de uma/inúmeras/ pelo menos x estrutura\novalada/arredondada, hiperecogênica, medindo 0, cm/até 0, cm, formando sombra acústica inserida em trajeto de uretra prostática / peniana.",
+     "impressoes": [
+      "Microcálculos em trajeto de uretra peniana/prostática."
+     ]
+    },
+    {
+     "titulo": "Coágulo",
+     "descricao": "Presença de uma/inúmeras/ pelo menos x estrutura ovalada/arredondada/amorfa, hiperecogênica de ecotextura grosseira, medindo x cm, não formadora sombra acústica.",
+     "impressoes": [
+      "Estrutura em vesícula urinária está relacionada a coágulo, tendo como diferencial neoplasia."
+     ]
+    },
+    {
+     "titulo": "Cistite pseudomembranosa",
+     "descricao": "Vesícula urinária: em baixa/moderada/acentuada distensão, parede espessa medindo x cm em parede ventral/dorsal, mucosa irregular e presença de múltiplas septações hiperecogênicas projetando-se para o lúmen vesical. Não há sinais de litíases.",
+     "impressoes": [
+      "Alteração em vesícula urinária está relacionada à cistite pseudomembranosa."
+     ]
+    },
+    {
+     "titulo": "Pólipo / Cistite polipoide",
+     "descricao": "Presença de um/pelo menos x nódulo de aspecto polipoide aderido à parede ventral/dorsal OU região de trígono/margem cranial de ecotextura homo/heterogênea, medindo x cm.",
+     "impressoes": [
+      "Imagem em vesícula urinária está relacionada à pólipo, neoplasia, tendo como diferencial neoplasia."
+     ]
+    },
+    {
+     "titulo": "Ruptura de bexiga",
+     "descricao": "Negativo: Não existem evidências de imagens sonográficas sugestivas de ruptura de órgãos abdominais ou presença de líquido livre disperso em cavidade abdominal.",
+     "impressoes": [
+      "Negativo para ruptura."
+     ]
+    },
+    {
+     "titulo": "Cistocentese",
+     "descricao": "Realizada coleta de urina por cistocentese guiada por ultrassom, número de punções: uma, quantidade de material coletado: 10 ml, derrame pós-coleta: ausente, hemorragia pós-coleta: ausente.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Acompanhamento de cistite",
+     "descricao": "Normal: Sem evidências ultrassonográficas de cistite ativa no momento do exame, compatível com evolução favorável ao tratamento.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Acompanhamento de cálculo",
+     "descricao": "Normal: Achados sugestivos de melhora evolutiva, evidenciada pela ausência de imagem compatível com cálculo vesical previamente descrito, persistindo discreta alteração inflamatória vesical associada a sedimento.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Reprodutor macho",
+   "entradas": [
+    {
+     "titulo": "Normal cachorro",
+     "descricao": "Próstata: contornos definidos, margens regulares, ecogenicidade mantida, ecotextura homogênea e dimensões preservadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura).\nTestículos: simétricos (esq.: 0 cm; dir.: 0 cm), contornos regulares, linhas mediastinais bem definidas, ecogenicidade preservada e ecotextura homogênea.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Normal gato",
+     "descricao": "Próstata: não caracterizada (localização intrapélvica).\nTestículos: simétricos (esq.: 0 cm; dir.: 0 cm), contornos regulares, linhas mediastinais bem definidas, ecogenicidade preservada e ecotextura homogênea.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Padrão castrado (cachorro)",
+     "descricao": "Próstata: contornos regulares, difusamente hipoecogênica, ecotextura homogênea e dimensões reduzidas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura).\nTestículos: não caracterizados, compatível com orquiectomia prévia.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Padrão castrado (gato)",
+     "descricao": "Próstata: não caracterizada (localização intrapélvica).\nTestículos: não identificados, compatível com orquiectomia prévia.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Hiperplasia prostática",
+     "descricao": "Próstata: contornos definidos, margens regulares, ecogenicidade preservada, ecotextura homogênea e dimensões aumentadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura).",
+     "impressoes": [
+      "Hiperplasia prostática"
+     ]
+    },
+    {
+     "titulo": "Hiperplasia prostática + cistos",
+     "descricao": "Próstata: contornos definidos, margens regulares e dimensões aumentadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Parênquima com ecotextura heterogênea devido à presença de inúmeras/pelo menos/x estruturas cavitárias com conteúdo anecogênico, distribuídas pelo parênquima, medindo até 0,0 cm.",
+     "impressoes": [
+      "Hiperplasia prostática associada à presença de cistos."
+     ]
+    },
+    {
+     "titulo": "Testículo ectópico em região pré-escrotal",
+     "descricao": "Nota-se ectopia do testículo esquerdo/direito, posicionado em região pré-escrotal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Testículo ectópico em região inguinal",
+     "descricao": "Testículo direito/esquerdo: localizado em região inguinal direita/esquerda, no tecido subcutâneo, medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares, ecotextura homogênea, ecogenicidade preservada e linha mediastinal central mantida.",
+     "impressoes": [
+      "Imagens sonográficas compatíveis com testículo direito/esquerdo ectópico (criptorquidismo inguinal)."
+     ]
+    },
+    {
+     "titulo": "Testículo ectópico normal em abdomen",
+     "descricao": "Testículo: presença de estrutura em cavidade abdominal - subcutânea, dorsal a vesícula urinária, ovalada, de superfície regular, hipoecogênica homogênea, com linha central hiperecogênica (linha mediastinal).\nTestículo direito/esquerdo: localizado em cavidade abdominal, adjacente ao anel inguinal interno direito/esquerdo), medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares, ecotextura homogênea, ecogenicidade preservada e linha mediastinal central mantida.\n*Testículo ectópico em abdômen + degeneração / neoplasia\nTestículo direito/esquerdo: localizado em cavidade abdominal, adjacente ao anel inguinal interno direito/esquerdo), medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares/irregulares, ecogenicidade difusamente reduzida/aumentada e ecotextura heterogênea devido à presença de inúmeras/pelo menos/x áreas/focos hiperecogênicos/hipoecogênicos distribuídos pelo parênquima.",
+     "impressoes": [
+      "Testículo direito/esquerdo ectópico com alterações ultrassonográficas compatíveis com degeneração testicular / neoplasia."
+     ]
+    },
+    {
+     "titulo": "Nódulo em um testiculo",
+     "descricao": "Testículo - de contornos definidos e margens regulares, dimensões levemente aumentadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo cm x cm de diâmetro, compatível com neoplasia.\nTestículo - de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea.",
+     "impressoes": [
+      "Neoplasia em testículo"
+     ]
+    },
+    {
+     "titulo": "Neoplasia nos dois testículos",
+     "descricao": "Testículo esquerdo de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo 0, cm x 0, cm.\nTestículo direito de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo 0, cm x 0, cm.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Neoplasia",
+     "descricao": "",
+     "impressoes": []
+    },
+    {
+     "titulo": "Litiase em trajeto de uretra prostática",
+     "descricao": "Presença de estrutura hiperecogênica inserida em trajeto de uretra prostática medindo 0, cm.",
+     "impressoes": [
+      "Litíase"
+     ]
+    },
+    {
+     "titulo": "Neoplasia Prostática",
+     "descricao": "Próstata: contornos definidos e margens regulares, dimensões aumentadas medindo 0, cm de comprimento x 0, cm de altura x 0, cm de largura, ecogenicidade mantida e ecotextura homogênea. Presença de pequenos nódulos hipocogênico dispersos no parênquima prostático, de contornos definidos e margens irregulares, ecotextura homogênea, medindo até 0, cm x 0, cm de diâmetro.",
+     "impressoes": [
+      "Hiperplasia prostática associada à nódulo, não descartando a possibilidade de neoplasia"
+     ]
+    },
+    {
+     "titulo": "Cisto",
+     "descricao": "Presença de estrutura cavitária inserida em parênquima prostático, medindo 0,0 cm de diâmetro.",
+     "impressoes": [
+      "Cisto"
+     ]
+    },
+    {
+     "titulo": "Área de Fibrose na Próstata",
+     "descricao": "Presença de um nódulo focal hierecogênico de contornos definidos e margens regulares, ecotextura grosseira, medindo 0,0 cm x 0,0 cm.",
+     "impressoes": [
+      "Nódulo prostático associado à foco mineralizado, área de fibrose / cicatricial, alteração nodular benigna, não descartando a possibilidade de neoplasia."
+     ]
+    },
+    {
+     "titulo": "Dimensões diminuídas",
+     "descricao": "Próstata: dimensões e ecogenicidade reduzidas, medindo cm de comprimento x cm de altura x com de largura, contorno regular e parênquima homogêneo.",
+     "impressoes": [
+      "Aspectos ultrassonográficos em próstata visibilizados pós-orquiectomia."
+     ]
+    }
+   ]
+  },
+  {
+   "nome": "Reprodutor fêmea",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Útero e ovários: dimensões preservadas em corpo de útero (cm) e cornos uterinos (dir.: e esq.:), hipoecogênicos, sem evidências de conteúdo anecogênico (líquido) luminal. Ovários direito e esquerdo normais, hipoecogênicos, medindo respectivamente, cm e cm.\n*Aparelho reprodutor: corpo uterino com dimensões preservadas, medindo 0,00 cm de diâmetro, hipoecogênico e sem evidências de conteúdo luminal. Ovários direito e esquerdo hipoecogênicos, de aspecto ultrassonográfico habitual, medindo 0,0 cm e 0,0 cm, respectivamente.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Útero e ovário não caracterizados",
+     "descricao": "Aparelho Reprodutor: imagens sem alterações em topografia de coto uterino e pedículos ovarianos.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Não caracterizado mas saudável",
+     "descricao": "Aparelho Reprodutor: região topográfica de útero e ovários sem evidências de alterações estruturais, aumentos volumétricos ou conteúdo luminal anômalo. Órgãos não delimitados individualmente devido às dimensões reduzidas fisiológicas, achado compatível com anestro.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Castrada",
+     "descricao": "Útero e ovários: não caracterizados, compatível com ovariohisterectomia prévia.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Pós castração / Processo cicatricial",
+     "descricao": "Aparelho Reprodutor: coto uterino ligeiramente aumentado de volume, medindo 0, cm de espessura, sem evidências de conteúdo líquido, associado à esteatite focal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Estímulo hormonal",
+     "descricao": "Útero de dimensões aumentadas, medindo 0, cm de diâmetro em seu maior eixo, de paredes espessadas e regulares, sem evidências de conteúdo líquido.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Estímulo hormonal",
+     "descricao": "",
+     "impressoes": []
+    },
+    {
+     "titulo": "Piometra",
+     "descricao": "Útero de dimensões aumentadas medindo 0, cm de diâmetro em seu maior eixo, de paredes preservadas / espessadas e regulares / irregulares, repleto por conteúdo líquido de alta celularidade",
+     "impressoes": [
+      "As imagens em útero são sugestivas de afecção uterina inflamatória ou infecciosa, tendo-se como principais diferenciais a piometra, mucometra ou hemometra."
+     ]
+    },
+    {
+     "titulo": "Puerpério",
+     "descricao": "Aparelho Reprodutor: Cornos uterinos aumentados de volume, medindo até 0, cm de diâmetro em seu maior eixo, de paredes espessadas e irregulares, com discreta presença de conteúdo líquido.",
+     "impressoes": [
+      "puerpério"
+     ]
+    },
+    {
+     "titulo": "Hiperplasia cística do endométrio",
+     "descricao": "Útero: de dimensões aumentadas medindo 0, cm de diâmetro em seu maior eixo, de paredes espessadas e irregulares repleto de pequenas estruturas cavitárias difusas medindo até 0, cm, sem evidências de conteúdo líquido.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Ovários normais bilateralmente",
+     "descricao": "Ovários: direito e esquerdo normais, hipocogênicos, medindo respectivamente,cm e cm.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Apenas um ovário caracterizado",
+     "descricao": "Ovário esquerdo/direito: não caracterizado.\nOvário esquerdo/direito: normal, hipocogênico, medindo 0 cm.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Glândulas mamárias",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "",
+     "impressoes": []
+    },
+    {
+     "titulo": "Hiperplasia",
+     "descricao": "Glândulas mamárias torácicas craniais/torácicas caudais/abdominais craniais/abdominais caudais/inguinais: aumentadas de volume, medindo a direita x cm e a esquerda x cm de espessura. Parênquima predominantemente hipoecogênico e heterogêneo. Notam-se múltiplos ductos lactíferos ectasiados, anecogênicos a hipoecogênicos. Ausência de nódulos ou massas focalmente delimitadas ao corte avaliado.",
+     "impressoes": [
+      "Alterações ultrassonográficas mamárias caracterizadas por hiperplasia glandular e ectasia ductal, achados sugestivos de estímulo hormonal / atividade lactacional."
+     ]
+    }
+   ]
+  },
+  {
+   "nome": "Rins",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Rins: simétricos, medindo o esquerdo 0,0 cm e o direito 0,0 cm de comprimento em plano longitudinal. Contornos regulares, definição córtico-medular preservada bilateralmente e ecogenicidade cortical mantida. Não há evidências de litíases ou pielectasia.\nRins: simétricos, medindo o esquerdo 0,0 cm e o direito 0,0 cm de comprimento em plano longitudinal. Razão rim / aorta: rim esquerdo: 0 e rim direito: 0.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Pelve renal normal",
+     "descricao": "Pelves renais medindo 0,0 cm à esquerda e 0,0 cm à direita, em corte transversal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Nefropatia crônica",
+     "descricao": "Rins: simétricos/assimétricos, medindo o esquerdo 0,0 cm e o direito 0,0 cm de comprimento em plano longitudinal. Contornos regulares/irregulares, perda da definição córtico-medular e ecogenicidade de corticais aumentadas. Não há sinais de litíases e hidronefrose.",
+     "impressoes": [
+      "Rins apresentando alterações sugestivas de nefropatia crônica."
+     ]
+    },
+    {
+     "titulo": "Rim diminuído",
+     "descricao": "Rim direito/esquerdo: perda do formato habitual, com redução acentuada de volume, medindo 0,0 cm em plano longitudinal, perda da relação e definição córtico-medular e ecogenicidade de cortical aumentadas. Não há sinais de litíases e pielectasia.",
+     "impressoes": [
+      "Atrofia/displasia renal em direito/esquerdo."
+     ]
+    },
+    {
+     "titulo": "Mineralização",
+     "descricao": "Presença de discretos/moderados/acentuados pontos ecogênicos dispersos em cortical renal bilateralmente.",
+     "impressoes": [
+      "Pontos hiperecogênicos distribuídos em parênquima renal são sugestivos de fibrose/mineralização distrófica."
+     ]
+    },
+    {
+     "titulo": "Cisto renal",
+     "descricao": "Presença de estrutura arredondada, cavitária, preenchida por conteúdo anecogênico inserida em cortical renal esquerda / direita, medindo 0,0 cm de diâmetro.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Pielectasia",
+     "descricao": "Presença de dilatação de pelve renal esquerda / direita / bilateral /, medindo 0,0 cm em corte transversal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Infarto renal",
+     "descricao": "Presença de área hiperecogênica/hipoecogênica, homogênea e triangular inserida em cortical renal direita, medindo 0,0 cm de diâmetro, com o ápice voltado para a medular, causando retração focal do parênquima.",
+     "impressoes": [
+      "Área triangular em rim direito/esquerdo sugere foco de infarto renal crônico."
+     ]
+    },
+    {
+     "titulo": "Doença renal policística",
+     "descricao": "Presença de inúmeras estruturas arredondadas, cavitárias, preenchidas por conteúdo anecogênico inseridas em cortical renal esquerda/direita/bilateral, medindo até 0,0 cm de diâmetro.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Litíase",
+     "descricao": "Presença de estrutura arredondada, hiperecogênica, de contornos definidos e margens irregulares, inserida em pelve renal (bilateral), medindo / até 0,0 cm de diâmetro em rim esquerdo / e até 0,0 cm de diâmetro em rim direito, formando sombra acústica.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Microcálculos em Recessos Pélvicos",
+     "descricao": "Presença de pequenas estruturas arredondadas, hiperecogênicas, inseridas em recessos pélvicos (bilateral), medindo até 0,0 cm de diâmetro em rim esquerdo e até 0, cm de diâmetro em rim direito, não produtoras de sombra acústica.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Mineralização",
+     "descricao": "Presença de moderados pontos ecogênicos dispersos em cortical renal bilateral.",
+     "impressoes": [
+      "Alterações renais compatíveis com nefropatia crônica associada à mineralização."
+     ]
+    },
+    {
+     "titulo": "Hidronefrose",
+     "descricao": "Presença de dilatação de pelve renal esquerda / direita / bilateral /, medindo 0,0 cm em corte transversal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Neoplasia",
+     "descricao": "Presença de formação aderida à cortical renal esquerda / direita, de contornos parcialmente definidos e margens irregulares, ecotextura heterogênea, medindo 0,0 cm x 0,0 cm de diâmetro.",
+     "impressoes": [
+      "Alteração renal pode estar relacionada à neoplasia renal."
+     ]
+    },
+    {
+     "titulo": "Junção corticomedular hiper",
+     "descricao": "Discreto aumento da ecogenicidade na porção periférica da medula renal, adjacente à junção córtico-medular, bilateralmente/em rim direito/esquerdo.",
+     "impressoes": [
+      "O aumento de ecogenicidade na junção córtico-medular em rins é um achado inespecífico que pode corresponder à variação fisiológica descrita em cães de pequeno porte ou à nefropatia incipiente."
+     ]
+    },
+    {
+     "titulo": "Sinal da medular",
+     "descricao": "Presença de linha hiperecogênica paralela à junção corticomedular bilateralmente/em rim direito/esquerdo (sinal da medular).",
+     "impressoes": [
+      "O sinal da medular pode não ter correlação com doença renal, porém, pode estar associado à nefropatia incipiente, devendo ser interpretado em associação aos demais achados clínicos e laboratoriais."
+     ]
+    },
+    {
+     "titulo": "Rins policísticos",
+     "descricao": "Presença de múltiplas/pelo menos estruturas cavitárias, esféricas/ovais, com conteúdo anecogênico, associadas a reforço acústico distal, medindo até 0,0 cm distribuídas pelo parênquima.",
+     "impressoes": [
+      "Cistos na cortical de ambos os rins: rins policisticos"
+     ]
+    }
+   ]
+  },
+  {
+   "nome": "Adrenais",
+   "entradas": [
+    {
+     "titulo": "Normais",
+     "descricao": "Adrenais: formato habitual, margens regulares, contornos definidos, ecogenicidade mantida e ecotextura homogênea. Dimensões preservadas, medindo a esquerda 0,0 x 0,0 x 0,0 cm e a direita 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).",
+     "impressoes": []
+    },
+    {
+     "titulo": "1 normal",
+     "descricao": "Adrenal esquerda/direita: formato habitual, margens regulares, contornos definidos, ecogenicidade mantida e ecotextura homogênea. Dimensões preservadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).",
+     "impressoes": []
+    },
+    {
+     "titulo": "Não visibilizada (conteúdo gasoso)",
+     "descricao": "Adrenais: não visibilizadas devido à acentuada quantidade de gás e conteúdo em alças intestinais adjacentes que promovem artefatos de reverberação e sombreamento acústico.\nNão visibilizada (desconforto/tensão/agitação)\nAdrenais: não caracterizadas em decorrência do desconforto e da tensão abdominal / agitação apresentados pelo paciente.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Aumento unilateral",
+     "descricao": "Adrenal direita/esquerda: contornos definidos, margem cranial/caudal abaulada, ecotextura heterogênea/homogênea, ecogenicidade mantida/aumentada e dimensões aumentadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).\nFALAR SE O AUMENTO É SIMÉTRICO OU NÃO.\nImpressão: Adrenomegalia direita/esquerda, podendo estar relacionada à endocrinopatia ou representar variação individual. Sugere-se correlacionar com os achados clínicos e laboratoriais.\nImpressão (perda de peso): Adrenomegalia esquerda/direita, podendo estar relacionada à endocrinopatia; contudo, a interpretação do achado deve considerar o estado nutricional do paciente. Recomendada correlação clínico-laboratorial.\nAumento bilateral (alterações iguais em ambas adrenais)\nAdrenais: contornos definidos, margem cranial/caudal abaulada bilateralmente, ecogenicidade mantida/aumentada e ecotextura homogênea/heterogênea. Dimensões aumentadas, medindo esq.: 0,0 x 0,0 x 0,0 cm e dir.: 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).\nImpressão: Adrenomegalia bilateral, podendo estar relacionada à endocrinopatia.\nAumento bilateral (alterações diferentes entre as adrenais)\nAdrenal esquerda: contornos definidos, margem cranial/caudal abaulada, ecogenicidade mantida/aumentada, e ecotextura homogênea/heterogênea. Dimensões aumentadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).\nAdrenal direita: contornos definidos, margem cranial/caudal abaulada, ecogenicidade mantida/aumentada, e ecotextura homogênea/heterogênea. Dimensões aumentadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).\nImpressão: Adenomegalia bilateral, podendo estar relacionada à endocrinopatia.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Atrofia unilateral",
+     "descricao": "Adrenal esquerda/direita: contornos definidos, margens afiladas, ecogenicidade mantida e ecotextura homogênea. Dimensões reduzidas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).",
+     "impressoes": []
+    },
+    {
+     "titulo": "Atrofia bilateral",
+     "descricao": "Adrenais: contornos definidos, margens afiladas, ecogenicidade mantida e ecotextura homogênea. Dimensões reduzidas, medindo esq.: 0,0 x 0,0 x 0,0 cm e dir.: 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).",
+     "impressoes": [
+      "Atrofia de adrenal bilateral, podendo estar relacionada à endocrinopatia bem como em pacientes sob uso crônico de corticoterapia. Sugere-se correlacionar com os exames laboratoriais, sintomatologia clínica e exame físico do paciente."
+     ]
+    },
+    {
+     "titulo": "Adrenal reduzida + contralateral aumentada",
+     "descricao": "Adrenal esquerda/direita (-): contornos definidos, margens afiladas, ecogenicidade mantida e ecotextura homogênea. Dimensões reduzidas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).\nAdrenal esquerda/direita (+): contornos definidos, margem cranial/caudal abaulada, ecotextura heterogênea/homogênea, ecogenicidade mantida/aumentada e dimensões aumentadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal).",
+     "impressoes": [
+      "Adrenomegalia direita/esquerda com atrofia da contralateral, podendo estar relacionada à endocrinopatia."
+     ]
+    },
+    {
+     "titulo": "Nódulo",
+     "descricao": "Presença de nódulo hiperecogênico/hipoecogênico em margem cranial/caudal, de contornos definidos e margens irregulares e ecotextura heterogênea, medindo 0,0 x 0,0 cm.",
+     "impressoes": [
+      "Formação nodular em adrenal direita/esquerda, compatível com hiperplasia nodular / neoplasia."
+     ]
+    },
+    {
+     "titulo": "Aumentada + nódulo",
+     "descricao": "Adrenal direita/esquerda: contornos definidos, margens abauladas, ecotextura heterogênea/homogênea, ecogenicidade mantida/aumentada e dimensões aumentadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura cranial x altura caudal). Em margem cranial/caudal do parênquima glandular, deformando levemente os contornos glandulares, visibiliza-se nódulo hiperecogênico/hipoecogênico de contornos ligeiramente irregulares e de ecotextura homogênea/grosseira, medindo 0,0 x 0,0 cm.\nImpressão: As imagens sonográficas encontradas em adrenais indicam adrenomegalia, juntamente com a presença de nódulo hiperplásico / neoplásico.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Baço",
+   "entradas": [
+    {
+     "titulo": "Normal cães",
+     "descricao": "Baço: dimensões preservadas, bordas finas, superfícies parietal e visceral regulares, parênquima homogêneo e ecogenicidade mantida.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Normal gatos",
+     "descricao": "Baço: dimensões preservadas (0,0 cm de espessura), bordas finas, superfícies parietal e visceral regulares, parênquima homogêneo e ecogenicidade mantida.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Microesplenia",
+     "descricao": "Baço: dimensões diminuídas, bordas finas, superfícies parietal e visceral regulares, parênquima homogêneo e ecogenicidade mantida / diminuída.",
+     "impressoes": [
+      "Alteração do volume do baço pode estar relacionado à desidratação / hipovolemia / caquexia / atrofia senil."
+     ]
+    },
+    {
+     "titulo": "Esplenomegalia",
+     "descricao": "Baço: dimensões aumentadas, bordas abauladas, superfícies parietal e visceral regulares, parênquima homogêneo e ecogenicidade mantida.",
+     "impressoes": [
+      "Esplenomegalia pode indicar hiperplasia linfoide, sugerindo presença de processo inflamatório / infeccioso ativo.",
+      "Esplenomegalia possivelmente relacionada à sedação.",
+      "Aumento de volume em baço (esplenomegalia), compatível com efeito secundário a sedação ou hiperplasia linfoide por ativação do sistema imunológico."
+     ]
+    },
+    {
+     "titulo": "Nódulo HIPO",
+     "descricao": "Presença de nódulo/formação hipoecogênica, com contornos definidos/indefinidos, margens regulares/irregulares, ecotextura homogênea/heterogênea/grosseira, medindo 0,0 x 0,0 cm, localizado na superfície visceral/parietal da região de extremidade dorsal / corpo / extremidade ventral / hilo,, sem promover deformidade no contorno do órgão.",
+     "impressoes": [
+      "Achados em baço compatíveis com hiperplasia nodular / hematoma / neoplasia"
+     ]
+    },
+    {
+     "titulo": "Nódulo HIPER",
+     "descricao": "Presença de nódulo/formação hipoecogênica medindo 0,0 x 0,0 cm localizado na superfície visceral/parietal da região de extremidade dorsal / corpo / extremidade ventral / hilo, de contornos definidos/indefinidos, margens regulares/irregulares, ecotextura homogênea/heterogênea/grosseira, deformando / não deformando a superfície esplênica.",
+     "impressoes": [
+      "Achados em baço compatíveis com hiperplasia nodular / neoplasia"
+     ]
+    },
+    {
+     "titulo": "Mielolipoma",
+     "descricao": "Presença de nódulo hiperecogênico medindo x cm em região hila/perivascular, de contornos definidos, margens regulares e ecotextura homogênea.",
+     "impressoes": [
+      "Lesão focal esplênica compatível com mielolipoma."
+     ]
+    },
+    {
+     "titulo": "Aspecto rendilhado",
+     "descricao": "Baço: dimensões aumentadas, bordas abauladas, superfícies parietal e visceral regulares, ecogenicidade mista e ecotextura heterogênea devido à presença de inúmeras áreas arredondadas a ovaladas, hipoecogênicas, dispersas por todo o parênquima esplênico (aspecto rendilhado).\nHematopoiese extramedular/ hiperplasia linfoide\nBaço: dimensões aumentadas/preservadas, bordas abauladas/finas, superfícies parietal e visceral regulares, ecogenicidade mantida/diminuída e parênquima heterogêneo devido à presença de múltiplas áreas puntiformes, hipo/hiperecogênicas, dispersas pelo parênquima.",
+     "impressoes": [
+      "Imagem em baço compatível com infiltrado neoplásico / hematopoiese extramedular.",
+      "Imagem em baço compatível com hematopoiese extramedular / hiperplasia linfoide / esplenite."
+     ]
+    },
+    {
+     "titulo": "Lesão em alvo",
+     "descricao": "Presença de nódulo com aspecto em alvo (periferia hipoecogênica e centro ecogênico), contornos definidos, margens discretamente irregulares e ecotextura heterogênea, medindo 0,0 x 0,0 cm, sem promover abaulamento da cápsula.",
+     "impressoes": [
+      "Lesão focal esplênica compatível com hiperplasia benigna / neoplasia. Sugere-se acompanhamento ultrassonográfico."
+     ]
+    },
+    {
+     "titulo": "Sinal de smoke / eco de contraste espontâneo",
+     "descricao": "Veia(s) ________ apresenta(m) eco de contraste espontâneo.\nObs.: O eco de contraste espontâneo observado na veia ________ pode estar associado a situações pré-trombóticas, hipertensão portal (se vaso so sistema portal) ou hemoaglutinação (Specchi e d'Anjou, 2019).",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Estômago",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Estômago: vazio/discretamente distendido por conteúdo alimentar/gasoso/líquido, estratificação parietal e espessura preservadas nas porções passíveis de avaliação, medindo 0,0 cm em região ventral de corpo. Peristaltismo presente e evolutivo.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Normal + submucosa evidente",
+     "descricao": "Estômago: vazio/discretamente distendido por conteúdo alimentar/gasoso/líquido, estratificação parietal e espessura preservadas nas porções passíveis de avaliação, medindo 0,0 cm em região ventral de corpo. Observa-se maior evidência da camada submucosa. Peristaltismo evolutivo.",
+     "impressoes": [
+      "Imagens em estômago compatíveis com infiltrado fibroadiposo."
+     ]
+    },
+    {
+     "titulo": "Gastrite",
+     "descricao": "Estômago: discretamente distendido por conteúdo alimentar/gasoso/líquido, estratificação parietal preservada/alterada e espessura aumentada, medindo 0,0 cm em região ventral de corpo. Peristaltismo aumentado/diminuído/evolutivo.",
+     "impressoes": [
+      "Achado em estômago está relacionado a processo inflamatório (gastrite)."
+     ]
+    },
+    {
+     "titulo": "Gastropatia urêmica",
+     "descricao": "Estômago: discretamente distendido por conteúdo gasoso / líquido, estratificação parietal preservada com proeminência de pregas gástricas, com espessamento generalizado de parede (edema), medindo 0,0 cm em região ventral de corpo e mineralizações focais/generalizadas em camada mucosa/submucosa.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Peristaltismo aumentado/diminuído/evolutivo.",
+     "descricao": "",
+     "impressoes": [
+      "Achado em estômago pode estar relacionado a gastropatia urêmica."
+     ]
+    },
+    {
+     "titulo": "Bola de pelo",
+     "descricao": "Presença de conteúdo ecogênico, amorfo, de contornos parcialmente definidos medindo 0,0 cm formador de sombra acústica.",
+     "impressoes": [
+      "Imagens em estômago compatíveis com bola de pelo / conteúdo alimentar ecodenso."
+     ]
+    },
+    {
+     "titulo": "Corpo estranho",
+     "descricao": "Presença de conteúdo/estrutura ecogênico(a) , amorfo, de contornos parcialmente/ definidos medindo 0,0 cm formador de sombra acústica. Peristaltimo aumetado/diminuído/retrógrado.",
+     "impressoes": [
+      "Corpo estranho gástrico."
+     ]
+    },
+    {
+     "titulo": "Neoplasia",
+     "descricao": "Estômago: discretamente distendido por conteúdo alimentar / gasoso / líquido, ecogenicidade aumentada/diminuída/normal, estratificação parietal perdida e espessura aumentada nas porções passíveis de avaliação, medindo até 0,0 cm em região ventral de corpo.",
+     "impressoes": [
+      "Neoplasia infiltrativa gástrica"
+     ]
+    },
+    {
+     "titulo": "Focos hiperecogênicos em camada muscular",
+     "descricao": "Presença de discretos / moderados / acentuados pontos hiperecogênicos em camada muscular.",
+     "impressoes": [
+      "Focos hiperecogênicos entremeados em camada muscular da parede gástrica estão relacionados à fibrose associados à processo inflamatório crônico."
+     ]
+    },
+    {
+     "titulo": "Submucosa evidente em gatos",
+     "descricao": "Estômago: vazio / discretamente distendido por conteúdo alimentar / gasoso / líquido, estratificação parietal mantida com maior evidenciação da camada submucosa. Espessura preservada nas porções passíveis de avaliação, medindo 0,0 cm em região ventral de corpo. Peristaltismo evolutivo.",
+     "impressoes": [
+      "A maior evidenciação da camada submucosa pode estar relacionada à deposição adiposa (achado incidental) ou fibrose associada à processo inflamatório crônico."
+     ]
+    }
+   ]
+  },
+  {
+   "nome": "Fígado",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Fígado: dimensões preservadas em relação aos limites do gradil costal, superfície regular e bordas afiladas. Ecotextura homogênea e ecogenicidade mantida. Arquitetura vascular com trajeto e calibre preservados.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Hepatomegalia",
+     "descricao": "Fígado: dimensões aumentadas, ultrapassando os limites do gradil costal, superfície regular e bordas arredondadas. Ecotextura homogênea e ecogenicidade mantida. Arquitetura vascular com trajeto e calibre preservados.",
+     "impressoes": [
+      "hepatomegalia."
+     ]
+    },
+    {
+     "titulo": "Hepatomegalia + hipo",
+     "descricao": "Fígado: dimensões aumentadas, ultrapassando os limites do gradil costal, superfície regular e bordas arredondadas. Ecotextura homogênea com redução difusa da ecogenicidade. Arquitetura vascular com trajeto e calibre preservados.\nA diferenciação definitiva requer avaliação citológica ou histopatológica. Recomenda-se acompanhamento ultrassonográfico periódico para monitoramento evolutivo.",
+     "impressoes": [
+      "Alteração hepática está relacionada à processo inflamatório / infeccioso ou toxemia associada à hepatomegalia.",
+      "Hepatomegalia com hipoecogenicidade difusa do parênquima hepático, achados que podem estar relacionados a processo inflamatório/infeccioso ou toxêmico ou congestivo."
+     ]
+    },
+    {
+     "titulo": "Fígado HIPER",
+     "descricao": "Fígado: dimensões normais/aumentadas em relação aos limites do gradil costal, superfície regular e bordas afiladas/arredondadas, ecotextura homogênea com discreto/moderado/acentuado aumento da ecogenicidade. Arquitetura vascular com trajeto e calibre preservados.\nAchados visibilizados em fígado sugerem infiltração gordurosa (hepatopatia vacuolar/esteatose) ou hepatopatia crônica.",
+     "impressoes": [
+      "Alteração hepática pode estar relacionada a infiltração gordurosa, hepatopatia esteroidal, endocrinopatia, hepatopatia crônica."
+     ]
+    },
+    {
+     "titulo": "Infiltrado gorduroso",
+     "descricao": "Fígado: dimensões aumentadas em relação aos limites do gradil costal, superfície regular e bordas arredondadas. Parênquima de ecotextura homogênea com discreto/moderado/acentuado aumento difuso da ecogenicidade, havendo atenuação do feixe sonoro distal. Arquitetura vascular portal e intra-hepática com perda de detalhamento anatômico.",
+     "impressoes": [
+      "Achados visualizados em fígado sugerem infiltração gordurosa (hepatopatia vacuolar/esteatose)."
+     ]
+    },
+    {
+     "titulo": "Fígado HIPO",
+     "descricao": "Fígado: dimensões normais/aumentadas em relação aos limites do gradil costal, superfície regular e bordas afiladas/arredondadas. Ecotextura homogênea com redução difusa da ecogenicidade. Arquitetura vascular com trajeto e calibre preservados.\nAlterações em fígado indicam presença de hepatopatia aguda / toxêmica / congestão passiva.",
+     "impressoes": [
+      "Alteração hepática está relacionada à processo inflamatório sistêmico, hepatopatia toxemica ou congestão passiva."
+     ]
+    },
+    {
+     "titulo": "Dilatação veias hepáticas",
+     "descricao": "Arquitetura vascular dilatada, mantendo trajeto preservado.",
+     "impressoes": [
+      "Alteração vascular hepática pode estar relacionada à alterações cardíacas (ICCD), hipertensão, super hidratação.",
+      "Alteração vascular hepática pode estar relacionada a alterações cardíacas / hemodinâmicas."
+     ]
+    },
+    {
+     "titulo": "Calibre reduzido de veias hepáticas",
+     "descricao": "Arquitetura vascular com calibre reduzido, mantendo trajeto preservado.",
+     "impressoes": [
+      "Alteração vascular hepática pode estar relacionada à hipovolemia, hemorragia."
+     ]
+    },
+    {
+     "titulo": "Nódulo HIPER",
+     "descricao": "Presença de área hiperecogênica, arredondada/amorfa, homogênea/heterogênea, de contornos definidos/indefinidos e de margens regulares/irregulares, inserida em lobo x, medindo 0,0 cm x 0,0 cm.",
+     "impressoes": [
+      "Área nodular em fígado pode estar relacionada a hiperplasia nodular / fibrose / neoplasia."
+     ]
+    },
+    {
+     "titulo": "Nódulo HIPO",
+     "descricao": "Presença de área hipoecogênica, arredondada/amorfa, homogênea/heterogênea, de contornos definidos/indefinidos e de margens regulares/irregulares, inserida em lobo x, medindo 0,0 cm x 0,0 cm.",
+     "impressoes": [
+      "Área nodular em fígado pode estar relacionada a nódulo regenerativo, hematoma, abscesso, necrose ou nódulo neoplásico."
+     ]
+    },
+    {
+     "titulo": "Formação",
+     "descricao": "Presença de formação hipoecogênica/hiperecogênica/mista, arredondada/amorfa, heterogênea, de contornos definidos/parcialmente definidos e de margens regulares/irregulares, com presença ou não de áreas cavitárias, inserida em lobo x, medindo 0,0 cm x 0,0 cm, deformando / não deformando a superfície hepática.",
+     "impressoes": [
+      "Alteração hepática compatível com neoplasia."
+     ]
+    },
+    {
+     "titulo": "Infiltrado neoplásico",
+     "descricao": "Fígado: dimensões preservadas/aumentadas em relação aos limites do gradil costal, superfície regular/irregular e bordas arredondadas. Ecotextura heterogênea devido a presença de inúmeras áreas hipoecogênicas/hiperecogênicas por todo parênquima e ecogenicidade mantida/alterada, medindo até 0,0 cm. Arquitetura vascular com trajeto e calibre preservados.\nAspecto ultrassonográfico de fígado correspondente à hepatomegalia associada a processo inflamatório / infiltrativo.",
+     "impressoes": [
+      "Alteração hepática pode estar relacionada a infiltração neoplásica difusa."
+     ]
+    },
+    {
+     "titulo": "Mineralizações",
+     "descricao": "Presença de inúmeros pontos hiperecogênicos dispersos pelo parênquima hepático produtores/não produtores de tênue sombra acústica.",
+     "impressoes": [
+      "Alteração em parênquima hepático compatível com mineralizações."
+     ]
+    },
+    {
+     "titulo": "Cirrose",
+     "descricao": "Fígado: dimensões diminuídas em relação aos limites do gradil costal e superfície irregular. Ecotextura heterogênea devido à presença de inúmeras áreas de ecogenicidade mista dispersas por todo parênquima medindo até 0,0 cm e ecogenicidade difusamente aumentada. Associada a moderada/acentuada quantidade de líquido livre. Arquitetura vascular com trajeto e calibre preservados.",
+     "impressoes": [
+      "Alteração hepática pode estar relacionada a hepatopatia crônica / fibrose avançada (cirrose)."
+     ]
+    },
+    {
+     "titulo": "Microhepatia",
+     "descricao": "Fígado: dimensões diminuídas em relação aos limites do gradil costal, superfície regular, bordos afilados. Ecotextura homogênea e ecogenicidade mantida. Arquitetura vascular com trajeto e calibre preservados.\nNo contexto clínico e ultrassonográfico hepático/cardíaco, as alterações hemodinâmicas referem-se a qualquer distúrbio na circulação do sangue, na pressão vascular ou no fluxo sanguíneo que afete a forma como o sangue chega, passa ou sai do fígado.\nQuando um laudo menciona que uma alteração vascular no fígado pode estar relacionada a causas hemodinâmicas, costuma incluir condições como:",
+     "impressoes": [
+      "Microhepatia. Achado ultrassonográfico pode estar relacionado à anomalia vascular."
+     ]
+    },
+    {
+     "titulo": "1. Alterações na Pressão e no Fluxo Venoso",
+     "descricao": "Congestão venosa sistêmica (passiva): Dificuldade no retorno do sangue do fígado em direção ao coração. Isso faz com que as veias hepáticas e a veia cava inferior fiquem ingurgitadas (dilatadas).\nHipertensão portal: Aumento da pressão na veia porta, podendo gerar alteração no calibre vascular, retardo ou inversão do fluxo (fluxo hepatófugo) e aparecimento de vasos colaterais.\nTromboses ou estenoses: Presença de coágulos (como na Síndrome de Budd-Chiari) ou estreitamentos que impeçam a drenagem venosa hepática normal.\n2. Alterações de Origem Cardíaca (Cardio-hepáticas)\nInsuficiência cardíaca direita ou global: Quando o lado direito do coração não consegue bombear adequadamente o sangue, gerando represamento retrógrado de sangue na veia cava e nas veias hepáticas.\nDoenças pericárdicas ou valvares: Como efusão pericárdica, pericardite constritiva ou displasia/insuficiência de valva tricúspide, que também causam aumento da pressão venosa central e estase sanguínea no fígado.",
+     "impressoes": []
+    },
+    {
+     "titulo": "3. Estados de Baixo Débito ou Choque",
+     "descricao": "Hipotensão grave ou estado de choque: Condições em que a perfusão (chegada de sangue arterial ao fígado) fica comprometida, alterando o padrão do fluxo e do parênquima vascular.\nVolume circulante alterado: Situações de hipervolemia (sobrecarga de fluidos) ou desidratação severa que modifiquem o volume de sangue em circulação.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Vesícula biliar",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Vesícula biliar: parede fina (0,0 cm), mucosa regular e repleta por moderada quantidade de conteúdo anecogênico homogêneo. Não há sinais de dilatação em vias biliares intra e/ou extra-hepáticas.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Lama biliar",
+     "descricao": "Vesícula biliar: parede fina (0,0 cm) e mucosa regular. Conteúdo predominantemente anecogênico (bile), com discreta/moderada /acentuada quantidade de material hiperecogênico, denso e homogêneo em suspensão (lama biliar). Vias biliares intra e extra-hepáticas sem evidências de alterações.\nImpressão: Conteúdo em vesícula biliar sugestivo de lama biliar.\nA lama biliar está relacionada a alterações na composição da bile, processo inflamatório, endocrinopatias e ou desmotilidade da vesícula biliar.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Colecistite",
+     "descricao": "Vesícula biliar: parede espessada (0, cm), hiperecogênica e regular/irregular, repleta por conteúdo anecogênico e homogêneo. Não existem evidências de alterações em vias biliares intra ou extra hepáticas.\nImpressão: O espessamento da parede da vesícula biliar é compatível com colecistite crônica.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Colecistite por edema",
+     "descricao": "Vesícula biliar: parede espessada (0, cm), hiperecogênica e regular/irregular apresentando halo hipocogênico, repleta por conteúdo anecogênico e homogêneo. Não existem evidências de alterações em vias biliares intra ou extra hepáticas.\nImpressão: Colecistite associada à edema. Esta alteração está relacionada à cardiopatia.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Colangiohepatite",
+     "descricao": "Vesícula biliar: paredes espessadas (0,0 cm), hiperecogênicas e regulares apresentando ou não halo hipoecogênico, repleta por conteúdo anecogênico e homogêneo. Presença de ductos biliares dilatados e tortuosos.\nImpressão: Colangiohepatite.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Mucocele",
+     "descricao": "Vesícula biliar: parede fina/espessa e mucosa regular/irregular, repleta por bile e conteúdo hiperecogênico, denso, amorfo e heterogêneo, com área central de aspecto estrelado, aderido a parede. Não existem evidências de alterações em vias biliares intra ou extra hepáticas.\nAlteração em vesícula biliar compatível com mucocele madura/imatura.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Colelitíase",
+     "descricao": "Presença de estrutura hiperecogênica de contornos definidos e margens regulares/irregulares, medindo 0, cm, produtora de /tênue sombra acústica.\nImagem em vesícula biliar compatível com colecistolitíase, concreção, bile densificada.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Hiperplasia cística mucinosa",
+     "descricao": "Vesícula Biliar: parede irregular devido à presença de discretos/moderados/acentuados pequenos cistos que se projetam para o lúmen. Moderada quantidade de conteúdo anecogênico homogêneo. Não há sinais de dilatação em vias biliares intra e / ou extra-hepáticas.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Colecistectomizado",
+     "descricao": "Vesícula Biliar: paciente colecistectomizado.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Ruptura de vesícula biliar",
+     "descricao": "Vesícula Biliar: apresentando formato regular/irregular associada a descontinuidade de parede, com aumento da ecogenicidade do tecido adiposo adjacente e discreto líquido livre entre os lobos hepáticos. Presença de pequena/moderada quantidade de conteúdo anecogênico heterogêneo. Não há sinais de dilatação em vias biliares intra e / ou extra-hepáticas.\nAlterações compatíveis com ruptura de vesícula biliar.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Vesícula septada em gatos",
+     "descricao": "",
+     "impressoes": []
+    },
+    {
+     "titulo": "Colestase / obstrução biliar",
+     "descricao": "",
+     "impressoes": [
+      "Dilatação das vias biliares sugestiva de obstrução biliar extra-hepática, recomendando investigação da causa"
+     ]
+    }
+   ]
+  },
+  {
+   "nome": "Intestino",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Alças Intestinais: distribuição habitual, paredes com estratificação parietal preservada e espessura dentro da normalidade (duodeno descendente: 0,0 cm; jejuno: 0,0 cm; íleo: 0,0 cm; cólon descendente: 0,0 cm). Conteúdo luminal gasoso e mucoso em intestino delgado e hiperecogênico (fecal) em cólon. Peristaltismo presente e evolutivo.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Alças espessadas",
+     "descricao": "Alças intestinais: distribuição habitual e estratificação parietal preservada. Observa-se espessamento de parede em segmentos de duodeno/jejuno/íleo/cólon (duodeno descendente: 0,0 cm; jejuno: 0,0 cm; íleo: 0,0 cm; cólon descendente: 0,0 cm), com conteúdo luminal gasoso e mucoso em intestino delgado e hiperecogênico e heterogêneo (fecal) em cólon. Peristaltismo presente e evolutivo.",
+     "impressoes": [
+      "Alterações visibilizadas em alças intestinais são indicativas de processo inflamatório (enterite/duodenite/jejunite/colite/enterocolite)."
+     ]
+    },
+    {
+     "titulo": "Fecaloma",
+     "descricao": "Alças intestinais: distribuição habitual, paredes com estratificação parietal preservada e espessura dentro da normalidade (duodeno descendente: 0, cm; segmentos jejunais: o, cm; íleo: 0, cm; cólon descendente: 0,0 cm), com conteúdo luminal gasoso e mucoso em intestino delgado e acentuada quantidade de conteúdo hiperecogênico (fecal) em cólon, formando intensa sombra acústica. Peristaltismo presente e evolutivo/reduzido.",
+     "impressoes": [
+      "Imagens sonográficas descritas em cólon compatíveis com fecaloma.",
+      "Cólon acentuadamente dilatado, achado compatível com retenção de conteúdo fecal. Recomenda-se correlação com o histórico clínico e sinais de constipação."
+     ]
+    },
+    {
+     "titulo": "Corpo estranho linear",
+     "descricao": "Alças intestinais: distribuição habitual, paredes com estratificação parietal preservada e espessura aumentada (duodeno descendente: 0, cm; segmentos jejunais: 0, cm; íleo: 0, cm e 0, cólon descendente: 0,0), preenchidas e discretamente dilatadas por conteúdo predominantemente líquido em intestino delgado e hiperecogênico (fecal) em cólon. Peristaltismo presente/progressivo e aumentado. Visibiliza-se pelo menos um segmento de alça em região de jejuno/duodeno apresentando aspecto plissado com presença de estrutura linear hiperecogênica intraluminal, medindo aproximadamente x cm de comprimento.",
+     "impressoes": [
+      "Imagens sonográficas compatíveis com corpo estranho linear."
+     ]
+    },
+    {
+     "titulo": "Corpo estranho não visibilizado",
+     "descricao": "Ao exame ultrassonográfico, não foram evidenciadas imagens compatíveis com corpos estranhos em estômago ou alças intestinais no momento da avaliação. Ressalta-se, entretanto, que o estômago apresenta-se moderadamente preenchido por conteúdo alimentar, o que pode limitar a detecção de eventuais corpos estranhos de pequenas dimensões não individualizados ao exame. Durante a avaliação, não foram observados sinais ultrassonográficos de obstrução gastrointestinal, como distensão significativa de alças, alterações de motilidade compatíveis ou conteúdo sugestivo de estase. Recomenda-se acompanhamento clínico e reavaliação ultrassonográfica caso a paciente apresente sinais sugestivos de obstrução gastrointestinal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Neoplasia",
+     "descricao": "Alças intestinais: distribuição habitual, paredes com estratificação parietal preservada e espessura normal (duodeno descendente: 0, cm; segmentos jejunais: 0, cm; íleo: 0, cm e 0, cólon descendente: ), com conteúdo gasoso e mucoso luminal em intestino delgado e hiperecogênico e heterogêneo (fecal) em cólon.\nPeristaltismo presente e evolutivo. Em segmento de duodeno/jejuno/ileo/cólon evidencia-se área com perda da estratificação parietal e espessura aumentada, em região intraluminal/intramural/difuso medindo 0,0 cm de diâmetro.",
+     "impressoes": [
+      "Alteração intestinal compatível com infiltrado neoplásico."
+     ]
+    },
+    {
+     "titulo": "Hiperplasia Linfóide Reacional em Duodeno",
+     "descricao": "Alças intestinais: Em região de duodeno foi observado projeções ecogênicas em face ventral da camada mucosa, espaçadas simetricamente entre si.",
+     "impressoes": [
+      "Alteração descrita em duodeno compatível com hiperplasia linfóide reacional/pseudoulcera."
+     ]
+    },
+    {
+     "titulo": "Duodeno pós prandial",
+     "descricao": "Em região de duodeno foi observado pontos ecogênicos em face ventral da camada mucosa.",
+     "impressoes": [
+      "Alteração descrita em duodeno pode estar relacionada a período pós prandial."
+     ]
+    },
+    {
+     "titulo": "Enteropatia perdedora de proteína",
+     "descricao": "Alças Intestinais: distribuição habitual, paredes com estratificação parietal preservada e paredes espessadas (duodeno descendente: 0,0 cm; segmentos jejunais: 0,0 cm; íleo: 0,0 cm e cólon: 0,0), com conteúdo gasoso e mucoso luminal em intestino delgado e hiperecogênico (fecal) em cólon. Peristaltismo aumentado e evolutivo nos segmentos passíveis de visualização.\nPresença de inúmeras estriações perpendiculares em camada mucosa.",
+     "impressoes": [
+      "Achados em alças intestinais pode estar relacionado a enteropatia perdedora de proteína."
+     ]
+    },
+    {
+     "titulo": "Corrugado",
+     "descricao": "Observa-se segmentos de alças irregulares apresentando aspecto corrugado.",
+     "impressoes": [
+      "Achado pode estar relacionado à processo inflamatório crônico."
+     ]
+    },
+    {
+     "titulo": "Intussuscepção",
+     "descricao": "Alças intestinais: distribuição habitual, paredes com estratificação parietal preservada e espessura aumentada (duodeno descendente: 0, cm; segmentos jejunais: 0, cm; íleo: 0, cm e 0, cólon: ), com conteúdo gasoso e mucoso luminal em intestino delgado e hiperecogênico e heterogêneo (fecal) em cólon. Peristaltismo presente e evolutivo.\nVisibiliza-se segmento de duodeno/jejuno invaginado em segmento posterior com aspecto de múltiplas camadas.",
+     "impressoes": [
+      "Imagens em intestino compatíveis com intussuscepção."
+     ]
+    },
+    {
+     "titulo": "Tecido linfoide em duodeno",
+     "descricao": "Presença de projeções ecogênicas na camada mucosa da parede ventral, regularmente espaçadas.\nImpressão diagnóstica\nSem sinal clínico: O aspecto descrito em parede duodenal é sugestivo de evidenciação do tecido linfóide achado comum em pacientes jovens clinicamente saudáveis.\nCom sinais clínicos de TGI: Imagens sugestivas de duodenite, com sinais de hiperplasia linfoide reacional.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Pâncreas",
+   "entradas": [
+    {
+     "titulo": "Normal cães",
+     "descricao": "Pâncreas: lobo pancreático direito com dimensões preservadas (0,0 cm), ecotextura homogênea e ecogenicidade mantida. Não há evidências de dilatação do ducto pancreático.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Normal gatos",
+     "descricao": "Pâncreas: lobo pancreático esquerdo com dimensões preservadas (0,0 cm), ecotextura homogênea e ecogenicidade mantida. Ducto pancreático sem evidência de dilatação, medindo 0,0 cm.\nPancreatopatia crônica / infiltrado fibroadiposo\nPâncreas: lobo pancreático direito/esquerdo com dimensões mantidas/aumentadas (0,0 cm de espessura), ecotextura homogênea/grosseira e ecogenicidade preservada/aumentada. Não há evidências de alterações da gordura mesentérica adjacente, líquido livre ou dilatação do ducto pancreático.",
+     "impressoes": [
+      "Pâncreas apresentando conjunto de alterações que indicam pancreatopatia crônica / deposição de tecido fibroadiposo."
+     ]
+    },
+    {
+     "titulo": "Ectasia de ducto pancreático",
+     "descricao": "Ducto pancreático dilatado, medindo 0,0 cm de diâmetro.",
+     "impressoes": [
+      "Ectasia de ducto pancreático compatível com cronicidade / senilidade."
+     ]
+    },
+    {
+     "titulo": "Pancreatite",
+     "descricao": "Pâncreas: lobo pancreático direito/esquerdo com dimensões aumentadas, medindo 0,0 cm, hipoecogênico e de ecotextura homogênea/heterogênea/grosseira. Nota-se aumento da ecogenicidade da gordura peripancreática (esteatite focal) e presença de discreta/acentuada quantidade de líquido livre.",
+     "impressoes": [
+      "Pancreatite associada (ou não) à esteatite focal."
+     ]
+    },
+    {
+     "titulo": "Edema de pâncreas",
+     "descricao": "Pâncreas: porção de lobo pancreático direito e / ou esquerdo passível de avaliação, dimensões preservadas medindo 0,0 cm, ecotextura homogênea, com fissuras, e ecogenicidade diminuída.",
+     "impressoes": [
+      "Imagens pancreáticas compatíveis com edema."
+     ]
+    }
+   ]
+  },
+  {
+   "nome": "Linfonodos",
+   "entradas": [
+    {
+     "titulo": "Normais",
+     "descricao": "Não foi evidenciada à ultrassonografia linfonodomegalia abdominal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Processo Inflamatório / Neoplásico",
+     "descricao": "Linfonodos ... de contornos definidos e de margens regulares / irregulares, dimensões aumentadas, ecotextura homogênea / heterogênea e ecogenicidade diminuída, medindo 0,0 cm de diâmetro.\nImpressão: Processo inflamatório / neoplásico.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Linfonodos jejunais aumentados",
+     "descricao": "Linfonodos: aumento de linfonodos jejunais medindo até 0,0 cm, ecotextura homogênea ecogenicidade diminuída. Mesentério adjacente com ecogenicidade aumentada.",
+     "impressoes": [
+      "A linfonodomegalia está relacionada à resposta a um processo inflamatório, não sendo possível descartar infiltrado neoplásico."
+     ]
+    },
+    {
+     "titulo": "Aumentados (sem medir)",
+     "descricao": "Linfonodos ______ identificados, apresentando discreta proeminência, ecogenicidade preservada e contornos regulares, sugestivos de reatividade.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Gestacional",
+   "entradas": [
+    {
+     "titulo": "Ausência de gestação",
+     "descricao": "Aparelho Reprodutor: Não há evidências sonográficas de imagens sugestivas de fetos",
+     "impressoes": []
+    },
+    {
+     "titulo": "Prenhez &lt; 30 dias",
+     "descricao": "",
+     "impressoes": []
+    },
+    {
+     "titulo": "Prenhez positiva.",
+     "descricao": "Presença de várias vesículas gestacionais, nas quais visibiliza-se imagem embrionária, cuja viabilidade foi comprovada pelos batimentos cardíacos.\nMORFOMETRIA EMBRIONÁRIA:\nDiâmetro da vesícula gestacional: entre x cm - x cm\nDiâmetro biparietal: x cm\nSegundo as fórmulas gestacionais e organogênese fetal, o tempo estimado de gestação é x a x dias.\nSegundo as fórmulas gestacionais e organogênese fetal, faltam x a x dias para o parto.\nApesar do estudo ultrassonográfico não ser ideal para a contagem dos fetos, sugere-se a presença de aproximadamente ... bolsas gestacionais.\nObs: caso o clínico julgue necessário saber o número exato de fetos, sugere-se avaliação radiográfica aos 45-50 dias de gestação.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Prenhez &gt; 30 dias",
+     "descricao": "",
+     "impressoes": []
+    },
+    {
+     "titulo": "Prenhez positiva.",
+     "descricao": "A viabilidade fetal foi comprovada pelos movimentos e batimentos cardíacos.\nPlacenta, líquido e anexos fetais normais para a idade gestacional.\nORGANOGÊNESE FETAL:\nNo tórax é possível observar coração com câmaras cardíacas diferenciadas, timo.\nNo abdômen fetal é possível visibilizar: grandes vasos, estômago, fígado, vesícula biliar, bexiga, rins e alças intestinais - com/sem movimentos peristálticos.\nMORFOMETRIA FETAL:\nDiâmetro biparietal: entre cm - cm\nFrequência cardíaca: bpm.\nPresença/ausência de oscilação de frequência cardíaca fetal.\nSegundo as fórmulas gestacionais e organogênese fetal, o tempo estimado de gestação é x a x dias.\nSegundo as fórmulas gestacionais e organogênese fetal, faltam x a x dias para o parto.\nApesar do estudo ultrassonográfico não ser ideal/preciso para a contagem dos fetos, sugere-se a presença de aproximadamente...\nfetos.\nObs: caso o clínico julgue necessário saber o número exato de fetos, sugere-se a avaliação radiográfica aos 45-50 dias de gestação.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Calcificação do ventrículo cardíaco fetal",
+     "descricao": "Evidenciou-se uma linha hiperecogênica circundando a parede interna do ventrículo cardíaco fetal.",
+     "impressoes": [
+      "Alteração em coração fetal pode estar relacionada à calcificação do ventrículo cardíaco fetal."
+     ]
+    },
+    {
+     "titulo": "Feto com anasarca",
+     "descricao": "Evidenciou-se um feto com aumento de espessura de tecidos moles, principalmente próximo ao crânio e com presença de conteúdo anecogênico em espaço pleural e peritoneal (efusão).",
+     "impressoes": [
+      "Observa-se um feto com anasarca."
+     ]
+    },
+    {
+     "titulo": "Feto enfisematoso",
+     "descricao": "Observa-se feto com presença de conteúdo hiperecogênico formador de artefato de reverberação em subcutâneo, não sendo passível avaliar as estruturas profundas.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Gastroquise fetal",
+     "descricao": "Observa-se protrusão de alças intestinais para fora da cavidade abdominal fetal, em suspensão no líquido amniótico, sem evidências de envoltório hiperecogênico circundante.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Onfalocele fetal",
+     "descricao": "Observa-se protrusão de alças intestinais para fora da cavidade abdominal fetal, com evidências de envoltório hiperecogênico circundante, contendo os órgãos abdominais de contato com líquido amniótico.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Hidrocefalia fetal",
+     "descricao": "Observa-se dilação ventricular por conteúdo um anecogênico homogêneo (líquido) no interior da calota craniana em um dos fetos em corno esquerdo/direito.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Hipoplasia do coração esquerdo fetal",
+     "descricao": "Observa-se massa ecogênica, de contornos parcialmente definidos, intracardíaca, em topografia de câmaras esquerdas medindo cm x cm.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Mumificação fetal",
+     "descricao": "Observa-se feto com diminuição de tamanho, com perda da definição dos órgãos abdominais e torácicos e perda da ecogenicidade das estruturas ósseas com contração da coluna e redução dos líquidos fetais.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Maceração fetal",
+     "descricao": "Evidenciou-se em interior de cornos uterinos, estruturas hiperecogênicas desorganizadas formadoras de sombreamento acústico posterior (estruturas fetais) envolto por conteúdo anecogênico com moderados pontos ecogênicos em suspensão.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Infecção uterina na gestação",
+     "descricao": "Observa-se conteúdo formador de reverberação em interior de cornos uterinos, impedindo a adequada avaliação do seu conteúdo.",
+     "impressoes": [
+      "Conteúdo no interior de corpos uterinos pode estar relacionado à gestação com infecção com produção de gás."
+     ]
+    },
+    {
+     "titulo": "Gestação anembrionária",
+     "descricao": "Evidenciou-se em interior de cornos uterinos pelo menos x estruturas circulares anecogênicas (vesículas gestacionais) com ausência de imagem embrionária em seu interior.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "FAST abdominal (A-FAST)",
+   "entradas": [
+    {
+     "titulo": "Geral",
+     "descricao": "Posicionamento do paciente: decúbito direito",
+     "impressoes": []
+    },
+    {
+     "titulo": "Avaliação de fluido abdominal",
+     "descricao": "",
+     "impressoes": []
+    },
+    {
+     "titulo": "Janela hepatodiafragmatica (DH)",
+     "descricao": "Presente/ausente",
+     "impressoes": []
+    },
+    {
+     "titulo": "Janela esplenorenal (SR)",
+     "descricao": "Presente/ausente",
+     "impressoes": []
+    },
+    {
+     "titulo": "Janela cistocólica (CC)",
+     "descricao": "Presente/ausente",
+     "impressoes": []
+    },
+    {
+     "titulo": "Janela hepatorenal (HR)",
+     "descricao": "Presente/ausente",
+     "impressoes": []
+    },
+    {
+     "titulo": "Total de fluido corporal (de zero a 4)",
+     "descricao": "Zero, 1/4, 2/4, 3/4, 4/4",
+     "impressoes": []
+    },
+    {
+     "titulo": "Avaliação da veia cava caudal",
+     "descricao": "Preservada/dilatada/reduzida",
+     "impressoes": []
+    },
+    {
+     "titulo": "Edema de vesícula biliar",
+     "descricao": "Presente/ausente",
+     "impressoes": []
+    },
+    {
+     "titulo": "Abdominocentese",
+     "descricao": "Sim/não.\nAspecto:\nOutros sinais",
+     "impressoes": []
+    }
+   ]
+  }
+ ]
+}

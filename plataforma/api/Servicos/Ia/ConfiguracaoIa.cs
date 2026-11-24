@@ -13,7 +13,7 @@ public class ConfiguracaoIa(IConfiguration cfg)
     /// <summary>Quantos exames gerar ao mesmo tempo.</summary>
     public int Paralelo { get; } = Math.Clamp(cfg.GetValue("IA_PARALELO", 2), 1, 10);
     /// <summary>Máximo de fotos enviadas à IA por exame.</summary>
-    public int MaxImagens { get; } = Math.Clamp(cfg.GetValue("IA_MAX_IMAGENS", 15), 1, 50);
+    public int MaxImagens { get; } = Math.Clamp(cfg.GetValue("IA_MAX_IMAGENS", 30), 1, 50);
 
     public string? ClaudeChave { get; } = Vazio(cfg["ANTHROPIC_API_KEY"]);
     public string ClaudeModelo { get; } = Vazio(cfg["CLAUDE_MODELO"]) ?? "claude-opus-5-5";

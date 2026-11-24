@@ -45,7 +45,7 @@ export function MinhaConta() {
             <Botao type="submit">Salvar</Botao>
           </form>
         </Cartao>
-        <EnvioImagem titulo="Assinatura" alt="Assinatura" urlVer="/api/auth/assinatura" urlEnviar="/api/auth/assinatura"
+        <EnvioImagem titulo="Assinatura" alt="Assinatura" urlVer="/api/auth/assinatura" urlEnviar="/api/auth/assinatura" urlUso="/api/auth/assinatura/uso"
           explicacao="Imagem da sua assinatura (foto ou digitalização), impressa nos laudos que você assinar. Opcional: sem ela, o laudo sai com o seu nome e CRMV." />
         <ConfigEnvio />
         <TrocarSenha />

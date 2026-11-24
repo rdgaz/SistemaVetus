@@ -37,4 +37,14 @@ public class GeradorSimulado : IGeradorLaudo
         // consumo de mentira, proporcional às fotos, para testar a cobrança (o preço do "simulado" é 0 por padrão)
         return new RespostaIa(Nome, "simulado", JsonSerializer.Serialize(resultado), 2_000 + entrada.Imagens.Count * 1_000, 3_000);
     }
+
+    public Task<RespostaIa> Texto(string sistema, string pedido, CancellationToken ct)
+    {
+        // padroniza "de mentira": usa o relato do médico com a primeira letra maiúscula e ponto final
+        var i = pedido.LastIndexOf("RELATO DO MÉDICO:", StringComparison.Ordinal);
+        var relato = (i >= 0 ? pedido[(i + "RELATO DO MÉDICO:".Length)..] : pedido).Trim();
+        if (relato.Length > 0) relato = char.ToUpperInvariant(relato[0]) + relato[1..];
+        if (relato.Length > 0 && !relato.EndsWith('.')) relato += ".";
+        return Task.FromResult(new RespostaIa(Nome, Modelo, relato, 500, 100));
+    }
 }

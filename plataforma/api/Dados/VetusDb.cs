@@ -15,6 +15,9 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
     public DbSet<ImagemCadastro> ImagensCadastro => Set<ImagemCadastro>();
     public DbSet<LinkPublico> LinksPublicos => Set<LinkPublico>();
     public DbSet<Compartilhamento> Compartilhamentos => Set<Compartilhamento>();
+    public DbSet<DiscordanciaAlerta> DiscordanciasAlerta => Set<DiscordanciaAlerta>();
+    public DbSet<RotuloImagem> RotulosImagem => Set<RotuloImagem>();
+    public DbSet<DitadoOrgao> DitadosOrgao => Set<DitadoOrgao>();
     public DbSet<ConfiguracaoCobranca> ConfiguracoesCobranca => Set<ConfiguracaoCobranca>();
     public DbSet<PrecoModelo> PrecosModelos => Set<PrecoModelo>();
     public DbSet<MovimentoSaldo> MovimentosSaldo => Set<MovimentoSaldo>();
@@ -29,6 +32,7 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.HasIndex(x => x.AeTitle).IsUnique();
             e.Property(x => x.Nome).HasMaxLength(200);
             e.Property(x => x.AeTitle).HasMaxLength(16); // limite do AE Title no DICOM
+            e.Property(x => x.PosicaoLogo).HasMaxLength(10);
             e.Property(x => x.Documento).HasMaxLength(30);
             e.Property(x => x.Telefone).HasMaxLength(30);
             e.Property(x => x.Email).HasMaxLength(200);
@@ -109,6 +113,44 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.HasIndex(x => x.ExameId);
             e.HasOne(x => x.Exame).WithMany().HasForeignKey(x => x.ExameId);
             e.Property(x => x.Token).HasMaxLength(40);
+        });
+
+        b.Entity<DitadoOrgao>(e =>
+        {
+            e.ToTable("ditados_orgao");
+            e.HasIndex(x => new { x.ClinicaId, x.CriadoEm });
+            e.Property(x => x.Orgao).HasMaxLength(100);
+            e.Property(x => x.TextoBruto).HasMaxLength(4000);
+            e.Property(x => x.TextoPadronizado).HasMaxLength(4000);
+            e.Property(x => x.TextoFinal).HasMaxLength(4000);
+            e.Property(x => x.Ia).HasMaxLength(20);
+            e.Property(x => x.Modelo).HasMaxLength(100);
+            e.Property(x => x.UsuarioNome).HasMaxLength(200);
+        });
+
+        b.Entity<RotuloImagem>(e =>
+        {
+            e.ToTable("rotulos_imagem");
+            e.HasIndex(x => new { x.ExameId, x.Foto }).IsUnique(); // um rótulo por foto do exame (o último vale)
+            e.HasIndex(x => x.HashFoto);
+            e.Property(x => x.Foto).HasMaxLength(200);
+            e.Property(x => x.HashFoto).HasMaxLength(40);
+            e.Property(x => x.OrgaoIa).HasMaxLength(100);
+            e.Property(x => x.OrgaoCorreto).HasMaxLength(100);
+            e.Property(x => x.Tipo).HasMaxLength(20);
+            e.Property(x => x.UsuarioNome).HasMaxLength(200);
+        });
+
+        b.Entity<DiscordanciaAlerta>(e =>
+        {
+            e.ToTable("discordancias_alerta");
+            e.HasIndex(x => new { x.ClinicaId, x.CriadaEm });
+            e.Property(x => x.Motivo).HasMaxLength(30);
+            e.Property(x => x.UsuarioNome).HasMaxLength(200);
+            e.Property(x => x.Comentario).HasMaxLength(2000);
+            e.Property(x => x.AlertaConfianca).HasMaxLength(10);
+            e.Property(x => x.Ia).HasMaxLength(20);
+            e.Property(x => x.Modelo).HasMaxLength(100);
         });
 
         b.Entity<Compartilhamento>(e =>

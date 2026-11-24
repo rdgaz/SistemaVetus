@@ -160,10 +160,11 @@ async function esperarExame(nav, filtro, segundos = 40) {
   const { exame, lista } = await esperarExame(X.nav, (e) => e.paciente === 'MIMI');
   ok(!!exame, 'exame aparece na lista da clínica X');
   if (!exame) { console.log('\nSem o exame, os demais testes não fazem sentido.'); process.exit(1); }
-  ok(exame.status === 'NaFila', `modo automático: entra na fila (${exame.status})`);
+  // a fila é rápida: o exame pode já estar sendo gerado (ou pronto para revisão) quando o teste consulta
+  ok(['NaFila', 'Gerando', 'AguardandoRevisao'].includes(exame.status), `modo automático: entra na fila (${exame.status})`);
   ok(exame.especie === 'Felina' && exame.tutor === 'Joana Teste', `paciente e tutor criados (${exame.especie}, ${exame.tutor})`);
   ok(exame.totalFotos === 5, `5 fotos (2 imagens + 3 quadros) (${exame.totalFotos})`);
-  ok(lista.contagens.NaFila >= 1, 'contagem por status');
+  ok((lista.contagens.NaFila ?? 0) + (lista.contagens.Gerando ?? 0) + (lista.contagens.AguardandoRevisao ?? 0) >= 1, 'contagem por status');
 
   const det = await X.nav.req('GET', `/api/exames/${exame.id}`);
   ok(det.status === 200 && det.dados.fotos.length === 5 && det.dados.pasta.startsWith(`${X.ae}/`), `detalhe com 5 fotos na pasta da clínica (${det.dados.pasta})`);
@@ -316,6 +317,66 @@ async function esperarExame(nav, filtro, segundos = 40) {
     ok((await Y.nav.req('PUT', `/api/exames/${idY}/laudo`, { conteudo: revisado })).status === 204, 'salva a revisão do laudo');
     const comRevisao = (await Y.nav.req('GET', `/api/exames/${idY}`)).dados.laudo;
     ok(comRevisao.revisado && comRevisao.conteudo.orgaos[0].descricao.includes('revisado') && comRevisao.conteudo.prancha.length === 2, 'revisão e prancha guardadas');
+
+    // ---- padrão do médico: ordem e nomes dos órgãos como no laudo dele (Rins numa linha só; linfonodos por último)
+    const nomesOrgaos = (await Y.nav.req('GET', `/api/exames/${idY}`)).dados.laudo.conteudo.orgaos.map((o) => o.orgao);
+    ok(nomesOrgaos[0] === 'Fígado' && nomesOrgaos[1] === 'Vesícula Biliar' && nomesOrgaos.includes('Rins') && !nomesOrgaos.some((n) => /^Rim /.test(n))
+      && nomesOrgaos.includes('Vesícula Urinária') && nomesOrgaos.at(-1) === 'Linfonodos' && !nomesOrgaos.includes('Cavidade abdominal'),
+      `órgãos na ordem e com os nomes do laudo do médico (${nomesOrgaos.join(', ')})`);
+
+    // ---- alerta de achado urgente: o veterinário discorda e a discordância fica registrada
+    const comAlerta = JSON.parse(JSON.stringify(revisado));
+    Object.assign(comAlerta, { achadoUrgente: true, motivoUrgencia: 'Suspeita de corpo estranho linear.', imagensUrgencia: [1, 2], confiancaUrgencia: 'alta', evidenciaUrgencia: 'Imagem 1: alças plissadas.' });
+    ok((await Y.nav.req('PUT', `/api/exames/${idY}/laudo`, { conteudo: comAlerta })).status === 204, 'salva um laudo com alerta urgente');
+    ok((await Y.nav.req('POST', `/api/exames/${idY}/laudo/alerta/discordar`, { motivo: 'qualquer' })).status === 400, 'discordância sem motivo válido: recusada');
+    ok((await X.nav.req('POST', `/api/exames/${idY}/laudo/alerta/discordar`, { motivo: 'falso_alarme' })).status === 404, 'outra clínica não registra discordância');
+    const disc = await Y.nav.req('POST', `/api/exames/${idY}/laudo/alerta/discordar`, { motivo: 'falso_alarme', comentario: 'Alças plissadas por enterite, sem corpo estranho.' });
+    ok(disc.status === 204, 'registra a discordância com a leitura correta');
+    const semAlerta = (await Y.nav.req('GET', `/api/exames/${idY}`)).dados.laudo.conteudo;
+    ok(semAlerta.achadoUrgente === false && semAlerta.alertaDiscordado === true, 'o alerta sai do laudo');
+    ok((await Y.nav.req('POST', `/api/exames/${idY}/laudo/alerta/discordar`, { motivo: 'falso_alarme' })).status === 409, 'sem alerta: nada a discordar (409)');
+    const lista = (await adm.req('GET', '/api/admin/discordancias')).dados;
+    const reg = lista.find((d) => d.exameId === idY);
+    ok(reg && reg.motivo === 'falso_alarme' && /enterite/.test(reg.comentario) && reg.alertaMotivo.includes('corpo estranho') && reg.alertaConfianca === 'alta' && JSON.parse(reg.alertaFotos).length === 2,
+      'discordância guardada com o que a IA disse, a confiança, as fotos e o comentário');
+    ok((await Y.nav.req('GET', '/api/admin/discordancias')).status === 403, 'só o administrador do sistema lê as discordâncias');
+
+    // ---- rótulos de imagem: o veterinário confirma ou corrige "o que a imagem mostra"
+    const foto1 = salvo.fotos[0].nome, foto2 = salvo.fotos[1].nome;
+    const rot0 = (await Y.nav.req('GET', `/api/exames/${idY}/rotulos`)).dados;
+    ok(rot0.opcoes.includes('Fígado') && rot0.opcoes.includes('Sem órgão (tela, medida ou texto)') && rot0.rotulos.length === 0, 'opções de rótulo e nenhum rótulo ainda');
+    const conf = await Y.nav.req('PUT', `/api/exames/${idY}/rotulos`, { foto: foto1, orgaoIa: 'Bexiga urinária', orgaoCorreto: 'Bexiga urinária' });
+    ok(conf.status === 200 && conf.dados.tipo === 'confirmacao', 'confirma que a imagem é do órgão que a IA indicou');
+    const corr = await Y.nav.req('PUT', `/api/exames/${idY}/rotulos`, { foto: foto2, orgaoIa: 'Fígado', orgaoCorreto: 'Baço' });
+    ok(corr.status === 200 && corr.dados.tipo === 'correcao' && corr.dados.orgaoCorreto === 'Baço', 'corrige: a imagem não é do fígado, é do baço');
+    const recor = await Y.nav.req('PUT', `/api/exames/${idY}/rotulos`, { foto: foto2, orgaoIa: 'Fígado', orgaoCorreto: 'Vesícula biliar' });
+    ok(recor.status === 200 && (await Y.nav.req('GET', `/api/exames/${idY}/rotulos`)).dados.rotulos.length === 2, 'mudar o rótulo da mesma foto atualiza (um por foto)');
+    ok((await Y.nav.req('PUT', `/api/exames/${idY}/rotulos`, { foto: foto1, orgaoIa: 'Fígado', orgaoCorreto: 'Qualquer coisa' })).status === 400, 'rótulo fora das opções: recusado');
+    ok((await Y.nav.req('PUT', `/api/exames/${idY}/rotulos`, { foto: '../x.jpg', orgaoIa: 'Fígado', orgaoCorreto: 'Baço' })).status === 400, 'foto inexistente: recusada');
+    ok((await X.nav.req('PUT', `/api/exames/${idY}/rotulos`, { foto: foto1, orgaoIa: 'Fígado', orgaoCorreto: 'Baço' })).status === 404, 'outra clínica não rotula o exame');
+    const base = (await adm.req('GET', '/api/admin/rotulos-imagens')).dados;
+    const meus = base.rotulos.filter((x) => x.exameId === idY);
+    ok(meus.length === 2 && meus.every((x) => x.hashFoto.length === 40) && base.confirmacoes >= 1 && base.correcoes >= 1, 'conjunto de treino do administrador: rótulos com a impressão digital da foto');
+    ok((await Y.nav.req('GET', '/api/admin/rotulos-imagens')).status === 403, 'só o administrador do sistema lê a base de treino');
+
+    // ---- ditado por voz: o texto falado é padronizado e guardado (relato, padronizado e final)
+    ok((await Y.nav.req('POST', `/api/exames/${idY}/laudo/padronizar`, { orgao: 'Fígado', texto: '   ' })).status === 400, 'padronizar sem texto: recusado');
+    ok((await X.nav.req('POST', `/api/exames/${idY}/laudo/padronizar`, { orgao: 'Fígado', texto: 'normal' })).status === 404, 'outra clínica não padroniza');
+    const pad = await Y.nav.req('POST', `/api/exames/${idY}/laudo/padronizar`, { orgao: 'Fígado', texto: 'tá com tamanho normal e bordas lisas', descricaoAtual: 'Fígado revisado.' });
+    ok(pad.status === 200 && pad.dados.texto === 'Tá com tamanho normal e bordas lisas.' && !!pad.dados.id, 'padroniza o texto ditado (IA simulada)');
+    ok((await Y.nav.req('POST', `/api/exames/${idY}/laudo/padronizar/${pad.dados.id}/aceitar`, { textoFinal: 'Fígado de tamanho normal e bordas lisas.' })).status === 204, 'aceita o texto padronizado (editado)');
+    const dit = (await adm.req('GET', '/api/admin/ditados')).dados.find((d) => d.id === pad.dados.id);
+    ok(dit && dit.aceito && dit.textoBruto.includes('tá com') && dit.textoPadronizado.endsWith('.') && dit.textoFinal.startsWith('Fígado') && dit.descricaoAnterior === 'Fígado revisado.',
+      'ditado guardado: relato falado, texto padronizado e texto final');
+    ok((await Y.nav.req('GET', '/api/admin/ditados')).status === 403, 'só o administrador do sistema lê os ditados');
+
+    // ---- aprendizados da clínica: o que a IA recebe no próximo pré-laudo (discordâncias, órgãos confundidos, ditados)
+    const apr = (await Y.nav.req('GET', '/api/clinica/aprendizados')).dados;
+    ok(!apr.vazio && apr.texto.includes('DESCARTOU') && apr.texto.includes('corpo estranho linear') && apr.texto.includes('enterite'),
+      'aprendizados: a discordância do alerta (com a leitura correta) vai para a IA');
+    ok(apr.texto.includes('confundiu') && apr.texto.includes('"Fígado"') && apr.texto.includes('"Vesícula biliar"'), 'aprendizados: órgãos que a IA confundiu nas imagens');
+    ok(apr.texto.includes('como o médico desta clínica escreve') && apr.texto.includes('Fígado de tamanho normal'), 'aprendizados: exemplo de como o médico escreve');
+    ok((await X.nav.req('GET', '/api/clinica/aprendizados')).dados.vazio === true, 'aprendizados são por clínica: outra clínica não recebe');
 
     const semCrmv = await Y.nav.req('POST', `/api/exames/${idY}/laudo/assinar`, {});
     ok(semCrmv.status === 400 && /CRMV/.test(semCrmv.dados.erro), 'assinar sem CRMV: recusado');

@@ -53,13 +53,13 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'exame', titulo: '4. Tela do exame: dados e informações adicionais', palavras: 'paciente tutor raça peso castrado jejum suspeita solicitante texto livre ditar',
+    id: 'exame', titulo: '4. Tela do exame: dados e informações adicionais', palavras: 'paciente responsável raça peso castrado jejum suspeita solicitante texto livre ditar',
     conteudo: (
       <>
         <ul>
           <li><b>Fotos:</b> role para o lado ou toque em "Ver todas"; um toque amplia.</li>
-          <li><b>✎ Editar:</b> corrija o que foi digitado no aparelho (nome, espécie, raça, sexo, castrado, idade, peso), o tutor (nome, WhatsApp, e-mail) e o exame (tipo, jejum, suspeita, solicitante com CRMV, histórico). Toque em <b>Salvar</b>.</li>
-          <li><b>Informações adicionais:</b> escreva ou dite (microfone do teclado) o que souber: suspeita, histórico, o que o tutor relatou. A IA organiza esse texto nos campos vazios e o usa na análise.</li>
+          <li><b>✎ Editar:</b> corrija o que foi digitado no aparelho (nome, espécie, raça, sexo, castrado, idade, peso), o responsável (nome, WhatsApp, e-mail) e o exame (tipo, jejum, suspeita, solicitante com CRMV, histórico). Toque em <b>Salvar</b>.</li>
+          <li><b>Informações adicionais:</b> escreva ou dite (microfone do teclado) o que souber: suspeita, histórico, o que o responsável relatou. A IA organiza esse texto nos campos vazios e o usa na análise.</li>
           <li><b>Marcar urgente:</b> o exame passa na frente na fila.</li>
           <li>Para gerar o pré-laudo bastam <b>espécie</b> e <b>tipo de exame</b>; os demais campos aparecem como recomendados.</li>
           <li>Se sair com alterações não salvas, o sistema avisa.</li>
@@ -71,12 +71,12 @@ const TOPICOS: Topico[] = [
     id: 'ia', titulo: '5. Pré-laudo com IA', palavras: 'ia gerar atualizar refazer análise completa fotos repetidas referência medidas',
     conteudo: (
       <>
-        <p>A IA analisa as fotos do exame (até 15, sem repetir fotos iguais), os dados do paciente, as medidas do aparelho e os <b>valores de referência</b> da espécie e do peso, e escreve o pré-laudo no padrão brasileiro: condições técnicas, cada órgão (normal, alterado ou não visualizado), impressão diagnóstica, diferenciais, recomendações e sugestão de fotos para a prancha.</p>
+        <p>A IA analisa as fotos do exame (até 15, sem repetir fotos iguais), os dados do paciente, as medidas do aparelho e os <b>valores de referência</b> da espécie e do peso, e escreve o pré-laudo no padrão brasileiro: condições técnicas, cada órgão (normal, alterado ou não visibilizado), impressão diagnóstica, diferenciais, recomendações e sugestão de fotos para a prancha.</p>
         <ul>
           <li><b>Atualizar pré-laudo:</b> depois de mudar dados ou o texto livre, a IA ajusta o pré-laudo <b>sem reanalisar as fotos</b> (mais rápido e mais barato). Se chegaram fotos novas, só elas são analisadas.</li>
           <li><b>Refazer análise completa:</b> a IA olha todas as fotos de novo.</li>
           <li>Se nada mudou, o sistema avisa e não cobra.</li>
-          <li>A IA não inventa órgão que não aparece nas fotos: ele fica como "não visualizado", com o motivo.</li>
+          <li>A IA não inventa órgão que não aparece nas fotos: ele fica como "não visibilizado", com o motivo.</li>
           <li>O pré-laudo é um <b>rascunho</b>: só vale depois da revisão e da assinatura do veterinário.</li>
         </ul>
       </>
@@ -96,7 +96,7 @@ const TOPICOS: Topico[] = [
     conteudo: (
       <>
         <ul>
-          <li>Em cada órgão, escolha <b>Normal</b> (aplica a frase padrão de normalidade), <b>Alterado</b> ou <b>Não visualizado</b>, e edite o texto.</li>
+          <li>Em cada órgão, escolha <b>Normal</b> (aplica a frase padrão de normalidade), <b>Alterado</b> ou <b>Não visibilizado</b>, e edite o texto.</li>
           <li>Edite condições técnicas, impressão, diferenciais e recomendações (um por linha).</li>
           <li><b>Escolher fotos:</b> monte a prancha do laudo (até 12 fotos).</li>
           <li><b>Salvar revisão</b> guarda o rascunho; <b>Prévia do PDF</b> mostra como vai ficar (marcado "RASCUNHO").</li>
@@ -119,15 +119,15 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'envio', titulo: '9. Enviar o laudo (WhatsApp, e-mail, link)', palavras: 'compartilhar whatsapp email link pdf tutor smtp gmail senha de app',
+    id: 'envio', titulo: '9. Enviar o laudo (WhatsApp, e-mail, link)', palavras: 'compartilhar whatsapp email link pdf responsável tutor smtp gmail senha de app',
     conteudo: (
       <>
         <p>No laudo assinado, use <b>Compartilhar</b>:</p>
         <ul>
-          <li><b>WhatsApp:</b> abre a conversa com a mensagem e o link do laudo (telefone do tutor já preenchido).</li>
+          <li><b>WhatsApp:</b> abre a conversa com a mensagem e o link do laudo (telefone do responsável já preenchido).</li>
           <li><b>E-mail:</b> envia o PDF anexado pelo <b>seu próprio e-mail</b>. Configure em Minha conta → Envio de laudos → "Seu e-mail de saída (SMTP)". Em Gmail e Outlook, use uma <b>senha de app</b>; teste com "Enviar teste".</li>
           <li><b>Copiar link / Baixar PDF;</b> no celular, "Enviar PDF" manda o arquivo pelo compartilhar do aparelho.</li>
-          <li>O link do tutor abre o laudo sem login, vale por um prazo (padrão 30 dias) e pode ser <b>revogado</b>.</li>
+          <li>O link do responsável abre o laudo sem login, vale por um prazo (padrão 30 dias) e pode ser <b>revogado</b>.</li>
           <li>Em Minha conta você escolhe quais opções aparecem no Compartilhar.</li>
         </ul>
       </>
@@ -154,7 +154,7 @@ const TOPICOS: Topico[] = [
         <ol className="list-decimal space-y-1 pl-5">
           <li>No ultrassom, exporte o exame para o pendrive. Ele cria uma pasta por animal (ex.: <b>JADE20261105-083824-3E0C</b>).</li>
           <li>No computador, abra <b>Exames → Enviar exame do pendrive</b> e escolha a pasta do animal (ou o pendrive inteiro, com vários exames).</li>
-          <li>Confira a lista: o sistema lê o relatório PDF do aparelho e preenche paciente, tutor, idade, medidas e comentários. Se faltar o nome, digite.</li>
+          <li>Confira a lista: o sistema lê o relatório PDF do aparelho e preenche paciente, responsável, idade, medidas e comentários. Se faltar o nome, digite.</li>
           <li>Marque <b>Enviar também os vídeos</b> se quiser guardá-los no exame (eles não vão para a IA). Clique em <b>Enviar</b>.</li>
         </ol>
         <p>Se a internet cair, envie de novo: o que já chegou não é reenviado. Se o mesmo exame já veio pelo DICOM, os dois são juntados (sem duplicar); as fotos do pendrive só substituem as do DICOM antes do primeiro pré-laudo.</p>

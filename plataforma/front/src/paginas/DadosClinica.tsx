@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { api } from '../api';
 import { useSessao } from '../sessao';
 import { Aviso, Botao, Campo, Cartao, Titulo } from '../ui';
@@ -14,6 +15,8 @@ type Dados = {
   email: string | null;
   aeTitle: string;
   gerarAutomaticamente: boolean;
+  informacoesObrigatorias: boolean;
+  verificacaoOnline: boolean;
 };
 
 export function DadosClinica() {
@@ -74,11 +77,42 @@ export function DadosClinica() {
               </span>
             </span>
           </label>
+          <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3">
+            <input type="checkbox" className="mt-1 size-5" checked={d.informacoesObrigatorias}
+              onChange={(e) => setD({ ...d, informacoesObrigatorias: e.target.checked })} />
+            <span>
+              <span className="font-medium">"Informações adicionais" obrigatórias</span>
+              <span className="block text-sm text-slate-500">
+                Ligado: só dá para gerar o pré-laudo com o campo preenchido. Com a geração automática, o exame espera em
+                "Aguardando dados" até alguém preencher (exames do pendrive com comentários no PDF já entram na fila).
+              </span>
+            </span>
+          </label>
+        </Cartao>
+
+        <Cartao titulo="Verificação online do laudo">
+          <label className="flex min-h-11 cursor-pointer items-start gap-3">
+            <input type="checkbox" className="mt-1 size-5" checked={d.verificacaoOnline}
+              onChange={(e) => setD({ ...d, verificacaoOnline: e.target.checked })} />
+            <span>
+              <span className="font-medium">Mostrar QR code e código de verificação no laudo</span>
+              <span className="block text-sm text-slate-500">
+                Ligado: o PDF traz o QR code, o código e o endereço para conferir a autenticidade no site.
+                Desligado: nada disso aparece no PDF e a página de verificação deixa de abrir para os laudos desta clínica,
+                inclusive os já emitidos (volta a funcionar se você religar).
+              </span>
+            </span>
+          </label>
+        </Cartao>
+
+        <Cartao titulo="Aparência do laudo">
+          <p className="text-sm text-slate-600">Cores, fonte, campos, ordem das seções e textos do PDF.</p>
+          <Link to="/clinica/layout" className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-[#0E4D64] px-4 font-medium text-white hover:bg-[#0B3D50]">Personalizar o laudo</Link>
         </Cartao>
 
         <EnvioImagem titulo="Logo (cabeçalho do laudo)" alt="Logo da clínica"
-          urlVer={`/api/clinicas/${d.id}/logo`} urlEnviar="/api/clinica/logo"
-          explicacao="Aparece no topo do PDF de todos os laudos da clínica." />
+          urlVer={`/api/clinicas/${d.id}/logo`} urlEnviar="/api/clinica/logo" urlUso="/api/clinica/logo/uso" comPosicao
+          explicacao="Aparece no cabeçalho do PDF de todos os laudos da clínica: centralizado por padrão, ou à esquerda/direita." />
 
         <Cartao titulo="Ultrassom (DICOM)">
           <p className="text-sm">

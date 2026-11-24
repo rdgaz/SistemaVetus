@@ -11,6 +11,7 @@ import { EnvioPendrive } from './paginas/EnvioPendrive';
 import { ExameDetalhe } from './paginas/ExameDetalhe';
 import { Usuarios } from './paginas/Usuarios';
 import { DadosClinica } from './paginas/DadosClinica';
+import { LayoutLaudo } from './paginas/LayoutLaudo';
 import { MinhaConta } from './paginas/MinhaConta';
 import { AdminClinicas } from './paginas/AdminClinicas';
 import { AdminCobranca } from './paginas/AdminCobranca';
@@ -49,6 +50,7 @@ function AppComLogin() {
         <Route path="exames/:id" element={<ExameDetalhe />} />
         <Route path="usuarios" element={<SoAdminClinica><Usuarios /></SoAdminClinica>} />
         <Route path="clinica" element={<SoAdminClinica><DadosClinica /></SoAdminClinica>} />
+        <Route path="clinica/layout" element={<SoAdminClinica><LayoutLaudo /></SoAdminClinica>} />
         <Route path="conta" element={<MinhaConta />} />
         <Route path="ajuda" element={usuario.clinicas.length > 0 ? <Ajuda /> : <Navigate to="/" replace />} />
         <Route

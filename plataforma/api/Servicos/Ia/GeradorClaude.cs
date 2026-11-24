@@ -18,7 +18,7 @@ public class GeradorClaude(ConfiguracaoIa cfg) : IGeradorLaudo
         var conteudo = new List<ContentBlockParam> { new TextBlockParam { Text = entrada.Texto } };
         foreach (var img in entrada.Imagens)
         {
-            conteudo.Add(new TextBlockParam { Text = $"Imagem {img.Numero} ({img.Nome}):" });
+            conteudo.Add(new TextBlockParam { Text = $"Imagem {img.Numero} ({img.Nome}){(img.Descricao is null ? "" : $" — descrição do aparelho: {img.Descricao}")}:" });
             conteudo.Add(new ImageBlockParam
             {
                 Source = new Base64ImageSource { Data = Convert.ToBase64String(img.Bytes), MediaType = MediaType.ImageJpeg },
@@ -56,5 +56,20 @@ public class GeradorClaude(ConfiguracaoIa cfg) : IGeradorLaudo
         var json = string.Concat(resposta.Content.Select(b => b.Value).OfType<TextBlock>().Select(t => t.Text));
         return new RespostaIa(Nome, cfg.ClaudeModelo, json,
             (int)resposta.Usage.InputTokens, (int)resposta.Usage.OutputTokens);
+    }
+
+    public async Task<RespostaIa> Texto(string sistema, string pedido, CancellationToken ct)
+    {
+        var client = new AnthropicClient { ApiKey = cfg.ClaudeChave };
+        var resposta = await client.Messages.Create(new MessageCreateParams
+        {
+            Model = cfg.ClaudeModelo,
+            MaxTokens = 3000,
+            System = sistema,
+            Messages = [new UserMessageParam { Content = new List<ContentBlockParam> { new TextBlockParam { Text = pedido } } }],
+        }, ct);
+        if (resposta.StopReason == "refusal") throw new InvalidOperationException("Claude recusou a solicitação.");
+        var saida = string.Concat(resposta.Content.Select(b => b.Value).OfType<TextBlock>().Select(t => t.Text));
+        return new RespostaIa(Nome, cfg.ClaudeModelo, saida.Trim(), (int)resposta.Usage.InputTokens, (int)resposta.Usage.OutputTokens);
     }
 }

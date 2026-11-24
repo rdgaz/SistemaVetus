@@ -132,7 +132,8 @@ public static partial class PendriveEndpoints
                     Paciente = paciente,
                     StudyInstanceUid = $"pendrive:{idAnimal}:{subpasta}",
                     Origem = "pendrive",
-                    Status = clinica.GerarAutomaticamente ? StatusExame.NaFila : StatusExame.AguardandoDados,
+                    // automático entra direto na fila; se a clínica exige "Informações adicionais", só com os comentários do PDF
+                    Status = clinica.GerarAutomaticamente && (!clinica.InformacoesObrigatorias || !string.IsNullOrWhiteSpace(rel?.Comentarios)) ? StatusExame.NaFila : StatusExame.AguardandoDados,
                     FotosPendrive = true,
                     TipoExame = TipoDoPendrive(prefixo, rel),
                     SolicitanteNome = rel?.MedicoIndicado,

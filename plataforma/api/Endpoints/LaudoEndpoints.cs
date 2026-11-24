@@ -12,6 +12,10 @@ public static class LaudoEndpoints
 {
     public record RevisaoReq(JsonElement Conteudo);
     public record AssinarReq(JsonElement? Conteudo);
+    public record DiscordarReq(string? Motivo, string? Comentario);
+    public record PadronizarReq(string? Orgao, string? Texto, string? DescricaoAtual);
+    public record AceitarDitadoReq(string? TextoFinal);
+    private static readonly string[] MotivosDiscordancia = ["falso_alarme", "achado_diferente", "imagens_insuficientes"];
     public record RetificarReq(string? Motivo);
 
     public const string LimitePublico = "publico";
@@ -28,6 +32,72 @@ public static class LaudoEndpoints
             if (ValidarConteudo(r.Conteudo) is { } msg) return Erros.Invalido(msg);
             l!.ConteudoRevisado = r.Conteudo.GetRawText();
             e!.AtualizadoEm = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
+
+        // O veterinário discorda do alerta de achado urgente da IA: o alerta sai do laudo e a discordância fica guardada
+        // (com o que a IA disse e a leitura correta) para melhorar a IA.
+        g.MapPost("/alerta/discordar", async (Guid id, DiscordarReq r, HttpContext http, VetusDb db) =>
+        {
+            var (e, l, erro) = await LaudoEmRevisao(id, http, db);
+            if (erro is not null) return erro;
+            if (r.Motivo is null || !MotivosDiscordancia.Contains(r.Motivo)) return Erros.Invalido("Escolha o motivo da discordância.");
+            var u = await Acesso.UsuarioAtual(http, db);
+            if (u is null) return Results.Unauthorized();
+
+            var no = System.Text.Json.Nodes.JsonNode.Parse(l!.ConteudoRevisado ?? l.ConteudoIa) as System.Text.Json.Nodes.JsonObject;
+            if (no is null || no["achadoUrgente"]?.GetValue<bool>() != true) return Erros.Conflito("Este laudo não tem alerta de achado urgente.");
+
+            var enviadas = JsonSerializer.Deserialize<List<string>>(l.ImagensEnviadas) ?? [];
+            var numeros = (no["imagensUrgencia"] as System.Text.Json.Nodes.JsonArray)?.Select(x => x?.GetValue<int>() ?? 0).ToList() ?? [];
+            if (numeros.Count == 0) numeros = (no["imagensSugeridas"] as System.Text.Json.Nodes.JsonArray)?.Select(x => x?.GetValue<int>() ?? 0).Take(6).ToList() ?? [];
+            var fotos = numeros.Where(n => n >= 1 && n <= enviadas.Count).Select(n => enviadas[n - 1]).Distinct().ToList();
+
+            var comentario = Texto.Opcional(r.Comentario);
+            db.DiscordanciasAlerta.Add(new DiscordanciaAlerta
+            {
+                ClinicaId = e!.ClinicaId, ExameId = e.Id, LaudoId = l.Id, LaudoVersao = l.Versao,
+                UsuarioId = u.Id, UsuarioNome = u.Nome, Motivo = r.Motivo,
+                Comentario = comentario is { Length: > 2000 } ? comentario[..2000] : comentario,
+                AlertaMotivo = no["motivoUrgencia"]?.GetValue<string>() ?? "",
+                AlertaConfianca = no["confiancaUrgencia"]?.GetValue<string>(),
+                AlertaEvidencia = no["evidenciaUrgencia"]?.GetValue<string>(),
+                AlertaFotos = JsonSerializer.Serialize(fotos),
+                Ia = l.Ia, Modelo = l.Modelo,
+            });
+            no["achadoUrgente"] = false;
+            no["alertaDiscordado"] = true;
+            l.ConteudoRevisado = no.ToJsonString();
+            e.AtualizadoEm = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
+
+        // Texto ditado pelo veterinário para um órgão: a IA o reescreve no padrão do laudo (como se ele mesmo tivesse digitado)
+        g.MapPost("/padronizar", async (Guid id, PadronizarReq r, HttpContext http, VetusDb db, Padronizador pad, CancellationToken ct) =>
+        {
+            var (e, l, erro) = await LaudoEmRevisao(id, http, db);
+            if (erro is not null) return erro;
+            var relato = Texto.Opcional(r.Texto);
+            if (relato is null) return Erros.Invalido("Fale ou escreva o que deseja registrar.");
+            if (relato.Length > Padronizador.MaxTexto) return Erros.Invalido($"Texto grande demais (máximo {Padronizador.MaxTexto} caracteres).");
+            if (Texto.Opcional(r.Orgao) is not { } orgao) return Erros.Invalido("Órgão não informado.");
+            var u = await Acesso.UsuarioAtual(http, db);
+            if (u is null) return Results.Unauthorized();
+            var (ditado, msg, status) = await pad.Padronizar(e!, l!.Versao, orgao, relato, r.DescricaoAtual, u, ct);
+            return msg is not null ? Results.Json(new { erro = msg }, statusCode: status) : Results.Ok(new { ditado.Id, texto = ditado.TextoPadronizado });
+        }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
+
+        // o médico aceitou o texto padronizado (talvez editado): guarda o texto final junto do relato e do padronizado
+        g.MapPost("/padronizar/{ditadoId:guid}/aceitar", async (Guid id, Guid ditadoId, AceitarDitadoReq r, HttpContext http, VetusDb db) =>
+        {
+            var clinicaId = http.VinculoAtual().ClinicaId;
+            var d = await db.DitadosOrgao.FirstOrDefaultAsync(x => x.Id == ditadoId && x.ExameId == id && x.ClinicaId == clinicaId);
+            if (d is null) return Erros.NaoEncontrado("Ditado não encontrado.");
+            var final = Texto.Opcional(r.TextoFinal);
+            d.TextoFinal = final is { Length: > 4000 } ? final[..4000] : final;
+            d.Aceito = true;
             await db.SaveChangesAsync();
             return Results.NoContent();
         }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
@@ -52,7 +122,7 @@ public static class LaudoEndpoints
             if (string.IsNullOrWhiteSpace(e!.Paciente.Nome)) falta.Add("nome do paciente");
             if (string.IsNullOrWhiteSpace(e.Paciente.Especie)) falta.Add("espécie");
             if (string.IsNullOrWhiteSpace(e.Paciente.Sexo)) falta.Add("sexo");
-            if (string.IsNullOrWhiteSpace(e.Paciente.Tutor?.Nome)) falta.Add("tutor");
+            if (string.IsNullOrWhiteSpace(e.Paciente.Tutor?.Nome)) falta.Add("responsável");
             if (!TiposExame.Valido(e.TipoExame)) falta.Add("tipo de exame");
             if (falta.Count > 0) return Erros.Invalido($"Para assinar, complete: {string.Join(", ", falta)}.");
 
@@ -118,6 +188,7 @@ public static class LaudoEndpoints
                 .Include(x => x.Exame).ThenInclude(x => x.Clinica)
                 .FirstOrDefaultAsync(x => x.CodigoVerificacao == c);
             if (l is null) return Results.NotFound(new { valido = false, erro = "Código não encontrado." });
+            if (!l.Exame.Clinica.VerificacaoOnline) return Results.NotFound(new { valido = false, erro = "A verificação online não está disponível para este laudo." });
             var vigente = await db.Laudos.Where(x => x.ExameId == l.ExameId && x.AssinadoEm != null)
                 .OrderByDescending(x => x.Versao).Select(x => x.Versao).FirstAsync();
             return Results.Ok(new

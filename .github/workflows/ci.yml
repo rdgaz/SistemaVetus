@@ -80,6 +80,9 @@ jobs:
       - name: Teste dos exames por clínica (DICOM -> plataforma)
         run: node tests/exames.js
 
+      - name: Teste da personalização do laudo (layout)
+        run: node tests/layout.js
+
       - name: Teste do envio por pendrive (pasta sintética)
         run: node tests/pendrive.js
 

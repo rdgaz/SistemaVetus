@@ -26,6 +26,16 @@ public class Clinica
     public decimal SaldoBrl { get; set; }
     /// <summary>Gera o pré-laudo automaticamente ao receber o exame.</summary>
     public bool GerarAutomaticamente { get; set; } = true;
+    /// <summary>Imprime o logo no cabeçalho do laudo (a imagem fica guardada mesmo desligado).</summary>
+    /// <summary>true = o campo "Informações adicionais" do exame é obrigatório para gerar o pré-laudo.</summary>
+    public bool InformacoesObrigatorias { get; set; }
+    /// <summary>true = o laudo mostra o código de verificação e o QR code, e a página de verificação online funciona.</summary>
+    public bool VerificacaoOnline { get; set; } = true;
+    /// <summary>Aparência do PDF do laudo (JSON de LayoutLaudo); vazio = padrão.</summary>
+    public string? LayoutLaudo { get; set; }
+    public bool UsarLogo { get; set; } = true;
+    /// <summary>Onde o logo fica no cabeçalho do laudo: centro (padrão), esquerda ou direita.</summary>
+    public string PosicaoLogo { get; set; } = "centro";
     public bool Ativa { get; set; } = true;
     public DateTime CriadaEm { get; set; } = DateTime.UtcNow;
 
@@ -43,6 +53,8 @@ public class Usuario
     public bool TrocarSenha { get; set; }
     public string? Crmv { get; set; }
     public string? CrmvUf { get; set; }
+    /// <summary>Imprime a imagem da assinatura nos laudos que assinar (a imagem fica guardada mesmo desligado).</summary>
+    public bool UsarAssinatura { get; set; } = true;
     public bool AdministradorSistema { get; set; }
     public bool Ativo { get; set; } = true;
 
@@ -293,7 +305,7 @@ public class MovimentoSaldo
     public DateTime Em { get; set; } = DateTime.UtcNow;
 }
 
-/// <summary>Link público do laudo (para o tutor): abre a última versão assinada do exame, sem login.</summary>
+/// <summary>Link público do laudo (para o responsável): abre a última versão assinada do exame, sem login.</summary>
 public class LinkPublico
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -351,5 +363,86 @@ public class Vinculo
     /// <summary>true = o laudo sai com a identidade (logo/cabeçalho) do próprio profissional, não da clínica.</summary>
     public bool IdentidadePropria { get; set; }
     public bool Ativo { get; set; } = true;
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Discordância do veterinário com o alerta de achado urgente da IA. Cada registro guarda o que a IA disse e a leitura
+/// correta, e alimenta a melhoria da IA (casos de correção, conjunto de referência, exemplos do que não é urgente).
+/// </summary>
+public class DiscordanciaAlerta
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ClinicaId { get; set; }
+    public Guid ExameId { get; set; }
+    public Guid LaudoId { get; set; }
+    public int LaudoVersao { get; set; }
+    public Guid UsuarioId { get; set; }
+    public string UsuarioNome { get; set; } = "";
+    /// <summary>falso_alarme, achado_diferente ou imagens_insuficientes.</summary>
+    public string Motivo { get; set; } = "";
+    /// <summary>A leitura correta, nas palavras do veterinário.</summary>
+    public string? Comentario { get; set; }
+    // o que a IA tinha dito (cópia, para não depender do laudo)
+    public string AlertaMotivo { get; set; } = "";
+    public string? AlertaConfianca { get; set; }
+    public string? AlertaEvidencia { get; set; }
+    /// <summary>Nomes das fotos que a IA indicou para o alerta (JSON), ou as principais quando ela não indicou.</summary>
+    public string AlertaFotos { get; set; } = "[]";
+    public string Ia { get; set; } = "";
+    public string Modelo { get; set; } = "";
+    public DateTime CriadaEm { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// O que uma imagem mostra, segundo o veterinário: confirma ou corrige o órgão que a IA associou à foto.
+/// É a base de treino de um futuro reconhecedor de órgãos e do agente de análise de imagens.
+/// </summary>
+public class RotuloImagem
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ClinicaId { get; set; }
+    public Guid ExameId { get; set; }
+    public int LaudoVersao { get; set; }
+    /// <summary>Nome do arquivo da foto no exame.</summary>
+    public string Foto { get; set; } = "";
+    /// <summary>Impressão digital (SHA-1) da foto: identifica a mesma imagem em qualquer exame, mesmo se o arquivo mudar de pasta.</summary>
+    public string HashFoto { get; set; } = "";
+    /// <summary>Órgão que a IA associou à imagem (null se ela não associou a nenhum).</summary>
+    public string? OrgaoIa { get; set; }
+    /// <summary>O que a imagem mostra, segundo o veterinário.</summary>
+    public string OrgaoCorreto { get; set; } = "";
+    /// <summary>confirmacao (o veterinário confirmou) ou correcao (ele mudou).</summary>
+    public string Tipo { get; set; } = "";
+    public Guid UsuarioId { get; set; }
+    public string UsuarioNome { get; set; } = "";
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Texto ditado pelo veterinário para um órgão, já padronizado pela IA. Guarda o relato falado (informal), a descrição que
+/// existia, o texto padronizado e o texto final aceito: pares de treino para um agente que escreve como o médico.
+/// (O áudio em si não é guardado; só o texto.)
+/// </summary>
+public class DitadoOrgao
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ClinicaId { get; set; }
+    public Guid ExameId { get; set; }
+    public int LaudoVersao { get; set; }
+    public string Orgao { get; set; } = "";
+    /// <summary>O que o médico falou (transcrição), com a fala informal.</summary>
+    public string TextoBruto { get; set; } = "";
+    /// <summary>A descrição do órgão antes do ditado.</summary>
+    public string? DescricaoAnterior { get; set; }
+    /// <summary>O texto que a IA devolveu no padrão do laudo.</summary>
+    public string TextoPadronizado { get; set; } = "";
+    /// <summary>O texto que o médico deixou no laudo (pode ter editado o padronizado); null se não aceitou.</summary>
+    public string? TextoFinal { get; set; }
+    public bool Aceito { get; set; }
+    public string Ia { get; set; } = "";
+    public string Modelo { get; set; } = "";
+    public Guid UsuarioId { get; set; }
+    public string UsuarioNome { get; set; } = "";
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 }

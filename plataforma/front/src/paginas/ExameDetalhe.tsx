@@ -3,8 +3,8 @@ import { Link, useParams } from 'react-router';
 import { api } from '../api';
 import { dataBR, nomeSexo, SeloStatus, type StatusExame } from '../exames';
 import { useSessao } from '../sessao';
-import { Aviso, Botao, Campo, Cartao, Selecao } from '../ui';
-import { corSituacao, nomeSituacao, pranchaInicial, Revisao, type ConteudoLaudo } from './Revisao';
+import { Aviso, AvisoIa, Botao, Campo, Cartao, Selecao } from '../ui';
+import { AlertaUrgente, corSituacao, nomeSituacao, pranchaInicial, Revisao, type ConteudoLaudo } from './Revisao';
 import { Compartilhar } from './Compartilhar';
 import { reais } from '../dinheiro';
 
@@ -17,6 +17,9 @@ type Detalhe = {
   urgente: boolean;
   tipo: string | null;
   data: string | null;
+  hora: string | null;
+  clinicaId: string;
+  idAnimal: string | null;
   especieAparelho: string | null;
   idade: string | null;
   peso: string | null;
@@ -31,6 +34,8 @@ type Detalhe = {
   solicitanteCrmv: string | null;
   solicitanteClinica: string | null;
   informacoesAdicionais: string | null;
+  informacoesObrigatorias: boolean;
+  verificacaoOnline: boolean;
   tiposExame: { codigo: string; nome: string }[];
   paciente: { nome: string; especie: string | null; raca: string | null; sexo: string | null; castrado: boolean | null };
   tutor: { nome: string; telefone: string | null; email: string | null } | null;
@@ -116,6 +121,8 @@ export function ExameDetalhe() {
   const [aviso, setAviso] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [fotoAberta, setFotoAberta] = useState<number | null>(null);
+  // galeria só com as imagens do alerta de achado urgente
+  const [galeria, setGaleria] = useState<{ fotos: Arquivo[]; indice: number } | null>(null);
   const [grade, setGrade] = useState(false);
 
   const carregar = async () => {
@@ -164,13 +171,16 @@ export function ExameDetalhe() {
   const sairSemSalvar = (ev: { preventDefault: () => void }) => {
     if (alterado && !confirm('Há alterações não salvas. Sair mesmo assim?')) ev.preventDefault();
   };
+  // fotos que a IA analisou no pré-laudo atual (ícone ✦ nas miniaturas)
+  const analisadas = new Set<string>(d.laudo?.imagensEnviadas ?? []);
   const somenteLeitura = d.status === 'Pronto' || d.status === 'Gerando';
   const mudar = (k: keyof Form) => (ev: { target: { value: string } }) => setF({ ...f, [k]: ev.target.value });
 
-  const faltaParaGerar = [!f.especie && 'espécie', !f.tipoExame && 'tipo de exame'].filter(Boolean) as string[];
+  const faltaParaGerar = [!f.especie && 'espécie', !f.tipoExame && 'tipo de exame',
+    d.informacoesObrigatorias && !f.informacoesAdicionais.trim() && '"Informações adicionais"'].filter(Boolean) as string[];
   const recomendados = [
     !f.sexo && 'sexo', !f.castrado && 'castrado', !f.idade && 'idade', !f.peso && 'peso', !f.raca && 'raça',
-    !f.tutorNome && 'tutor', !f.suspeitaClinica && 'suspeita clínica', !f.solicitanteNome && 'solicitante',
+    !f.tutorNome && 'responsável', !f.suspeitaClinica && 'suspeita clínica', !f.solicitanteNome && 'solicitante',
     !f.jejum && 'jejum',
   ].filter(Boolean) as string[];
 
@@ -247,7 +257,7 @@ export function ExameDetalhe() {
       )}
 
       {d.laudo && d.status === 'Pronto' && (
-        <LaudoAssinado exameId={d.id} laudo={d.laudo} aoMudar={() => carregar()}
+        <LaudoAssinado exameId={d.id} laudo={d.laudo} verificacao={d.verificacaoOnline} aoMudar={() => carregar()}
           compartilhar={<Compartilhar exameId={d.id} paciente={d.paciente.nome} tutor={d.tutor?.nome ?? null}
             telefone={d.tutor?.telefone ?? null} emailTutor={d.tutor?.email ?? null} clinica={clinica?.nome ?? ''} />} />
       )}
@@ -257,9 +267,14 @@ export function ExameDetalhe() {
       {d.laudo && (d.status === 'AguardandoRevisao' ? (
         <Revisao exameId={d.id} conteudoInicial={d.laudo.conteudo} imagensEnviadas={d.laudo.imagensEnviadas}
           fotos={d.fotos} mascaras={d.mascaras} aoMudar={() => carregar()}
-          aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))} />
+          aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))}
+          aoAbrirGaleria={(lista, indice) => setGaleria({ fotos: lista, indice })}
+          dados={{ clinicaId: d.clinicaId, paciente: d.paciente, tutor: d.tutor?.nome ?? null, idade: d.idade, peso: d.peso, data: d.data, hora: d.hora,
+            solicitanteNome: d.solicitanteNome, solicitanteCrmv: d.solicitanteCrmv, solicitanteClinica: d.solicitanteClinica,
+            suspeitaClinica: d.suspeitaClinica, equipamento: d.equipamento, idAnimal: d.idAnimal }} />
       ) : (
-        <PreLaudo laudo={d.laudo} fotos={d.fotos} aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))} />
+        <PreLaudo laudo={d.laudo} fotos={d.fotos} aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))}
+          aoAbrirGaleria={(lista, indice) => setGaleria({ fotos: lista, indice })} />
       ))}
 
       {/* fotos */}
@@ -269,14 +284,20 @@ export function ExameDetalhe() {
             {grade ? 'Ver em faixa' : 'Ver todas'}
           </button>
         )}>
+        {analisadas.size > 0 && d.fotos.length > 0 && (
+          <p className="mb-2 text-xs text-slate-500">
+            <span className="mr-1 inline-flex size-4 items-center justify-center rounded-full bg-[#0E4D64] text-[10px] text-white">✦</span>
+            analisada pela IA ({d.fotos.filter((f) => analisadas.has(f.nome)).length} de {d.fotos.length})
+          </p>
+        )}
         {d.fotos.length === 0 ? <p className="text-slate-500">Nenhuma foto.</p> : grade ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-            {d.fotos.map((foto, i) => <Miniatura key={foto.nome} foto={foto} onClick={() => setFotoAberta(i)} />)}
+            {d.fotos.map((foto, i) => <Miniatura key={foto.nome} foto={foto} analisada={analisadas.has(foto.nome)} onClick={() => setFotoAberta(i)} />)}
           </div>
         ) : (
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {d.fotos.map((foto, i) => (
-              <div key={foto.nome} className="w-32 shrink-0 sm:w-40"><Miniatura foto={foto} onClick={() => setFotoAberta(i)} /></div>
+              <div key={foto.nome} className="w-32 shrink-0 sm:w-40"><Miniatura foto={foto} analisada={analisadas.has(foto.nome)} onClick={() => setFotoAberta(i)} /></div>
             ))}
           </div>
         )}
@@ -308,18 +329,18 @@ export function ExameDetalhe() {
       </Cartao>
 
       {/* campo livre para a IA */}
-      <Cartao titulo="Informações adicionais">
+      <Cartao titulo={d.informacoesObrigatorias ? "Informações adicionais (obrigatório)" : "Informações adicionais"}>
         <textarea
           value={f.informacoesAdicionais}
           onChange={mudar('informacoesAdicionais')}
           disabled={somenteLeitura}
           rows={5}
           maxLength={8000}
-          placeholder="Escreva ou dite o que souber: suspeita, histórico, o que o tutor relatou, se estava em jejum, observações do exame…"
+          placeholder="Escreva ou dite o que souber: suspeita, histórico, o que o responsável relatou, se estava em jejum, observações do exame…"
           className="w-full rounded-lg border border-slate-300 p-3 text-base outline-none focus:border-[#0E4D64] focus:ring-2 focus:ring-[#0E4D64]/20 disabled:bg-slate-100"
         />
         <p className="mt-1 text-xs text-slate-500">
-          Opcional. A IA organiza essas informações nos campos e as considera na análise das imagens.
+          {d.informacoesObrigatorias ? "Obrigatório nesta clínica para gerar o pré-laudo. " : "Opcional. "}A IA organiza essas informações nos campos e as considera na análise das imagens.
           No celular, use o microfone 🎤 do teclado para ditar.
         </p>
       </Cartao>
@@ -417,6 +438,9 @@ export function ExameDetalhe() {
         </div>
       )}
 
+      {galeria && (
+        <Visualizador fotos={galeria.fotos} indice={galeria.indice} aoMudar={(i) => setGaleria({ ...galeria, indice: i })} aoFechar={() => setGaleria(null)} />
+      )}
       {fotoAberta !== null && (
         <Visualizador fotos={d.fotos} indice={fotoAberta} aoMudar={setFotoAberta} aoFechar={() => setFotoAberta(null)} />
       )}
@@ -427,8 +451,8 @@ export function ExameDetalhe() {
 const nomeIa: Record<string, string> = { claude: 'Claude', gemini: 'Gemini', simulado: 'IA simulada', retificacao: 'retificação' };
 
 /** Laudo assinado: quem assinou, código de verificação, PDF e retificação. */
-function LaudoAssinado({ exameId, laudo, aoMudar, compartilhar }: {
-  exameId: string; laudo: Laudo; aoMudar: () => Promise<void>; compartilhar: ReactNode;
+function LaudoAssinado({ exameId, laudo, verificacao, aoMudar, compartilhar }: {
+  exameId: string; laudo: Laudo; verificacao: boolean; aoMudar: () => Promise<void>; compartilhar: ReactNode;
 }) {
   const { clinica } = useSessao();
   const [erro, setErro] = useState('');
@@ -452,10 +476,10 @@ function LaudoAssinado({ exameId, laudo, aoMudar, compartilhar }: {
           Assinado por <b>{laudo.assinadoPorNome}</b> ({laudo.assinadoCrmv}) em{' '}
           {laudo.assinadoEm && new Date(laudo.assinadoEm).toLocaleString('pt-BR')} · versão {laudo.versao}
         </p>
-        <p className="text-sm">
+        {verificacao && <p className="text-sm">
           Código de verificação: <span className="font-mono font-semibold">{laudo.codigoVerificacao}</span>{' '}
           <a className="text-[#0E4D64] underline" href={`/verificar/${laudo.codigoVerificacao}`} target="_blank" rel="noreferrer">verificar</a>
-        </p>
+        </p>}
         <div className="flex flex-wrap gap-2">
           <a href={`/api/exames/${exameId}/laudo.pdf`} target="_blank" rel="noreferrer"
             className="inline-flex min-h-11 items-center rounded-lg bg-[#0E4D64] px-4 font-medium text-white hover:bg-[#0B3D50]">
@@ -470,7 +494,7 @@ function LaudoAssinado({ exameId, laudo, aoMudar, compartilhar }: {
 }
 
 /** Pré-laudo / laudo em modo leitura. */
-function PreLaudo({ laudo, fotos, aoAbrirFoto }: { laudo: Laudo; fotos: Arquivo[]; aoAbrirFoto: (nome: string) => void }) {
+function PreLaudo({ laudo, fotos, aoAbrirFoto, aoAbrirGaleria }: { laudo: Laudo; fotos: Arquivo[]; aoAbrirFoto: (nome: string) => void; aoAbrirGaleria: (lista: Arquivo[], indice: number) => void }) {
   const c = laudo.conteudo;
   const prancha = pranchaInicial(c, laudo.imagensEnviadas)
     .map((nome) => fotos.find((f) => f.nome === nome))
@@ -479,6 +503,7 @@ function PreLaudo({ laudo, fotos, aoAbrirFoto }: { laudo: Laudo; fotos: Arquivo[
   return (
     <Cartao titulo="Pré-laudo">
       <div className="space-y-4">
+        <AvisoIa />
         <p className="text-xs text-slate-500">
           Gerado por {nomeIa[laudo.ia] ?? laudo.ia} ({laudo.modelo}) em {new Date(laudo.geradoEm).toLocaleString('pt-BR')}
           {laudo.duracaoMs > 0 && ` · ${(laudo.duracaoMs / 1000).toFixed(0)} s`} · versão {laudo.versao}
@@ -488,9 +513,7 @@ function PreLaudo({ laudo, fotos, aoAbrirFoto }: { laudo: Laudo; fotos: Arquivo[
           Rascunho: precisa da revisão e assinatura do veterinário.
         </p>
 
-        {c.achadoUrgente && (
-          <Aviso><b>⚠ Achado que pede atenção imediata:</b> {c.motivoUrgencia}</Aviso>
-        )}
+        <AlertaUrgente conteudo={c} imagensEnviadas={laudo.imagensEnviadas} fotos={fotos} aoAbrirGaleria={aoAbrirGaleria} />
 
         {c.condicoesTecnicas && (
           <div>
@@ -517,7 +540,7 @@ function PreLaudo({ laudo, fotos, aoAbrirFoto }: { laudo: Laudo; fotos: Arquivo[
           <h3 className="text-sm font-semibold text-slate-700">Impressão diagnóstica</h3>
           <p className="text-sm">{c.impressaoDiagnostica}</p>
         </div>
-        {c.diferenciais?.length > 0 && (
+        {c.diferenciais?.length > 0 && c.exibirDiferenciais !== false && (
           <div>
             <h3 className="text-sm font-semibold text-slate-700">Diagnósticos diferenciais</h3>
             <ul className="list-disc pl-5 text-sm">{c.diferenciais.map((x) => <li key={x}>{x}</li>)}</ul>
@@ -552,10 +575,16 @@ function SeloReferencia({ situacao }: { situacao: 'dentro' | 'acima' | 'abaixo' 
   return <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${s[0]}`}>{s[1]}</span>;
 }
 
-function Miniatura({ foto, onClick }: { foto: Arquivo; onClick: () => void }) {
+function Miniatura({ foto, onClick, analisada }: { foto: Arquivo; onClick: () => void; analisada?: boolean }) {
   return (
-    <button onClick={onClick} className="block w-full overflow-hidden rounded-lg bg-black">
+    <button onClick={onClick} className="relative block w-full overflow-hidden rounded-lg bg-black">
       <img src={foto.url} alt={foto.nome} loading="lazy" className="aspect-[4/3] w-full object-contain" />
+      {analisada && (
+        <span title="Imagem analisada pela IA" aria-label="Imagem analisada pela IA"
+          className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-[#0E4D64] text-xs text-white shadow ring-2 ring-white">
+          ✦
+        </span>
+      )}
     </button>
   );
 }
@@ -595,7 +624,7 @@ function FormularioDados({ f, d, mudar }: {
         </div>
       </Grupo>
 
-      <Grupo titulo="Tutor">
+      <Grupo titulo="Responsável">
         <Campo rotulo="Nome" value={f.tutorNome} onChange={mudar('tutorNome')} />
         <Campo rotulo="Telefone (WhatsApp)" type="tel" value={f.tutorTelefone} onChange={mudar('tutorTelefone')} />
         <Campo rotulo="E-mail" type="email" value={f.tutorEmail} onChange={mudar('tutorEmail')} />
@@ -628,7 +657,7 @@ function Resumo({ f, d }: { f: Form; d: Detalhe }) {
   const itens: [string, string][] = [
     ['Espécie', f.especie], ['Raça', f.raca], ['Sexo', f.sexo ? nomeSexo[f.sexo] ?? f.sexo : ''],
     ['Castrado', f.castrado === 'sim' ? 'Sim' : f.castrado === 'nao' ? 'Não' : ''], ['Idade', f.idade], ['Peso', f.peso],
-    ['Tutor', [f.tutorNome, f.tutorTelefone].filter(Boolean).join(' · ')], ['Exame', tipo ?? ''],
+    ['Responsável', [f.tutorNome, f.tutorTelefone].filter(Boolean).join(' · ')], ['Exame', tipo ?? ''],
     ['Suspeita clínica', f.suspeitaClinica], ['Jejum', f.jejum === 'sim' ? 'Sim' : f.jejum === 'nao' ? 'Não' : ''],
     ['Solicitante', [f.solicitanteNome, f.solicitanteCrmv].filter(Boolean).join(' · ')],
     ['Equipamento', d.equipamento ?? ''], ['Operador', d.operador ?? ''],

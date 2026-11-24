@@ -104,3 +104,17 @@ export function Segredo({ rotulo, valor }: { rotulo: string; valor: string }) {
     </div>
   );
 }
+
+/** Alerta fixo nas telas de pré-laudo e revisão: o texto é sugestão da IA e precisa ser conferido pelo veterinário. */
+export function AvisoIa() {
+  return (
+    <div role="alert" className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+      <span aria-hidden className="text-lg leading-none">⚠</span>
+      <div>
+        <b>Estas informações são sugestões geradas por inteligência artificial.</b> Confira todos os dados —
+        achados, medidas, impressão diagnóstica e recomendações — com as imagens e com o exame antes de aprovar e assinar.
+        A responsabilidade pelo laudo é do médico-veterinário.
+      </div>
+    </div>
+  );
+}

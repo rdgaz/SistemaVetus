@@ -33,12 +33,12 @@ class Mapa {
     const d = this.dono.get(rel);
     return d !== undefined && d !== sop;
   }
-  registrar(sop, tipo, arquivos, pastaExame) {
+  registrar(sop, tipo, arquivos, pastaExame, extra = {}) {
     // remove arquivos que este objeto gerou antes e não gera mais (ex.: vídeo com menos quadros)
     for (const a of (this.porSop[sop] || {}).arquivos || []) {
       if (!arquivos.includes(a)) { fs.rmSync(path.join(pastaExame, a), { force: true }); this.dono.delete(a); }
     }
-    this.porSop[sop] = { tipo, arquivos };
+    this.porSop[sop] = { tipo, arquivos, ...extra };
     for (const a of arquivos) this.dono.set(a, sop);
   }
 }
@@ -72,7 +72,9 @@ function gerarFotos(ds, el, pastaExame, formato, mapa, r) {
     if (fs.existsSync(f)) r.substituidas++; else r.novas++;
     fs.writeFileSync(f, toBuffer(frames[i]));
   });
-  mapa.registrar(sop, 'foto', arquivos.map((n) => `${FOTOS}/${n}`), pastaExame);
+  // descrição da imagem digitada/gerada no aparelho (quando houver): a plataforma dá preferência a estas fotos
+  const descricao = [el.ImageComments, el.SeriesDescription].map((x) => str(x).trim()).find((x) => x && x !== str(el.StudyDescription).trim());
+  mapa.registrar(sop, 'foto', arquivos.map((n) => `${FOTOS}/${n}`), pastaExame, descricao ? { descricao } : {});
   return { fotos: frames.length };
 }
 

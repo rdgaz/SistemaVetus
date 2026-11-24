@@ -36,7 +36,7 @@ public static class ExameEndpoints
 
         if (r.TipoExame is not null && r.TipoExame != "" && !TiposExame.Valido(r.TipoExame)) return "Tipo de exame inválido.";
         if (r.Paciente?.Sexo is { Length: > 0 } sx && sx.ToUpperInvariant() is not ("M" or "F" or "O")) return "Sexo inválido (M, F ou O).";
-        if (r.Tutor?.Email is { Length: > 0 } em && !em.Contains('@')) return "E-mail do tutor inválido.";
+        if (r.Tutor?.Email is { Length: > 0 } em && !em.Contains('@')) return "E-mail do responsável inválido.";
 
         if (r.Paciente is { } p)
         {
@@ -147,6 +147,8 @@ public static class ExameEndpoints
                 e.FotosPendrive, pendrive = e.PastaPendrive is not null,
                 e.TipoExame, e.SuspeitaClinica, e.Historico, e.Jejum, e.SolicitanteNome, e.SolicitanteCrmv,
                 e.SolicitanteClinica, e.InformacoesAdicionais, e.ErroGeracao, laudo,
+                informacoesObrigatorias = http.VinculoAtual().Clinica.InformacoesObrigatorias,
+                verificacaoOnline = http.VinculoAtual().Clinica.VerificacaoOnline,
                 iaAtiva = ia.Ativa,
                 mascaras = ModeloLaudo.Normalidade,
                 clinicaId = e.ClinicaId,
@@ -164,7 +166,7 @@ public static class ExameEndpoints
             });
         }).ExigirClinica();
 
-        // Salva os dados do exame, do paciente e do tutor (tela do exame). Qualquer perfil da clínica pode preencher.
+        // Salva os dados do exame, do paciente e do responsável (tela do exame). Qualquer perfil da clínica pode preencher.
         g.MapPut("/{id:guid}", async (Guid id, SalvarExameReq r, HttpContext http, VetusDb db) =>
         {
             var e = await CarregarParaEditar(id, http, db);
@@ -191,6 +193,8 @@ public static class ExameEndpoints
             if (string.IsNullOrWhiteSpace(e.Paciente.Especie)) faltando.Add("espécie");
             if (!TiposExame.Valido(e.TipoExame)) faltando.Add("tipo de exame");
             if (faltando.Count > 0) return Erros.Invalido($"Para gerar o pré-laudo, informe: {string.Join(" e ", faltando)}.");
+            if (http.VinculoAtual().Clinica.InformacoesObrigatorias && string.IsNullOrWhiteSpace(e.InformacoesAdicionais))
+                return Erros.Invalido("Preencha o campo \"Informações adicionais\" (obrigatório nesta clínica) para gerar o pré-laudo.");
 
             // gerar de novo: atualiza só com o que mudou (sem reenviar as fotos), salvo pedido de análise completa
             e.GerarCompleto = r?.Completa == true;
