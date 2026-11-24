@@ -120,14 +120,18 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                         var moldura = lay.EstiloTitulos == "caixa" ? caixa.Border(0.75f).BorderColor(lay.CorBorda) : caixa;
                         moldura.Column(ic =>
                         {
-                            if (lay.TituloIdentificacao is { } tituloId)
+                            var tituloId = lay.TituloIdentificacao ?? (lay.EstiloTitulos == "faixa" ? "Dados" : null);
+                            if (tituloId is not null)
                             {
                                 if (lay.EstiloTitulos == "caixa")
                                     ic.Item().BorderBottom(0.75f).BorderColor(lay.CorBorda).PaddingVertical(8).PaddingHorizontal(6).Text(tituloId).FontSize(12).Bold().FontColor(cor);
+                                else if (lay.EstiloTitulos == "faixa")
+                                    ic.Item().Background(lay.CorFundoTitulos).PaddingVertical(4).PaddingHorizontal(8).Text(tituloId).FontSize(11).Bold().FontColor("#1B1B1B");
                                 else
                                     ic.Item().PaddingBottom(2).Text(tituloId).FontSize(11).Bold().FontColor(cor);
                             }
-                            ic.Item().Background(lay.CorFundoIdentificacao).Padding(8).Table(tab =>
+                            var fundoId = lay.EstiloTitulos == "faixa" && lay.CorFundoIdentificacao == "#F1F4F8" ? "#00000000" : lay.CorFundoIdentificacao;
+                            ic.Item().Background(fundoId).Padding(lay.EstiloTitulos == "faixa" ? 4 : 8).Table(tab =>
                             {
                                 tab.ColumnsDefinition(cd => { for (var i = 0; i < lay.ColunasIdentificacao; i++) cd.RelativeColumn(); });
                                 foreach (var (rotulo, valor, _) in campos)
@@ -135,8 +139,8 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                                     {
                                         if (lay.TamanhoFonteIdentificacao > 0) txt.DefaultTextStyle(x => x.FontSize((float)lay.TamanhoFonteIdentificacao));
                                         txt.Span($"{(rotulo == "Data e hora do exame" ? "Data" : rotulo)}: ").SemiBold();
-                                        // estilo caixa (modelo do médico): campo sem valor fica em branco; no simples, um traço
-                                        txt.Span(string.IsNullOrWhiteSpace(valor) ? (lay.EstiloTitulos == "caixa" ? "" : "—") : valor);
+                                        // estilo caixa (modelo do médico) e faixa: campo sem valor fica em branco; no simples, um traço
+                                        txt.Span(string.IsNullOrWhiteSpace(valor) ? (lay.EstiloTitulos is "caixa" or "faixa" ? "" : "—") : valor);
                                     });
                             });
                         });
@@ -149,7 +153,7 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                             if (Texto(c, "condicoesTecnicas") is { } cond) { TituloSecao(col, lay, "Condições técnicas"); col.Item().Text(cond); }
                             break;
                         case "achados":
-                            TituloSecao(col, lay, lay.TextoTituloAchados ?? "Achados");
+                            TituloSecao(col, lay, lay.TextoTituloAchados ?? (lay.EstiloTitulos == "faixa" ? "Relatório Ultrassonográfico" : "Achados"));
                             if (c.TryGetProperty("orgaos", out var orgaos))
                                 foreach (var o in orgaos.EnumerateArray().Where(x => !(Texto(x, "orgao") ?? "").StartsWith("Cavidade abdominal", StringComparison.OrdinalIgnoreCase)))
                                 {
@@ -259,12 +263,14 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
         })).GeneratePdf();
     }
 
-    /// <summary>Título de seção: texto colorido ou, no estilo "caixa", dentro de uma caixa com borda.</summary>
+    /// <summary>Título de seção: texto colorido, faixa com fundo ou, no estilo "caixa", dentro de uma caixa com borda.</summary>
     private static void TituloSecao(ColumnDescriptor col, LayoutLaudo lay, string texto, float tamanho = 11, float espaco = 0)
     {
         var item = col.Item().PaddingTop(espaco);
         if (lay.EstiloTitulos == "caixa")
             item.Border(0.75f).BorderColor(lay.CorBorda).PaddingVertical(8).PaddingHorizontal(6).Text(texto).FontSize(Math.Max(tamanho, 12)).Bold().FontColor(lay.CorPrincipal);
+        else if (lay.EstiloTitulos == "faixa")
+            item.Background(lay.CorFundoTitulos).PaddingVertical(4).PaddingHorizontal(8).Text(texto).FontSize(Math.Max(tamanho, 11)).Bold().FontColor("#1B1B1B");
         else
             item.Text(texto).FontSize(tamanho).Bold().FontColor(lay.CorPrincipal);
     }

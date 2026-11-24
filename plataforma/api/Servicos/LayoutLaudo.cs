@@ -21,9 +21,11 @@ public record LayoutLaudo
     public double TamanhoFonteIdentificacao { get; init; }
     /// <summary>Cor das bordas das caixas (estilo "caixa") e do fundo das linhas.</summary>
     public string CorBorda { get; init; } = "#E5DCDC";
+    /// <summary>Cor de fundo das faixas de títulos (estilo "faixa"). Padrão: #E4DBDB.</summary>
+    public string CorFundoTitulos { get; init; } = "#E4DBDB";
     /// <summary>Margem da página, em cm (0,5 a 2,5).</summary>
     public double MargemCm { get; init; } = 1.4;
-    /// <summary>simples (título colorido) ou caixa (título dentro de uma caixa com borda; a identificação também ganha borda).</summary>
+    /// <summary>simples (título colorido), faixa (título em faixa com fundo colorido) ou caixa (título dentro de uma caixa com borda).</summary>
     public string EstiloTitulos { get; init; } = "simples";
 
     // ---- cabeçalho
@@ -128,9 +130,10 @@ public record LayoutLaudo
             CorFundoIdentificacao = Cor(CorFundoIdentificacao, "#F1F4F8"),
             TamanhoFonte = Math.Clamp(double.IsFinite(TamanhoFonte) ? TamanhoFonte : 9.5, 8, 12),
             CorBorda = Cor(CorBorda, "#E5DCDC"),
+            CorFundoTitulos = Cor(CorFundoTitulos, "#E4DBDB"),
             TamanhoFonteIdentificacao = double.IsFinite(TamanhoFonteIdentificacao) && TamanhoFonteIdentificacao >= 8 ? Math.Min(TamanhoFonteIdentificacao, 14) : 0,
             MargemCm = Math.Clamp(double.IsFinite(MargemCm) ? MargemCm : 1.4, 0.5, 2.5),
-            EstiloTitulos = Opcao(EstiloTitulos, "simples", "simples", "caixa"),
+            EstiloTitulos = Opcao(EstiloTitulos, "simples", "simples", "faixa", "caixa"),
             AlturaLogo = Math.Clamp(AlturaLogo, 30, 260),
             FundoPrancha = Opcao(FundoPrancha, "preto", "preto", "nenhum"),
             TituloIdentificacao = Tx(TituloIdentificacao, 60),

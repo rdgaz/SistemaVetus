@@ -7,6 +7,7 @@ type Item = { id: string; mostrar: boolean };
 type Layout = {
   corPrincipal: string;
   corFundoIdentificacao: string;
+  corFundoTitulos?: string;
   tamanhoFonte: number;
   tamanhoFonteIdentificacao: number;
   corBorda: string;
@@ -188,8 +189,14 @@ export function LayoutLaudo() {
                 <input className={input} value={l.corBorda} maxLength={7} onChange={(e) => mudar({ corBorda: e.target.value })} />
               </div>
             </Linha>
+            <Linha rotulo="Cor do fundo dos títulos (faixas)">
+              <div className="flex items-center gap-2">
+                <input type="color" className="h-11 w-16 cursor-pointer rounded border border-slate-300" value={l.corFundoTitulos || '#E4DBDB'} onChange={(e) => mudar({ corFundoTitulos: e.target.value })} />
+                <input className={input} value={l.corFundoTitulos || '#E4DBDB'} maxLength={7} onChange={(e) => mudar({ corFundoTitulos: e.target.value })} />
+              </div>
+            </Linha>
             <Linha rotulo="Estilo dos títulos">
-              <Opcoes valor={l.estiloTitulos} opcoes={[['simples', 'Texto colorido'], ['caixa', 'Caixa com borda']]} aoMudar={(v) => mudar({ estiloTitulos: v })} />
+              <Opcoes valor={l.estiloTitulos} opcoes={[['simples', 'Texto colorido'], ['faixa', 'Faixa com fundo'], ['caixa', 'Caixa com borda']]} aoMudar={(v) => mudar({ estiloTitulos: v })} />
             </Linha>
             <Linha rotulo={`Margem da página: ${l.margemCm.toLocaleString('pt-BR')} cm`}>
               <input type="range" min={0.5} max={2.5} step={0.1} className="w-full" value={l.margemCm} onChange={(e) => mudar({ margemCm: Number(e.target.value) })} />
