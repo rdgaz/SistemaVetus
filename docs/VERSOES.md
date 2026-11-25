@@ -8,3 +8,4 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.3** — 24/11/2026, 17:27:30 — Prancha sem limite de fotos; sexo sem (castrado/castrada) no laudo
 - **0.10.4** — 24/11/2026, 20:35:07 — Botão para excluir exame (lista e tela do exame)
 - **0.10.5** — 24/11/2026, 22:26:20 — Nome do PDF (Laudo Ultrassonográfico <Paciente>), nota de exame excluído no extrato e exclusão atômica da pasta do pendrive
+- **0.10.6** — 25/11/2026, 00:05:13 — PDF com underlines (laudo_ultrassonografico_<Nome>.pdf), separação de Próstata/Testículos e Útero/Ovários, aprendizado global de imagens entre clínicas com preservação de fotos de treino e melhorias de layout/agilidade na revisão, conta e configurações
