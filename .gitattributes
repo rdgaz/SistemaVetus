@@ -1,4 +1,9 @@
 * text=auto eol=lf
+# scripts do Windows (AutoLaudoVet Desktop): o cmd.exe lê errado goto/rótulos com LF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
+*.ps1 text eol=crlf
 *.jpg binary
 *.dcm binary
 *.pdf binary

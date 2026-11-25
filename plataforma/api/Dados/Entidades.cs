@@ -278,6 +278,12 @@ public class ConfiguracaoCobranca
     public decimal SaldoProvedorBrl { get; set; } = 40m;
     /// <summary>Avisar quando o saldo do provedor ficar abaixo disto.</summary>
     public decimal AlertaSaldoProvedorBrl { get; set; } = 10m;
+    /// <summary>Saldo pré-pago no Google AI (Gemini), em reais: o custo de cada geração do Gemini é descontado daqui.</summary>
+    public decimal SaldoGeminiBrl { get; set; }
+    /// <summary>Saldo pré-pago na Anthropic (Claude), em dólares: o custo de cada geração do Claude é descontado daqui.</summary>
+    public decimal SaldoClaudeUsd { get; set; }
+    /// <summary>Quando os saldos foram conferidos no site dos provedores pela última vez.</summary>
+    public DateTime? SaldosConferidosEm { get; set; }
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 }
 
@@ -303,6 +309,10 @@ public class MovimentoSaldo
     public Guid? ExameId { get; set; }
     public Guid? UsuarioId { get; set; }
     public DateTime Em { get; set; } = DateTime.UtcNow;
+    /// <summary>Nos débitos: o custo real (quanto o dono do sistema pagou ao provedor), para calcular o lucro.</summary>
+    public decimal CustoBrl { get; set; }
+    /// <summary>Nos débitos: a IA usada (gemini, claude...).</summary>
+    public string? Ia { get; set; }
 }
 
 /// <summary>Link público do laudo (para o responsável): abre a última versão assinada do exame, sem login.</summary>

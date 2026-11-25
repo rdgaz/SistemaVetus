@@ -22,7 +22,21 @@ public static class AdminEndpoints
     {
         var g = app.MapGroup("/api/admin").ExigirAdministradorSistema();
 
-        // Discordâncias dos veterinários com alertas da IA (material para melhorar a IA), da mais recente para a mais antiga
+        // Exames de todas as clínicas (os mais recentes), para o administrador do sistema conferir o que vai para a IA
+        g.MapGet("/exames", async (VetusDb db) => Results.Ok(await db.Exames
+            .OrderByDescending(e => e.AtualizadoEm).Take(200)
+            .Select(e => new { e.Id, clinica = e.Clinica.Nome, paciente = e.Paciente.Nome, especie = e.Paciente.Especie, e.Status, e.Data, e.TotalFotos })
+            .ToListAsync()));
+
+        // O prompt que a IA receberia numa análise completa do exame (texto, sem as imagens). Só o administrador do sistema:
+        // é a parte do produto que não deve ficar visível para as clínicas.
+        g.MapGet("/exames/{id:guid}/prompt", async (Guid id, VetusDb db, Vetus.Api.Servicos.Ia.ServicoLaudo laudos, CancellationToken ct) =>
+        {
+            if (!await db.Exames.AnyAsync(x => x.Id == id)) return Erros.NaoEncontrado("Exame não encontrado.");
+            var (sistema, texto, fotos) = await laudos.PreviaPrompt(id, ct);
+            return Results.Ok(new { sistema, texto, fotos, tokensTexto = (sistema.Length + texto.Length) / 4 });
+        });
+
         g.MapGet("/discordancias", async (VetusDb db) => Results.Ok(await db.DiscordanciasAlerta
             .OrderByDescending(d => d.CriadaEm).Take(500).ToListAsync()));
 

@@ -166,6 +166,110 @@ public static class ExameEndpoints
             });
         }).ExigirClinica();
 
+
+        // Excluir o exame por completo (para enviar de novo, por exemplo pelo pendrive): laudos, envios, rótulos, ditados e os
+        // arquivos enviados pelo pendrive. Laudo já assinado: só o administrador da clínica exclui.
+        g.MapDelete("/{id:guid}", async (Guid id, HttpContext http, VetusDb db, Arquivos arq, ILoggerFactory logs) =>
+        {
+            var v = http.VinculoAtual();
+            var e = await db.Exames.Include(x => x.Paciente).FirstOrDefaultAsync(x => x.Id == id && x.ClinicaId == v.ClinicaId);
+            if (e is null) return Erros.NaoEncontrado("Exame não encontrado.");
+            if (e.Status == StatusExame.Gerando) return Erros.Conflito("O pré-laudo está sendo gerado: aguarde terminar para excluir.");
+            if (await db.Laudos.AnyAsync(l => l.ExameId == id && l.AssinadoEm != null) && v.Perfil != Perfil.AdministradorClinica)
+                return Results.Json(new { erro = "Este exame tem laudo assinado: só o administrador da clínica pode excluí-lo." }, statusCode: 403);
+
+            // Antes de separar a pasta do exame, preserva na pasta global "_treino" qualquer foto que já tenha sido rotulada
+            // pelo veterinário, para que o dataset de imagens nunca perca amostras quando um exame for excluído.
+            var rotulosExame = await db.RotulosImagem.Where(x => x.ExameId == id).Select(x => new { x.Foto, x.HashFoto }).ToListAsync();
+            if (rotulosExame.Count > 0)
+            {
+                try
+                {
+                    var dirTreino = Path.Combine(arq.RaizPendrive, "_treino");
+                    Directory.CreateDirectory(dirTreino);
+                    foreach (var rot in rotulosExame)
+                        if (!string.IsNullOrWhiteSpace(rot.HashFoto) && arq.Arquivo(e, Arquivos.Jpg, rot.Foto) is { } origemFoto)
+                        {
+                            var destinoTreino = Path.Combine(dirTreino, $"{rot.HashFoto}.jpg");
+                            if (!File.Exists(destinoTreino)) File.Copy(origemFoto, destinoTreino);
+                        }
+                }
+                catch (Exception x) { logs.CreateLogger("Exames").LogWarning(x, "Exame {Id}: não foi possível copiar fotos rotuladas para _treino", id); }
+            }
+
+            // 1) Arquivos do pendrive: a pasta é separada ANTES de mexer no banco (renomear é atômico). Daqui em diante um novo
+            //    envio do mesmo exame cria uma pasta nova, e nunca se mistura com restos. Se não der para separar, nada é excluído.
+            var log = logs.CreateLogger("Exames");
+            var pastaPendrive = e.PastaPendrive;
+            var dirPendrive = pastaPendrive is null ? null : arq.PastaPendrive(pastaPendrive);
+            string? separada = null;
+            if (dirPendrive is not null && Directory.Exists(dirPendrive))
+            {
+                separada = $"{dirPendrive}.excluido-{Guid.NewGuid():N}";
+                try { Directory.Move(dirPendrive, separada); }
+                catch (Exception x) when (x is IOException or UnauthorizedAccessException)
+                {
+                    log.LogError(x, "Exame {Id}: pasta do pendrive {Pasta} não pôde ser separada; exclusão cancelada", id, pastaPendrive);
+                    return Results.Json(new { erro = "Não foi possível apagar as fotos e os arquivos deste exame. Nada foi excluído: tente de novo." }, statusCode: 500);
+                }
+            }
+
+            // 2) Banco, numa transação só. Se falhar, a pasta volta para o lugar e o exame continua inteiro.
+            try
+            {
+                await using var tx = await db.Database.BeginTransactionAsync();
+                await db.Compartilhamentos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
+                await db.LinksPublicos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
+                // RotulosImagem, DitadosOrgao e DiscordanciasAlerta são preservados mesmo ao excluir o exame,
+                // para que o aprendizado acumulado pela IA nunca seja perdido.
+                await db.Laudos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
+                // o extrato de créditos fica (é dinheiro), sem o vínculo com o exame e com a anotação de que o exame foi excluído
+                // (o pré-laudo já foi cobrado: sem a nota, o lançamento pareceria de um exame que ainda existe)
+                var quem = (await Acesso.UsuarioAtual(http, db))?.Nome;
+                var nota = $" — exame excluído em {DateTime.Now:dd/MM/yyyy HH:mm}{(string.IsNullOrWhiteSpace(quem) ? "" : $" por {quem}")}";
+                foreach (var mov in await db.MovimentosSaldo.Where(x => x.ExameId == id).ToListAsync())
+                {
+                    var basePrincipal = mov.Descricao.Length + nota.Length > 300 ? mov.Descricao[..(300 - nota.Length)] : mov.Descricao;
+                    mov.Descricao = basePrincipal + nota;
+                    mov.ExameId = null;
+                }
+                var pacienteId = e.PacienteId;
+                var tutorId = e.Paciente.TutorId;
+                db.Exames.Remove(e);
+                await db.SaveChangesAsync();
+
+                // paciente e responsável que ficaram sem nenhum exame
+                if (!await db.Exames.AnyAsync(x => x.PacienteId == pacienteId))
+                    await db.Pacientes.Where(p => p.Id == pacienteId).ExecuteDeleteAsync();
+                if (tutorId is { } t && !await db.Pacientes.AnyAsync(p => p.TutorId == t))
+                    await db.Tutores.Where(x => x.Id == t).ExecuteDeleteAsync();
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                if (separada is not null && dirPendrive is not null)
+                {
+                    try { Directory.Move(separada, dirPendrive); }
+                    catch (Exception x) { log.LogError(x, "Exame {Id}: não consegui devolver a pasta {Pasta} ao lugar", id, separada); }
+                }
+                throw;
+            }
+
+            // 3) Apaga de vez a pasta separada (e restos de exclusões anteriores que não terminaram). Se alguma não puder ser
+            //    apagada agora, ela já está fora do caminho do exame (não atrapalha novos envios) e é tentada de novo na próxima exclusão.
+            if (dirPendrive is not null && Path.GetDirectoryName(dirPendrive) is { } pai && Directory.Exists(pai))
+            {
+                foreach (var resto in Directory.EnumerateDirectories(pai, "*.excluido-*"))
+                {
+                    try { Directory.Delete(resto, recursive: true); }
+                    catch (Exception x) when (x is IOException or UnauthorizedAccessException)
+                    {
+                        log.LogWarning("Pasta excluída {Pasta} ainda não foi apagada do disco: {Erro}", resto, x.Message);
+                    }
+                }
+            }
+            return Results.NoContent();
+        }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
         // Salva os dados do exame, do paciente e do responsável (tela do exame). Qualquer perfil da clínica pode preencher.
         g.MapPut("/{id:guid}", async (Guid id, SalvarExameReq r, HttpContext http, VetusDb db) =>
         {

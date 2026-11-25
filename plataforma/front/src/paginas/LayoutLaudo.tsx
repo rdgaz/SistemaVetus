@@ -1,7 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { api, clinicaGuardada } from '../api';
+import { useSessao } from '../sessao';
 import { Aviso, Botao, Cartao, Titulo } from '../ui';
+import { EnvioImagem } from './EnvioImagem';
 
 type Item = { id: string; mostrar: boolean };
 type Layout = {
@@ -9,6 +11,8 @@ type Layout = {
   corFundoIdentificacao: string;
   corFundoTitulos?: string;
   tamanhoFonte: number;
+  justificarTexto: boolean;
+  mostrarRetificacao: boolean;
   tamanhoFonteIdentificacao: number;
   corBorda: string;
   margemCm: number;
@@ -94,18 +98,23 @@ function ListaOrdenavel({ itens, nomes, aoMudar }: { itens: Item[]; nomes: Recor
 
 /** Aparência do PDF do laudo: cores, fonte, campos, ordem das seções, prancha, assinatura e textos. */
 export function LayoutLaudo() {
+  const { clinica } = useSessao();
   const [r, setR] = useState<Resposta | null>(null);
   const [l, setL] = useState<Layout | null>(null);
+  const [inicial, setInicial] = useState('');
   const [erro, setErro] = useState('');
   const [ok, setOk] = useState('');
   const [ocupado, setOcupado] = useState(false);
 
   useEffect(() => {
-    api<Resposta>('GET', '/api/clinica/layout').then((x) => { setR(x); setL(x.layout); }).catch((e) => setErro(e.message));
+    api<Resposta>('GET', '/api/clinica/layout')
+      .then((x) => { setR(x); setL(x.layout); setInicial(JSON.stringify(x.layout)); })
+      .catch((e) => setErro(e.message));
   }, []);
 
   if (!r || !l) return <><Titulo>Aparência do laudo</Titulo>{erro ? <Aviso>{erro}</Aviso> : <p className="text-slate-500">Carregando…</p>}</>;
 
+  const alterado = JSON.stringify(l) !== inicial;
   const mudar = (p: Partial<Layout>) => { setL({ ...l, ...p }); setOk(''); };
   const texto = (k: keyof Layout) => (e: { target: { value: string } }) => mudar({ [k]: e.target.value || null } as Partial<Layout>);
 
@@ -136,7 +145,7 @@ export function LayoutLaudo() {
     setErro(''); setOk(''); setOcupado(true);
     try {
       const x = await api<{ layout: Layout }>('PUT', '/api/clinica/layout', l);
-      setL(x.layout); setR({ ...r, layout: x.layout, personalizado: true });
+      setL(x.layout); setInicial(JSON.stringify(x.layout)); setR({ ...r, layout: x.layout, personalizado: true });
       setOk('Aparência salva. Vale para todos os laudos da clínica (PDF, e-mail e link).');
     } catch (x) { setErro((x as Error).message); } finally { setOcupado(false); }
   };
@@ -146,22 +155,28 @@ export function LayoutLaudo() {
     setErro(''); setOk(''); setOcupado(true);
     try {
       await api('DELETE', '/api/clinica/layout');
-      setL(r.padrao); setR({ ...r, layout: r.padrao, personalizado: false });
+      setL(r.padrao); setInicial(JSON.stringify(r.padrao)); setR({ ...r, layout: r.padrao, personalizado: false });
       setOk('Layout padrão restaurado.');
     } catch (x) { setErro((x as Error).message); } finally { setOcupado(false); }
   };
 
   return (
     <>
-      <Titulo>Aparência do laudo</Titulo>
+      <Link to="/clinica" className="text-sm text-[#0E4D64] underline">← Clínica</Link>
+      <div className="mt-1"><Titulo>Aparência do laudo</Titulo></div>
       <p className="mb-4 text-sm text-slate-600">
-        Personalize o PDF dos laudos da clínica. Use <b>Ver prévia</b> para conferir com um laudo de exemplo antes de salvar.
-        O logo e a assinatura são configurados em <Link className="underline" to="/clinica">Clínica</Link> e em <Link className="underline" to="/conta">Minha conta</Link>.
+        Personalize o PDF dos laudos da clínica. Use <b>Ver prévia (PDF)</b> na barra inferior para conferir com um laudo de exemplo antes de salvar.
       </p>
       {erro && <Aviso>{erro}</Aviso>}
       {ok && <Aviso tipo="ok">{ok}</Aviso>}
 
       <div className="space-y-4">
+        {clinica && (
+          <EnvioImagem titulo="Logo (cabeçalho do laudo)" alt="Logo da clínica"
+            urlVer={`/api/clinicas/${clinica.id}/logo`} urlEnviar="/api/clinica/logo" urlUso="/api/clinica/logo/uso" comPosicao
+            explicacao="Imagem e posição (esquerda, centro ou direita) no cabeçalho do PDF. O tamanho do logo é ajustado no cartão Cabeçalho abaixo." />
+        )}
+
         <Cartao titulo="Cores e texto">
           <div className="grid gap-4 sm:grid-cols-2">
             <Linha rotulo="Cor principal (títulos e linhas)">
@@ -283,6 +298,8 @@ export function LayoutLaudo() {
             <Linha rotulo="Texto fixo no rodapé (ex.: endereço ou site)">
               <input className={input} maxLength={200} value={l.textoRodape ?? ''} onChange={texto('textoRodape')} />
             </Linha>
+            <Interruptor rotulo="Justificar os textos do laudo (alinhados nas duas margens)" valor={l.justificarTexto} aoMudar={(v) => mudar({ justificarTexto: v })} />
+            <Interruptor rotulo={'Mostrar no PDF a mensagem "Retificação do laudo anterior. Motivo: …" quando o laudo for retificado'} valor={l.mostrarRetificacao} aoMudar={(v) => mudar({ mostrarRetificacao: v })} />
             <Interruptor rotulo={'Mostrar "Emitido com AutoLaudoVet" no rodapé'} valor={l.mostrarCreditoProduto} aoMudar={(v) => mudar({ mostrarCreditoProduto: v })} />
             <Linha rotulo="Aviso ao final do laudo (vazio = aviso padrão)">
               <textarea rows={4} maxLength={800} className="w-full rounded-lg border border-slate-300 p-3 outline-none focus:border-[#0E4D64]"
@@ -291,9 +308,10 @@ export function LayoutLaudo() {
           </div>
         </Cartao>
 
-        <div className="sticky bottom-0 -mx-4 flex flex-wrap gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
-          <Botao disabled={ocupado} onClick={salvar}>Salvar</Botao>
+        <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
+          <Botao disabled={ocupado || !alterado} onClick={salvar}>Salvar aparência</Botao>
           <Botao variante="secundario" disabled={ocupado} onClick={previa}>Ver prévia (PDF)</Botao>
+          {alterado && <span className="text-sm font-medium text-amber-800">● Alterações não salvas</span>}
           {r.personalizado && <Botao variante="perigo" disabled={ocupado} onClick={restaurar} className="ml-auto">Voltar ao padrão</Botao>}
         </div>
       </div>

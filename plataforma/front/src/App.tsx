@@ -15,6 +15,7 @@ import { LayoutLaudo } from './paginas/LayoutLaudo';
 import { MinhaConta } from './paginas/MinhaConta';
 import { AdminClinicas } from './paginas/AdminClinicas';
 import { AdminCobranca } from './paginas/AdminCobranca';
+import { AdminIa } from './paginas/AdminIa';
 import { AdminReferencias } from './paginas/AdminReferencias';
 import { Verificar } from './paginas/Verificar';
 import { LaudoPublico } from './paginas/LaudoPublico';
@@ -65,6 +66,7 @@ function AppComLogin() {
           path="admin/cobranca"
           element={usuario.administradorSistema ? <AdminCobranca /> : <Navigate to="/" replace />}
         />
+        <Route path="admin/ia" element={usuario.administradorSistema ? <AdminIa /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
@@ -89,6 +91,7 @@ function Layout() {
     { para: '/admin/clinicas', texto: 'Clínicas (sistema)', mostrar: usuario!.administradorSistema },
     { para: '/admin/cobranca', texto: 'Cobrança (sistema)', mostrar: usuario!.administradorSistema },
     { para: '/admin/referencias', texto: 'Referências (sistema)', mostrar: usuario!.administradorSistema },
+    { para: '/admin/ia', texto: 'IA (sistema)', mostrar: usuario!.administradorSistema },
     { para: '/conta', texto: 'Minha conta', mostrar: true },
     { para: '/ajuda', texto: 'Ajuda', mostrar: !!clinica }, // ajuda: só para quem acessa uma clínica
   ].filter((i) => i.mostrar);

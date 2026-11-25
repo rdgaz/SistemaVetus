@@ -128,6 +128,19 @@ builder.Services.AddRateLimiter(o =>
 var app = builder.Build();
 await Inicializacao.Executar(app);
 
+// "dotnet Vetus.Api.dll --ver-prompt <id do exame> <arquivo.txt>": grava o prompt que a IA receberia (sem chamar a IA)
+if (args.Length >= 3 && args[0] == "--ver-prompt")
+{
+    using var escopo = app.Services.CreateScope();
+    var (sistema, texto, fotos) = await escopo.ServiceProvider.GetRequiredService<ServicoLaudo>().PreviaPrompt(Guid.Parse(args[1]));
+    await File.WriteAllTextAsync(args[2],
+        "==================== INSTRUÇÕES (SISTEMA) ====================\n\n" + sistema +
+        "\n\n==================== DADOS DO EXAME (MENSAGEM) ====================\n\n" + texto +
+        "\n\n==================== FOTOS ENVIADAS (as imagens vão junto, uma a uma) ====================\n\n" + string.Join('\n', fotos) + "\n");
+    Console.WriteLine($"Prompt gravado em {args[2]} (~{(sistema.Length + texto.Length) / 4} tokens de texto, {fotos.Count} fotos).");
+    return 0;
+}
+
 // "dotnet Vetus.Api.dll --redefinir-senha <email>": redefine a senha de um usuário pelo servidor
 // (ex.: administrador esqueceu a senha). A senha nova é lida da entrada padrão, não da linha de comando.
 if (args.Length >= 2 && args[0] == "--redefinir-senha")

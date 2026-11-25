@@ -105,26 +105,26 @@
    ]
   },
   {
-   "nome": "Reprodutor macho",
+   "nome": "Próstata",
    "entradas": [
     {
      "titulo": "Normal cachorro",
-     "descricao": "Próstata: contornos definidos, margens regulares, ecogenicidade mantida, ecotextura homogênea e dimensões preservadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura).\nTestículos: simétricos (esq.: 0 cm; dir.: 0 cm), contornos regulares, linhas mediastinais bem definidas, ecogenicidade preservada e ecotextura homogênea.",
+     "descricao": "Próstata: contornos definidos, margens regulares, ecogenicidade mantida, ecotextura homogênea e dimensões preservadas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura).",
      "impressoes": []
     },
     {
      "titulo": "Normal gato",
-     "descricao": "Próstata: não caracterizada (localização intrapélvica).\nTestículos: simétricos (esq.: 0 cm; dir.: 0 cm), contornos regulares, linhas mediastinais bem definidas, ecogenicidade preservada e ecotextura homogênea.",
+     "descricao": "Próstata: não caracterizada (localização intrapélvica).",
      "impressoes": []
     },
     {
      "titulo": "Padrão castrado (cachorro)",
-     "descricao": "Próstata: contornos regulares, difusamente hipoecogênica, ecotextura homogênea e dimensões reduzidas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura).\nTestículos: não caracterizados, compatível com orquiectomia prévia.",
+     "descricao": "Próstata: contornos regulares, difusamente hipoecogênica, ecotextura homogênea e dimensões reduzidas, medindo 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura).",
      "impressoes": []
     },
     {
      "titulo": "Padrão castrado (gato)",
-     "descricao": "Próstata: não caracterizada (localização intrapélvica).\nTestículos: não identificados, compatível com orquiectomia prévia.",
+     "descricao": "Próstata: não caracterizada (localização intrapélvica).",
      "impressoes": []
     },
     {
@@ -140,42 +140,6 @@
      "impressoes": [
       "Hiperplasia prostática associada à presença de cistos."
      ]
-    },
-    {
-     "titulo": "Testículo ectópico em região pré-escrotal",
-     "descricao": "Nota-se ectopia do testículo esquerdo/direito, posicionado em região pré-escrotal.",
-     "impressoes": []
-    },
-    {
-     "titulo": "Testículo ectópico em região inguinal",
-     "descricao": "Testículo direito/esquerdo: localizado em região inguinal direita/esquerda, no tecido subcutâneo, medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares, ecotextura homogênea, ecogenicidade preservada e linha mediastinal central mantida.",
-     "impressoes": [
-      "Imagens sonográficas compatíveis com testículo direito/esquerdo ectópico (criptorquidismo inguinal)."
-     ]
-    },
-    {
-     "titulo": "Testículo ectópico normal em abdomen",
-     "descricao": "Testículo: presença de estrutura em cavidade abdominal - subcutânea, dorsal a vesícula urinária, ovalada, de superfície regular, hipoecogênica homogênea, com linha central hiperecogênica (linha mediastinal).\nTestículo direito/esquerdo: localizado em cavidade abdominal, adjacente ao anel inguinal interno direito/esquerdo), medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares, ecotextura homogênea, ecogenicidade preservada e linha mediastinal central mantida.\n*Testículo ectópico em abdômen + degeneração / neoplasia\nTestículo direito/esquerdo: localizado em cavidade abdominal, adjacente ao anel inguinal interno direito/esquerdo), medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares/irregulares, ecogenicidade difusamente reduzida/aumentada e ecotextura heterogênea devido à presença de inúmeras/pelo menos/x áreas/focos hiperecogênicos/hipoecogênicos distribuídos pelo parênquima.",
-     "impressoes": [
-      "Testículo direito/esquerdo ectópico com alterações ultrassonográficas compatíveis com degeneração testicular / neoplasia."
-     ]
-    },
-    {
-     "titulo": "Nódulo em um testiculo",
-     "descricao": "Testículo - de contornos definidos e margens regulares, dimensões levemente aumentadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo cm x cm de diâmetro, compatível com neoplasia.\nTestículo - de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea.",
-     "impressoes": [
-      "Neoplasia em testículo"
-     ]
-    },
-    {
-     "titulo": "Neoplasia nos dois testículos",
-     "descricao": "Testículo esquerdo de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo 0, cm x 0, cm.\nTestículo direito de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo 0, cm x 0, cm.",
-     "impressoes": []
-    },
-    {
-     "titulo": "Neoplasia",
-     "descricao": "",
-     "impressoes": []
     },
     {
      "titulo": "Litiase em trajeto de uretra prostática",
@@ -215,41 +179,87 @@
    ]
   },
   {
-   "nome": "Reprodutor fêmea",
+   "nome": "Testículos",
    "entradas": [
     {
      "titulo": "Normal",
-     "descricao": "Útero e ovários: dimensões preservadas em corpo de útero (cm) e cornos uterinos (dir.: e esq.:), hipoecogênicos, sem evidências de conteúdo anecogênico (líquido) luminal. Ovários direito e esquerdo normais, hipoecogênicos, medindo respectivamente, cm e cm.\n*Aparelho reprodutor: corpo uterino com dimensões preservadas, medindo 0,00 cm de diâmetro, hipoecogênico e sem evidências de conteúdo luminal. Ovários direito e esquerdo hipoecogênicos, de aspecto ultrassonográfico habitual, medindo 0,0 cm e 0,0 cm, respectivamente.",
+     "descricao": "Testículos: simétricos (esq.: 0 cm; dir.: 0 cm), contornos regulares, linhas mediastinais bem definidas, ecogenicidade preservada e ecotextura homogênea.",
      "impressoes": []
     },
     {
-     "titulo": "Útero e ovário não caracterizados",
-     "descricao": "Aparelho Reprodutor: imagens sem alterações em topografia de coto uterino e pedículos ovarianos.",
+     "titulo": "Padrão castrado (cachorro)",
+     "descricao": "Testículos: não caracterizados, compatível com orquiectomia prévia.",
      "impressoes": []
     },
     {
-     "titulo": "Não caracterizado mas saudável",
-     "descricao": "Aparelho Reprodutor: região topográfica de útero e ovários sem evidências de alterações estruturais, aumentos volumétricos ou conteúdo luminal anômalo. Órgãos não delimitados individualmente devido às dimensões reduzidas fisiológicas, achado compatível com anestro.",
+     "titulo": "Padrão castrado (gato)",
+     "descricao": "Testículos: não identificados, compatível com orquiectomia prévia.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Testículo ectópico em região pré-escrotal",
+     "descricao": "Nota-se ectopia do testículo esquerdo/direito, posicionado em região pré-escrotal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Testículo ectópico em região inguinal",
+     "descricao": "Testículo direito/esquerdo: localizado em região inguinal direita/esquerda, no tecido subcutâneo, medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares, ecotextura homogênea, ecogenicidade preservada e linha mediastinal central mantida.",
+     "impressoes": [
+      "Imagens sonográficas compatíveis com testículo direito/esquerdo ectópico (criptorquidismo inguinal)."
+     ]
+    },
+    {
+     "titulo": "Testículo ectópico normal em abdomen",
+     "descricao": "Testículo: presença de estrutura em cavidade abdominal - subcutânea, dorsal a vesícula urinária, ovalada, de superfície regular, hipoecogênica homogênea, com linha central hiperecogênica (linha mediastinal).\nTestículo direito/esquerdo: localizado em cavidade abdominal, adjacente ao anel inguinal interno direito/esquerdo), medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares, ecotextura homogênea, ecogenicidade preservada e linha mediastinal central mantida.\n*Testículo ectópico em abdômen + degeneração / neoplasia\nTestículo direito/esquerdo: localizado em cavidade abdominal, adjacente ao anel inguinal interno direito/esquerdo), medindo aproximadamente 0,0 x 0,0 x 0,0 cm (comprimento x altura x largura). Formato ovalado, contornos definidos, margens regulares/irregulares, ecogenicidade difusamente reduzida/aumentada e ecotextura heterogênea devido à presença de inúmeras/pelo menos/x áreas/focos hiperecogênicos/hipoecogênicos distribuídos pelo parênquima.",
+     "impressoes": [
+      "Testículo direito/esquerdo ectópico com alterações ultrassonográficas compatíveis com degeneração testicular / neoplasia."
+     ]
+    },
+    {
+     "titulo": "Nódulo em um testiculo",
+     "descricao": "Testículo - de contornos definidos e margens regulares, dimensões levemente aumentadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo cm x cm de diâmetro, compatível com neoplasia.\nTestículo - de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea.",
+     "impressoes": [
+      "Neoplasia em testículo"
+     ]
+    },
+    {
+     "titulo": "Neoplasia nos dois testículos",
+     "descricao": "Testículo esquerdo de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo 0, cm x 0, cm.\nTestículo direito de contornos definidos e margens regulares, dimensões preservadas, ecogenicidade mantida e ecotextura homogênea, exceto devido à presença de nódulo inserido no parênquima, de contornos definidos e margens irregulares, ecotextura homogênea, medindo 0, cm x 0, cm.",
+     "impressoes": []
+    }
+   ]
+  },
+  {
+   "nome": "Útero",
+   "entradas": [
+    {
+     "titulo": "Normal",
+     "descricao": "Útero: dimensões preservadas em corpo de útero (cm) e cornos uterinos (dir.: e esq.:), hipoecogênicos, sem evidências de conteúdo anecogênico (líquido) luminal.\n*Útero: corpo uterino com dimensões preservadas, medindo 0,00 cm de diâmetro, hipoecogênico e sem evidências de conteúdo luminal.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Não caracterizado (coto uterino)",
+     "descricao": "Útero: imagens sem alterações em topografia de coto uterino.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Não caracterizado mas saudável (anestro)",
+     "descricao": "Útero: região topográfica sem evidências de alterações estruturais, aumentos volumétricos ou conteúdo luminal anômalo. Órgão não delimitado individualmente devido às dimensões reduzidas fisiológicas, achado compatível com anestro.",
      "impressoes": []
     },
     {
      "titulo": "Castrada",
-     "descricao": "Útero e ovários: não caracterizados, compatível com ovariohisterectomia prévia.",
+     "descricao": "Útero: não caracterizado, compatível com ovariohisterectomia prévia.",
      "impressoes": []
     },
     {
      "titulo": "Pós castração / Processo cicatricial",
-     "descricao": "Aparelho Reprodutor: coto uterino ligeiramente aumentado de volume, medindo 0, cm de espessura, sem evidências de conteúdo líquido, associado à esteatite focal.",
+     "descricao": "Útero: coto uterino ligeiramente aumentado de volume, medindo 0, cm de espessura, sem evidências de conteúdo líquido, associado à esteatite focal.",
      "impressoes": []
     },
     {
      "titulo": "Estímulo hormonal",
      "descricao": "Útero de dimensões aumentadas, medindo 0, cm de diâmetro em seu maior eixo, de paredes espessadas e regulares, sem evidências de conteúdo líquido.",
-     "impressoes": []
-    },
-    {
-     "titulo": "Estímulo hormonal",
-     "descricao": "",
      "impressoes": []
     },
     {
@@ -261,7 +271,7 @@
     },
     {
      "titulo": "Puerpério",
-     "descricao": "Aparelho Reprodutor: Cornos uterinos aumentados de volume, medindo até 0, cm de diâmetro em seu maior eixo, de paredes espessadas e irregulares, com discreta presença de conteúdo líquido.",
+     "descricao": "Útero: cornos uterinos aumentados de volume, medindo até 0, cm de diâmetro em seu maior eixo, de paredes espessadas e irregulares, com discreta presença de conteúdo líquido.",
      "impressoes": [
       "puerpério"
      ]
@@ -270,15 +280,35 @@
      "titulo": "Hiperplasia cística do endométrio",
      "descricao": "Útero: de dimensões aumentadas medindo 0, cm de diâmetro em seu maior eixo, de paredes espessadas e irregulares repleto de pequenas estruturas cavitárias difusas medindo até 0, cm, sem evidências de conteúdo líquido.",
      "impressoes": []
-    },
+    }
+   ]
+  },
+  {
+   "nome": "Ovários",
+   "entradas": [
     {
      "titulo": "Ovários normais bilateralmente",
-     "descricao": "Ovários: direito e esquerdo normais, hipocogênicos, medindo respectivamente,cm e cm.",
+     "descricao": "Ovários: direito e esquerdo normais, hipoecogênicos, medindo respectivamente, cm e cm.",
      "impressoes": []
     },
     {
      "titulo": "Apenas um ovário caracterizado",
-     "descricao": "Ovário esquerdo/direito: não caracterizado.\nOvário esquerdo/direito: normal, hipocogênico, medindo 0 cm.",
+     "descricao": "Ovário esquerdo/direito: não caracterizado.\nOvário esquerdo/direito: normal, hipoecogênico, medindo 0 cm.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Castrada",
+     "descricao": "Ovários: não caracterizados, compatível com ovariohisterectomia prévia.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Não caracterizados (pedículos ovarianos)",
+     "descricao": "Ovários: imagens sem alterações em topografia de pedículos ovarianos.",
+     "impressoes": []
+    },
+    {
+     "titulo": "Não caracterizados mas saudáveis (anestro)",
+     "descricao": "Ovários: região topográfica sem evidências de alterações estruturais ou aumentos volumétricos. Órgãos não delimitados individualmente devido às dimensões reduzidas fisiológicas, achado compatível com anestro.",
      "impressoes": []
     }
    ]

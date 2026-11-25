@@ -59,11 +59,11 @@ public static class ModeloLaudo
         {
             "Fígado", "Vesícula Biliar", "Estômago", "Alças Intestinais", "Pâncreas", "Baço", "Rins", "Adrenais", "Vesícula Urinária",
         };
-        orgaos.Add(sexo switch
+        orgaos.AddRange(sexo switch
         {
-            "M" => "Próstata e testículos",
-            "F" => "Útero e ovários",
-            _ => "Órgãos reprodutivos",
+            "M" => ["Próstata", "Testículos"],
+            "F" => ["Útero", "Ovários"],
+            _ => ["Órgãos reprodutivos"],
         });
         orgaos.Add("Linfonodos");
         return orgaos;
@@ -83,10 +83,14 @@ public static class ModeloLaudo
         ["Adrenais"] = "formato habitual, margens regulares, contornos definidos, ecogenicidade mantida e ecotextura homogênea. Dimensões preservadas.",
         ["Vesícula Urinária"] = "em moderada distensão, parede preservada, mucosa regular e conteúdo anecogênico homogêneo. Não há sinais de litíases.",
         ["Linfonodos"] = TextoLinfonodos,
-        ["Próstata e testículos"] = "Próstata com dimensões, contornos e ecotextura habituais. Testículos com dimensões e ecotextura habituais.",
-        ["Útero e ovários"] = "não caracterizados, compatível com ovariohisterectomia prévia.",
+        ["Próstata"] = "contornos definidos, margens regulares, ecogenicidade mantida, ecotextura homogênea e dimensões preservadas.",
+        ["Testículos"] = "simétricos, contornos regulares, linhas mediastinais bem definidas, ecogenicidade preservada e ecotextura homogênea.",
+        ["Útero"] = "corpo e cornos uterinos com dimensões preservadas, hipoecogênicos e sem evidências de conteúdo luminal.",
+        ["Ovários"] = "direito e esquerdo com dimensões e aspecto ultrassonográfico habituais, hipoecogênicos.",
         ["Órgãos reprodutivos"] = "Órgãos reprodutivos sem alterações ultrassonográficas evidentes.",
         // nomes usados em laudos antigos
+        ["Próstata e testículos"] = "Próstata com dimensões, contornos e ecotextura habituais. Testículos com dimensões e ecotextura habituais.",
+        ["Útero e ovários"] = "não caracterizados, compatível com ovariohisterectomia prévia.",
         ["Vesícula biliar"] = "parede fina, mucosa regular e repleta por moderada quantidade de conteúdo anecogênico homogêneo. Não há sinais de dilatação em vias biliares intra e/ou extra-hepáticas.",
         ["Alças intestinais"] = TextoAlcas,
         ["Bexiga urinária"] = "em moderada distensão, parede preservada, mucosa regular e conteúdo anecogênico homogêneo. Não há sinais de litíases.",

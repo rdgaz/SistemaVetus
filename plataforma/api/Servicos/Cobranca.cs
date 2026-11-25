@@ -56,7 +56,8 @@ public class Cobranca(VetusDb db, ILogger<Cobranca> log)
     /// Movimenta o saldo de forma atômica no banco (duas gerações ao mesmo tempo não se atropelam)
     /// e registra no extrato. Valor negativo = débito.
     /// </summary>
-    public async Task<decimal> Movimentar(Guid clinicaId, decimal valor, string tipo, string descricao, Guid? exameId = null, Guid? usuarioId = null)
+    public async Task<decimal> Movimentar(Guid clinicaId, decimal valor, string tipo, string descricao, Guid? exameId = null, Guid? usuarioId = null,
+        decimal custoBrl = 0, string? ia = null)
     {
         var saldo = (await db.Database.SqlQuery<decimal>(
             $"""UPDATE clinicas SET "SaldoBrl" = "SaldoBrl" + {valor} WHERE "Id" = {clinicaId} RETURNING "SaldoBrl" AS "Value" """)
@@ -65,16 +66,24 @@ public class Cobranca(VetusDb db, ILogger<Cobranca> log)
         {
             ClinicaId = clinicaId, Tipo = tipo, Valor = valor, SaldoApos = saldo,
             Descricao = descricao.Length > 300 ? descricao[..300] : descricao, ExameId = exameId, UsuarioId = usuarioId,
+            CustoBrl = custoBrl, Ia = ia,
         });
         await db.SaveChangesAsync();
         return saldo;
     }
 
     /// <summary>Desconta do saldo que o dono do sistema tem no provedor o custo real (para avisar quando estiver acabando).</summary>
-    public async Task DescontarProvedor(decimal custoBrl)
+    public async Task DescontarProvedor(string ia, decimal custoUsd, decimal custoBrl)
     {
-        if (custoBrl <= 0) return;
+        if (custoBrl <= 0 && custoUsd <= 0) return;
+        // cada provedor tem o próprio saldo: Gemini em reais, Claude em dólares; o total (em reais) acompanha
+        if (ia == "claude")
+            await db.Database.ExecuteSqlAsync(
+                $"""UPDATE configuracao_cobranca SET "SaldoClaudeUsd" = "SaldoClaudeUsd" - {custoUsd} WHERE "Id" = 1""");
+        else if (ia == "gemini")
+            await db.Database.ExecuteSqlAsync(
+                $"""UPDATE configuracao_cobranca SET "SaldoGeminiBrl" = "SaldoGeminiBrl" - {custoBrl} WHERE "Id" = 1""");
         await db.Database.ExecuteSqlAsync(
-            $"""UPDATE configuracao_cobranca SET "SaldoProvedorBrl" = "SaldoProvedorBrl" - {custoBrl} WHERE "Id" = 1""");
+            $"""UPDATE configuracao_cobranca SET "SaldoProvedorBrl" = "SaldoGeminiBrl" + "SaldoClaudeUsd" * "CambioUsdBrl" WHERE "Id" = 1""");
     }
 }

@@ -98,7 +98,7 @@ const TOPICOS: Topico[] = [
         <ul>
           <li>Em cada órgão, escolha <b>Normal</b> (aplica a frase padrão de normalidade), <b>Alterado</b> ou <b>Não visibilizado</b>, e edite o texto.</li>
           <li>Edite condições técnicas, impressão, diferenciais e recomendações (um por linha).</li>
-          <li><b>Escolher fotos:</b> monte a prancha do laudo (até 12 fotos).</li>
+          <li><b>Escolher fotos:</b> monte a prancha do laudo (quantas fotos quiser; o sistema sugere 8, uma por órgão).</li>
           <li><b>Salvar revisão</b> guarda o rascunho; <b>Prévia do PDF</b> mostra como vai ficar (marcado "RASCUNHO").</li>
           <li><b>Aprovar e assinar:</b> só para veterinário com <b>CRMV e UF</b> cadastrados em Minha conta. Depois de assinado, o laudo não pode mais ser editado.</li>
           <li>Em <b>Minha conta</b> você pode enviar a <b>imagem da sua assinatura</b>, que sai no PDF.</li>

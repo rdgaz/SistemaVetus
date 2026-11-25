@@ -31,12 +31,32 @@ export function Exames() {
   const [lista, setLista] = useState<Lista | null>(null);
   const [clinicaDados, setClinicaDados] = useState<DadosClinica | null>(null);
   const [erro, setErro] = useState('');
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
+  const [busca, setBusca] = useState('');
 
   const carregar = () => {
     if (!clinica) return;
     api<Lista>('GET', `/api/exames${status ? `?status=${status}` : ''}`)
       .then((l) => { setLista(l); setErro(''); })
       .catch((e) => setErro(e.message));
+  };
+
+  const podeExcluir = (e: ItemExame) =>
+    e.status !== 'Gerando' && (clinica?.perfil === 'AdministradorClinica' || (clinica?.perfil === 'Veterinario' && e.status !== 'Pronto'));
+
+  const excluir = async (e: ItemExame) => {
+    if (excluindoId) return;
+    if (!confirm(`Excluir o exame de ${e.paciente} por completo?\n\nApaga pré-laudos, laudos e os arquivos enviados pelo pendrive. Não tem volta.`)) return;
+    setErro('');
+    setExcluindoId(e.id);
+    try {
+      await api('DELETE', `/api/exames/${e.id}`);
+      carregar();
+    } catch (x) {
+      setErro((x as Error).message);
+    } finally {
+      setExcluindoId(null);
+    }
   };
 
   useEffect(() => {
@@ -69,51 +89,83 @@ export function Exames() {
       .map((s) => ({ valor: s, texto: nomeStatus[s], n: lista?.contagens[s] ?? 0 })),
   ];
 
+  const termo = busca.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const norm = (s: string | null | undefined) => (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const examesFiltrados = (lista?.exames ?? []).filter((e) =>
+    !termo || [e.paciente, e.tutor, e.especie, e.tipo, dataBR(e.data)].some((v) => norm(v).includes(termo)));
+
   return (
     <>
-      <Titulo>Exames</Titulo>
-      <div className="mb-4"><SaldoClinica /></div>
-      <div className="mb-4"><Link to="/exames/pendrive" className="text-sm font-medium text-[#0E4D64] underline">Enviar exame do pendrive</Link></div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <Titulo>Exames</Titulo>
+        <Link to="/exames/pendrive" className="inline-flex min-h-10 items-center rounded-lg bg-[#0E4D64] px-4 text-sm font-medium text-white hover:bg-[#0B3D50]">
+          + Enviar do pendrive
+        </Link>
+      </div>
+      <div className="mb-3"><SaldoClinica /></div>
 
-      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {abas.map((a) => (
-          <button
-            key={a.texto}
-            onClick={() => setParams(a.valor ? { status: a.valor } : {})}
-            className={`min-h-10 shrink-0 rounded-full border px-4 text-sm font-medium ${
-              status === a.valor ? 'border-[#0E4D64] bg-[#0E4D64] text-white' : 'border-slate-300 bg-white text-slate-700'
-            }`}
-          >
-            {a.texto} <span className="opacity-70">{a.n}</span>
-          </button>
-        ))}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input
+          type="search"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar paciente, responsável ou data…"
+          className="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-[#0E4D64] focus:ring-2 focus:ring-[#0E4D64]/20 sm:max-w-xs"
+        />
+        <div className="-mx-4 flex flex-1 gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          {abas.map((a) => (
+            <button
+              key={a.texto}
+              onClick={() => setParams(a.valor ? { status: a.valor } : {})}
+              className={`min-h-10 shrink-0 rounded-full border px-3.5 text-sm font-medium ${
+                status === a.valor ? 'border-[#0E4D64] bg-[#0E4D64] text-white' : 'border-slate-300 bg-white text-slate-700'
+              }`}
+            >
+              {a.texto} <span className="opacity-70">{a.n}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {erro && <Aviso>{erro}</Aviso>}
       {!lista && !erro && <p className="text-slate-500">Carregando…</p>}
 
-      {lista && lista.exames.length > 0 && (
+      {lista && examesFiltrados.length > 0 && (
         <div className="space-y-2">
-          {lista.exames.map((e) => (
-            <Link key={e.id} to={`/exames/${e.id}`}
-              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:border-[#0E4D64]/40">
-              <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-black sm:size-20">
-                {e.miniatura && <img src={e.miniatura} alt="" loading="lazy" className="size-full object-cover" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{e.paciente}</span>
-                  {e.urgente && <span className="rounded-full bg-red-600 px-2 text-xs font-bold text-white">Urgente</span>}
+          {examesFiltrados.map((e) => (
+            <div key={e.id}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 hover:border-[#0E4D64]/40">
+              <Link to={`/exames/${e.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-black sm:size-20">
+                  {e.miniatura && <img src={e.miniatura} alt="" loading="lazy" className="size-full object-cover" />}
                 </div>
-                <div className="truncate text-sm text-slate-500">
-                  {[e.especie, e.tutor && `Responsável: ${e.tutor}`].filter(Boolean).join(' · ')}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold">{e.paciente}</span>
+                    {e.urgente && <span className="rounded-full bg-red-600 px-2 text-xs font-bold text-white">Urgente</span>}
+                  </div>
+                  <div className="truncate text-sm text-slate-500">
+                    {[e.especie, e.tutor && `Responsável: ${e.tutor}`].filter(Boolean).join(' · ')}
+                  </div>
+                  <div className="text-sm text-slate-500">
+                    {[e.tipo, dataBR(e.data), `${e.totalFotos} foto(s)`].filter(Boolean).join(' · ')}
+                  </div>
                 </div>
-                <div className="text-sm text-slate-500">
-                  {[e.tipo, dataBR(e.data), `${e.totalFotos} foto(s)`].filter(Boolean).join(' · ')}
-                </div>
-              </div>
-              <SeloStatus status={e.status} />
-            </Link>
+                <SeloStatus status={e.status} />
+              </Link>
+              {podeExcluir(e) && (
+                <button
+                  type="button"
+                  onClick={() => excluir(e)}
+                  disabled={excluindoId === e.id}
+                  title="Excluir exame"
+                  aria-label={`Excluir exame de ${e.paciente}`}
+                  className="min-h-9 shrink-0 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {excluindoId === e.id ? '…' : 'Excluir'}
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}

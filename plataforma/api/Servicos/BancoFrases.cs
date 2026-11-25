@@ -39,8 +39,10 @@ public class BancoFrases
         if (o.StartsWith("bexiga") || o.StartsWith("vesícula urin") || o.StartsWith("vesicula urin")) return "Vesícula urinária";
         if (o.StartsWith("vesícula bil") || o.StartsWith("vesicula bil")) return "Vesícula biliar";
         if (o.StartsWith("alças") || o.StartsWith("alcas") || o.StartsWith("intestin")) return "Intestino";
-        if (o.StartsWith("próstata") || o.StartsWith("prostata") || o.StartsWith("testícul")) return "Reprodutor macho";
-        if (o.StartsWith("útero") || o.StartsWith("utero") || o.StartsWith("ovário") || o.StartsWith("ovario")) return "Reprodutor fêmea";
+        if (o.StartsWith("próstata") || o.StartsWith("prostata")) return "Próstata";
+        if (o.StartsWith("testícul") || o.StartsWith("testicul")) return "Testículos";
+        if (o.StartsWith("útero") || o.StartsWith("utero")) return "Útero";
+        if (o.StartsWith("ovário") || o.StartsWith("ovario")) return "Ovários";
         if (o.StartsWith("fígado") || o.StartsWith("figado")) return "Fígado";
         if (o.StartsWith("baço") || o.StartsWith("baco")) return "Baço";
         if (o.StartsWith("estômago") || o.StartsWith("estomago")) return "Estômago";
@@ -62,9 +64,9 @@ public class BancoFrases
             "fast" => new[] { "FAST abdominal (A-FAST)" },
             "abdominal" or null => BlocosAbdominais.Concat(sexo switch
             {
-                "M" => ["Reprodutor macho"],
-                "F" => ["Reprodutor fêmea"],
-                _ => ["Reprodutor macho", "Reprodutor fêmea"],
+                "M" => ["Próstata", "Testículos"],
+                "F" => ["Útero", "Ovários"],
+                _ => ["Próstata", "Testículos", "Útero", "Ovários"],
             }).ToArray(),
             _ => [],
         };

@@ -220,6 +220,26 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
 
     // ------------------------------------------------------------ geração
 
+    /// <summary>
+    /// O prompt que a IA receberia numa análise completa deste exame, sem chamar a IA (sem custo): as instruções (sistema),
+    /// o texto com os dados do exame e a lista das fotos que iriam, com a informação de cada uma. As imagens não vão no texto.
+    /// </summary>
+    public async Task<(string Sistema, string Texto, List<string> Fotos)> PreviaPrompt(Guid exameId, CancellationToken ct = default)
+    {
+        var e = await db.Exames.AsNoTracking().Include(x => x.Paciente).ThenInclude(p => p.Tutor).FirstAsync(x => x.Id == exameId, ct);
+        e.GerarCompleto = true; // simula a análise completa (não é gravado: consulta sem rastreamento)
+        var plano = await Planejar(e, ct);
+        var pesoKg = Referencias.PesoKg(e.Peso);
+        var refs = await referencias.Aplicaveis(e.Paciente.Especie, pesoKg);
+        var textoRefs = Referencias.TextoParaIa(e.Paciente.Especie, pesoKg, refs);
+        var comparadas = Referencias.Comparar(MedidasJson(e), refs).Where(m => m.Situacao != Referencias.SemReferencia)
+            .Select(m => $"- {m.Grupo} > {m.Nome}: {m.Valor} {m.Unidade} → {m.Referencia} ({m.FaixaTexto}): {m.Situacao.ToUpperInvariant()}")
+            .ToList();
+        var entrada = MontarEntrada(e, plano, textoRefs, comparadas, await aprendizados.TextoParaIa(e.ClinicaId, ct));
+        var fotos = entrada.Imagens.Select(i => $"Imagem {i.Numero} ({i.Nome}){(i.Descricao is null ? "" : $" — {i.Descricao}")}").ToList();
+        return (entrada.Sistema, entrada.Texto, fotos);
+    }
+
     public async Task Gerar(Guid exameId, CancellationToken ct)
     {
         var e = await db.Exames.Include(x => x.Paciente).ThenInclude(p => p.Tutor).FirstAsync(x => x.Id == exameId, ct);
@@ -400,8 +420,8 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         if (valor.CobradoBrl > 0)
         {
             var modo = plano.Modo switch { SoDados => "atualização sem fotos", SoImagensNovas => "atualização com fotos novas", _ => "análise completa" };
-            await cobranca.Movimentar(e.ClinicaId, -valor.CobradoBrl, "debito", $"Pré-laudo {e.Paciente.Nome} (versão {versao}, {modo})", e.Id);
+            await cobranca.Movimentar(e.ClinicaId, -valor.CobradoBrl, "debito", $"Pré-laudo {e.Paciente.Nome} (versão {versao}, {modo})", e.Id, custoBrl: valor.CustoBrl, ia: r.Ia);
         }
-        await cobranca.DescontarProvedor(valor.CustoBrl);
+        await cobranca.DescontarProvedor(r.Ia, valor.CustoUsd, valor.CustoBrl);
     }
 }

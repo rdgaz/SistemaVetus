@@ -157,7 +157,7 @@ public static class EnvioEndpoints
             if (laudo is null) return Erros.Conflito("O laudo ainda não foi assinado.");
 
             (string, byte[])? anexo = r.AnexarPdf
-                ? ($"Laudo_{e.Paciente.Nome}_{e.Data}.pdf".Replace(' ', '_'), await pdf.Gerar(e, laudo))
+                ? (PdfLaudo.NomeArquivo(e.Paciente.Nome), await pdf.Gerar(e, laudo))
                 : null;
             var assunto = Texto.Opcional(r.Assunto) ?? $"Laudo de ultrassonografia: {e.Paciente.Nome}";
             var mensagem = Texto.Opcional(r.Mensagem) ?? $"Segue o laudo de ultrassonografia de {e.Paciente.Nome}.";
@@ -187,12 +187,12 @@ public static class EnvioEndpoints
             });
         }).RequireRateLimiting(LaudoEndpoints.LimitePublico);
 
-        app.MapGet("/api/publico/laudo/{token}/pdf", async (string token, VetusDb db, PdfLaudo pdf, HttpContext http) =>
+        app.MapGet("/api/publico/laudo/{token}/pdf", async (string token, string? baixar, VetusDb db, PdfLaudo pdf, HttpContext http) =>
         {
             var (link, laudo, e) = await LinkValido(db, token);
             if (link is null || laudo is null || e is null) return Results.NotFound();
-            var nome = $"Laudo_{e.Paciente.Nome}_{e.Data}.pdf".Replace(' ', '_');
-            http.Response.Headers.ContentDisposition = $"inline; filename=\"{Uri.EscapeDataString(nome)}\"";
+            var comoDownload = baixar is not (null or "" or "0" or "false");
+            http.Response.Headers.ContentDisposition = PdfLaudo.CabecalhoArquivo(e.Paciente.Nome, comoDownload);
             return Results.File(await pdf.Gerar(e, laudo), "application/pdf");
         }).RequireRateLimiting(LaudoEndpoints.LimitePublico);
     }

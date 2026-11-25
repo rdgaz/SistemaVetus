@@ -21,7 +21,7 @@ export type DadosDocumento = {
 
 type Item = { id: string; mostrar: boolean };
 type Layout = {
-  corPrincipal: string; corFundoIdentificacao: string; corBorda: string; tamanhoFonte: number; tamanhoFonteIdentificacao: number;
+  corPrincipal: string; corFundoTitulos: string; justificarTexto: boolean; corFundoIdentificacao: string; corBorda: string; tamanhoFonte: number; tamanhoFonteIdentificacao: number;
   margemCm: number; estiloTitulos: string; linhaCabecalho: boolean; mostrarNomeClinica: boolean; mostrarDocumento: boolean;
   mostrarEndereco: boolean; mostrarTelefone: boolean; mostrarEmail: boolean; alinhamentoTitulo: string; alturaLogo: number;
   mostrarTitulo: boolean; textoTitulo: string | null; tituloIdentificacao: string | null; colunasIdentificacao: number;
@@ -48,7 +48,10 @@ function valorCampo(id: string, d: DadosDocumento): string | null {
     case 'paciente': return p.nome;
     case 'especie': return p.especie;
     case 'raca': return p.raca;
-    case 'sexo': return ({ M: 'Macho', F: 'Fêmea', O: 'Outro' } as Record<string, string>)[p.sexo ?? ''] ? `${({ M: 'Macho', F: 'Fêmea', O: 'Outro' } as Record<string, string>)[p.sexo ?? '']}${p.castrado ? ' (castrado)' : ''}` : null;
+    case 'sexo': {
+      const nome = ({ M: 'Macho', F: 'Fêmea', O: 'Outro' } as Record<string, string>)[p.sexo ?? ''];
+      return nome ?? null; // só o sexo, sem "(castrado/castrada)"
+    }
     case 'idade': return d.idade;
     case 'peso': return d.peso;
     case 'responsavel': return d.tutor;
@@ -89,7 +92,7 @@ function Editavel({ valor, aoMudar, bloco = false, vazio = 'clique para escrever
  * veterinário clica no texto e edita como num editor comum; também escolhe as fotos da prancha. O PDF continua sendo
  * gerado pelo sistema a partir deste conteúdo (a paginação final pode diferir um pouco).
  */
-export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, prancha, alternarFoto, maxPrancha, aoSalvar, aoPrevia, aoFechar, ocupado, alterado }: {
+export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, prancha, alternarFoto, aoSalvar, aoPrevia, aoFechar, ocupado, alterado }: {
   c: ConteudoLaudo;
   setC: (c: ConteudoLaudo) => void;
   dados: DadosDocumento;
@@ -97,7 +100,6 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
   imagensEnviadas: string[];
   prancha: string[];
   alternarFoto: (nome: string) => void;
-  maxPrancha: number;
   aoSalvar: () => void;
   aoPrevia: () => void;
   aoFechar: () => void;
@@ -125,8 +127,12 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
 
   const cor = lay.corPrincipal;
   const caixa = lay.estiloTitulos === 'caixa';
+  const faixa = lay.estiloTitulos === 'faixa';
+  const justif = lay.justificarTexto ? 'text-justify' : '';
   const fotoPrancha = prancha.map((n) => fotos.find((f) => f.nome === n)).filter((f): f is Foto => !!f);
-  const Titulo = ({ texto }: { texto: string }) => caixa
+  const Titulo = ({ texto }: { texto: string }) => faixa
+    ? <div className="mt-3 px-2 py-1.5 font-bold" style={{ background: lay.corFundoTitulos, color: '#1B1B1B', fontSize: pt(11) }}>{texto}</div>
+    : caixa
     ? <div className="mt-3 border px-2 py-2 font-bold" style={{ borderColor: lay.corBorda, color: cor, fontSize: pt(12) }}>{texto}</div>
     : <div className="mt-3 font-bold" style={{ color: cor, fontSize: pt(11) }}>{texto}</div>;
 
@@ -160,12 +166,12 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
       case 'achados':
         return (
           <div key={s.id}>
-            <Titulo texto={lay.textoTituloAchados ?? 'Achados'} />
+            <Titulo texto={lay.textoTituloAchados ?? (faixa ? 'Relatório Ultrassonográfico' : 'Achados')} />
             <div className="mt-2 flex flex-col" style={{ gap: pt(8) }}>
               {c.orgaos.filter((o) => !o.orgao.toLowerCase().startsWith('cavidade abdominal')).map((o) => {
                 const i = c.orgaos.indexOf(o);
                 return (
-                  <div key={o.orgao}>
+                  <div key={o.orgao} className={justif}>
                     <b>{o.orgao}: </b>
                     <Editavel valor={o.descricao} vazio="descreva o órgão"
                       aoMudar={(v) => setC({ ...c, orgaos: c.orgaos.map((x, k) => (k === i ? { ...x, descricao: v } : x)) })} />
@@ -199,7 +205,7 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
             {lay.mostrarTituloPrancha && <Titulo texto="Prancha de imagens" />}
             <div className="mt-2 flex flex-wrap items-center gap-2 print:hidden">
               <button type="button" onClick={() => setEscolhendo(!escolhendo)} className="min-h-9 rounded-lg border border-[#0E4D64]/40 bg-white px-3 text-sm font-semibold text-[#0E4D64] hover:bg-slate-50">
-                {escolhendo ? 'Concluir escolha das fotos' : `Escolher fotos da prancha (${prancha.length} de até ${maxPrancha})`}
+                {escolhendo ? 'Concluir escolha das fotos' : `Escolher fotos da prancha (${prancha.length} escolhida(s))`}
               </button>
             </div>
             {escolhendo && (
@@ -261,10 +267,12 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
 
         {campos.length > 0 && (
           <div className="mt-3" style={caixa ? { border: `1px solid ${lay.corBorda}` } : undefined}>
-            {lay.tituloIdentificacao && <div className="px-2 py-2 font-bold" style={caixa ? { borderBottom: `1px solid ${lay.corBorda}`, color: cor, fontSize: pt(12) } : { color: cor, fontSize: pt(11) }}>{lay.tituloIdentificacao}</div>}
+            {(lay.tituloIdentificacao || faixa) && <div className="px-2 font-bold" style={faixa
+              ? { background: lay.corFundoTitulos, color: '#1B1B1B', fontSize: pt(11), paddingTop: 6, paddingBottom: 6 }
+              : caixa ? { borderBottom: `1px solid ${lay.corBorda}`, color: cor, fontSize: pt(12), paddingTop: 8, paddingBottom: 8 } : { color: cor, fontSize: pt(11) }}>{lay.tituloIdentificacao ?? 'Dados'}</div>}
             <div className="grid gap-x-3 gap-y-0.5 p-2" style={{ background: lay.corFundoIdentificacao, gridTemplateColumns: `repeat(${lay.colunasIdentificacao}, minmax(0, 1fr))`, fontSize: lay.tamanhoFonteIdentificacao > 0 ? pt(lay.tamanhoFonteIdentificacao) : undefined }}>
               {campos.map((x) => (
-                <div key={x.id} style={{ whiteSpace: 'pre-line' }}><b>{x.rotulo}: </b>{x.valor || (caixa ? '' : '—')}</div>
+                <div key={x.id} style={{ whiteSpace: 'pre-line' }}><b>{x.rotulo}: </b>{x.valor || (caixa || faixa ? '' : '—')}</div>
               ))}
             </div>
           </div>

@@ -171,9 +171,32 @@ const relatorio = (idAnimal, nome) => pdfRelatorio([
   // isolamento entre clínicas
   ok((await B.nav.req('GET', `/api/exames/${exameId}`)).status === 404, 'outra clínica não vê o exame');
   ok((await B.nav.req('GET', d.fotos[0].url)).status === 404, 'outra clínica não abre a foto');
+  ok((await B.nav.req('DELETE', `/api/exames/${exameId}`)).status === 404, 'outra clínica não exclui o exame');
   const vB = await B.nav.req('POST', '/api/exames/pendrive/verificar', { exames: [{ idAnimal, subpasta: sub }] });
   ok(vB.dados[0].exame === null && vB.dados[0].recebidos.length === 0, 'outra clínica não enxerga arquivos recebidos');
   ok((await new Navegador().req('POST', '/api/exames/pendrive/verificar', { exames: [] })).status === 401, 'sem login: 401');
+
+  // exclusão completa do exame (banco + arquivos do pendrive)
+  const usr = await A.nav.req('POST', '/api/clinica/usuarios', { nome: 'Recepção', email: `usr.${n}@teste.local`, perfil: 'Usuario' });
+  const navUsr = new Navegador();
+  await navUsr.entrar(`usr.${n}@teste.local`, usr.dados.senhaProvisoria);
+  await navUsr.req('PUT', '/api/auth/senha', { senhaAtual: usr.dados.senhaProvisoria, novaSenha: `SenhaUsr-${n}` });
+  navUsr.clinica = A.id;
+  ok((await navUsr.req('DELETE', `/api/exames/${exameId}`)).status === 403, 'perfil Usuario não pode excluir exame');
+
+  const del = await A.nav.req('DELETE', `/api/exames/${exameId}`);
+  ok(del.status === 204, 'exclui o exame com sucesso');
+  ok((await A.nav.req('GET', `/api/exames/${exameId}`)).status === 404, 'exame excluído não existe mais');
+  const vApos = await A.nav.req('POST', '/api/exames/pendrive/verificar', { exames: [{ idAnimal, subpasta: sub }] });
+  ok(vApos.dados[0].exame === null && vApos.dados[0].recebidos.length === 0, 'exclusão apaga também os arquivos do pendrive (pronto para reenviar do zero)');
+
+  // o caso que importa: depois de excluir, enviar de novo SÓ uma foto diferente não pode trazer as fotos de antes
+  ok((await A.nav.req('PUT', ARQ('999999999999EDITADA.JPG'), foto(77), 'image/jpeg')).status === 200, 'reenvia só uma foto editada (nome diferente)');
+  const c4 = await A.nav.req('POST', `${base}/concluir`, { nome: 'Reenvio' });
+  ok(c4.status === 200 && c4.dados.novo === true && c4.dados.fotos === 1, `exame refeito tem só a foto nova, sem restos das antigas (${c4.dados.fotos} foto)`);
+  const d4 = (await A.nav.req('GET', `/api/exames/${c4.dados.id}`)).dados;
+  ok(d4.fotos.length === 1 && d4.fotos[0].nome === '999999999999EDITADA.JPG', 'tela do exame lista só a foto nova');
+  ok((await A.nav.req('DELETE', `/api/exames/${c4.dados.id}`)).status === 204, 'exclui o exame refeito (limpeza do teste)');
 
   console.log(falhas ? `\n${falhas} falha(s)` : '\nTudo certo');
   process.exitCode = falhas ? 1 : 0;

@@ -21,6 +21,10 @@ public record LayoutLaudo
     public double TamanhoFonteIdentificacao { get; init; }
     /// <summary>Cor das bordas das caixas (estilo "caixa") e do fundo das linhas.</summary>
     public string CorBorda { get; init; } = "#E5DCDC";
+    /// <summary>Justifica (alinha nas duas margens) os textos do laudo.</summary>
+    public bool JustificarTexto { get; init; }
+    /// <summary>Mostra no PDF a mensagem "Retificação do laudo anterior. Motivo: ..." (padrão: não).</summary>
+    public bool MostrarRetificacao { get; init; }
     /// <summary>Cor de fundo das faixas de títulos (estilo "faixa"). Padrão: #E4DBDB.</summary>
     public string CorFundoTitulos { get; init; } = "#E4DBDB";
     /// <summary>Margem da página, em cm (0,5 a 2,5).</summary>

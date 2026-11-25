@@ -366,6 +366,17 @@ namespace Vetus.Api.Dados.Migracoes
                         .HasPrecision(14, 4)
                         .HasColumnType("numeric(14,4)");
 
+                    b.Property<decimal>("SaldoClaudeUsd")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)");
+
+                    b.Property<decimal>("SaldoGeminiBrl")
+                        .HasPrecision(14, 4)
+                        .HasColumnType("numeric(14,4)");
+
+                    b.Property<DateTime?>("SaldosConferidosEm")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.ToTable("configuracao_cobranca", (string)null);
@@ -716,6 +727,14 @@ namespace Vetus.Api.Dados.Migracoes
 
                     b.Property<Guid>("ClinicaId")
                         .HasColumnType("uuid");
+
+                    b.Property<decimal>("CustoBrl")
+                        .HasPrecision(14, 6)
+                        .HasColumnType("numeric(14,6)");
+
+                    b.Property<string>("Ia")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Descricao")
                         .IsRequired()

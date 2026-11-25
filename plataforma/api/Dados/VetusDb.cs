@@ -74,7 +74,7 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
         {
             e.ToTable("configuracao_cobranca");
             e.Property(x => x.Id).ValueGeneratedNever();
-            foreach (var p in new[] { "Fator", "CambioUsdBrl", "CreditoInicialClinica", "SaldoProvedorBrl", "AlertaSaldoProvedorBrl" })
+            foreach (var p in new[] { "Fator", "CambioUsdBrl", "CreditoInicialClinica", "SaldoProvedorBrl", "AlertaSaldoProvedorBrl", "SaldoGeminiBrl", "SaldoClaudeUsd" })
                 e.Property(p).HasPrecision(14, 4);
             e.HasData(new ConfiguracaoCobranca { Id = 1, AtualizadoEm = new DateTime(2026, 11, 23, 0, 0, 0, DateTimeKind.Utc) });
         });
@@ -104,6 +104,8 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.Property(x => x.Descricao).HasMaxLength(300);
             e.Property(x => x.Valor).HasPrecision(14, 4);
             e.Property(x => x.SaldoApos).HasPrecision(14, 4);
+            e.Property(x => x.CustoBrl).HasPrecision(14, 6);
+            e.Property(x => x.Ia).HasMaxLength(20);
         });
 
         b.Entity<LinkPublico>(e =>

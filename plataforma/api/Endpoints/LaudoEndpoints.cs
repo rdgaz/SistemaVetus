@@ -164,7 +164,7 @@ public static class LaudoEndpoints
         }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
 
         // PDF: a versão assinada (ou uma pré-visualização marcada como rascunho). Sem X-Clinica-Id: abre em nova aba.
-        app.MapGet("/api/exames/{id:guid}/laudo.pdf", async (Guid id, int? versao, HttpContext http, VetusDb db, PdfLaudo pdf) =>
+        app.MapGet("/api/exames/{id:guid}/laudo.pdf", async (Guid id, int? versao, string? baixar, HttpContext http, VetusDb db, PdfLaudo pdf) =>
         {
             var usuarioId = Acesso.UsuarioId(http.User);
             var e = await db.Exames.Include(x => x.Clinica).Include(x => x.Paciente).ThenInclude(p => p.Tutor)
@@ -175,8 +175,8 @@ public static class LaudoEndpoints
             var l = await (versao is { } v ? q.Where(x => x.Versao == v) : q.OrderByDescending(x => x.Versao)).FirstOrDefaultAsync();
             if (l is null) return Results.NotFound();
             var bytes = await pdf.Gerar(e, l);
-            var nome = $"Laudo_{e.Paciente.Nome}_{e.Data}_v{l.Versao}.pdf".Replace(' ', '_');
-            http.Response.Headers.ContentDisposition = $"inline; filename=\"{Uri.EscapeDataString(nome)}\"";
+            var comoDownload = baixar is not (null or "" or "0" or "false");
+            http.Response.Headers.ContentDisposition = PdfLaudo.CabecalhoArquivo(e.Paciente.Nome, comoDownload);
             return Results.File(bytes, "application/pdf");
         }).RequireAuthorization();
 
@@ -234,8 +234,9 @@ public static class LaudoEndpoints
             if (sit is not (ModeloLaudo.Normal or ModeloLaudo.Alterado or ModeloLaudo.NaoVisualizado))
                 return "Situação de órgão inválida.";
         }
-        if (c.TryGetProperty("prancha", out var p) && (p.ValueKind != JsonValueKind.Array || p.GetArrayLength() > 12))
-            return "A prancha pode ter no máximo 12 fotos.";
+        // prancha sem limite de fotos (a clínica escolhe quantas quiser); só precisa ser uma lista
+        if (c.TryGetProperty("prancha", out var p) && p.ValueKind != JsonValueKind.Array)
+            return "Prancha inválida.";
         return c.GetRawText().Length > 100_000 ? "Laudo grande demais." : null;
     }
 

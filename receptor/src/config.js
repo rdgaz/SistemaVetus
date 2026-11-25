@@ -21,7 +21,12 @@ module.exports = {
   dataDir: DATA_DIR,
   // pasta temporária de processamento: <DATA_DIR>/temp/<AE da clínica>/<EXAME>/<formato>/
   // (exames sem clínica, do AE antigo: <DATA_DIR>/temp/<EXAME>/<formato>/)
-  tempDir: path.join(DATA_DIR, 'temp'),
+  // EXAMES_DIR muda essa pasta (ex.: no notebook, Documentos\AutoLaudoVet\Exames)
+  tempDir: path.resolve(env('EXAMES_DIR', path.join(DATA_DIR, 'temp'))),
+  // painel local de status (só em 127.0.0.1). Vazio = sem painel (como no Docker)
+  painelPorta: Number(env('PAINEL_PORTA', 0)) || 0,
+  // IP fixo da placa de rede do cabo direto com o aparelho (o painel mostra se o cabo está pronto)
+  ipCabo: env('IP_CABO', '10.77.0.1'),
   // apaga o .dcm original depois que ele foi convertido/extraído com sucesso
   apagarOriginais: bool(env('APAGAR_ORIGINAIS', 'true')),
   // segundos sem receber imagens de um exame para considerá-lo completo

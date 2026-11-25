@@ -95,8 +95,11 @@ export function Compartilhar({ exameId, paciente, tutor, telefone, emailTutor, c
     return `Link copiado: ${url}`;
   });
 
+  const nomeLimpo = (paciente.trim() || 'Exame').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '');
+  const nomePdf = `laudo_ultrassonografico_${nomeLimpo || 'Exame'}.pdf`;
+
   const baixarPdf = () => {
-    window.open(`/api/exames/${exameId}/laudo.pdf`, '_blank');
+    window.open(`/api/exames/${exameId}/laudo.pdf?baixar=true`, '_blank');
     registrar('pdf');
   };
 
@@ -104,9 +107,9 @@ export function Compartilhar({ exameId, paciente, tutor, telefone, emailTutor, c
   const podeCompartilharArquivo = typeof navigator !== 'undefined' && 'canShare' in navigator;
   const compartilharArquivo = () => executar(async () => {
     const r = await fetch(`/api/exames/${exameId}/laudo.pdf`, { credentials: 'same-origin' });
-    const arquivo = new File([await r.blob()], `Laudo_${paciente}.pdf`, { type: 'application/pdf' });
+    const arquivo = new File([await r.blob()], nomePdf, { type: 'application/pdf' });
     if (!navigator.canShare?.({ files: [arquivo] })) throw new Error('Este aparelho não permite compartilhar arquivos.');
-    await navigator.share({ files: [arquivo], title: `Laudo de ${paciente}`, text: mensagem });
+    await navigator.share({ files: [arquivo], title: `Laudo Ultrassonográfico ${paciente}`, text: mensagem });
     await registrar('pdf', 'compartilhar do aparelho');
     return 'PDF compartilhado.';
   });

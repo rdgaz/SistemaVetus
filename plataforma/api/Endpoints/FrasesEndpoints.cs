@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Vetus.Api.Dados;
 using Vetus.Api.Servicos;
 using Vetus.Api.Servicos.Ia;
 

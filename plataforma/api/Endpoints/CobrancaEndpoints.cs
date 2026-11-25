@@ -10,7 +10,7 @@ public static class CobrancaEndpoints
 {
     public record PrecoReq(string? Modelo, decimal EntradaUsdPorMilhao, decimal SaidaUsdPorMilhao);
     public record ConfigReq(decimal Fator, decimal CambioUsdBrl, decimal CreditoInicialClinica, decimal SaldoProvedorBrl,
-        decimal AlertaSaldoProvedorBrl, List<PrecoReq>? Precos);
+        decimal AlertaSaldoProvedorBrl, List<PrecoReq>? Precos, decimal? SaldoGeminiBrl = null, decimal? SaldoClaudeUsd = null);
     public record MovimentoReq(decimal Valor, string? Descricao);
 
     public static void Mapear(WebApplication app)
@@ -27,6 +27,7 @@ public static class CobrancaEndpoints
             return Results.Ok(new
             {
                 cfg.Fator, cfg.CambioUsdBrl, cfg.CreditoInicialClinica, cfg.SaldoProvedorBrl, cfg.AlertaSaldoProvedorBrl, cfg.AtualizadoEm,
+                cfg.SaldoGeminiBrl, cfg.SaldoClaudeUsd, cfg.SaldosConferidosEm,
                 saldoProvedorBaixo = cfg.SaldoProvedorBrl < cfg.AlertaSaldoProvedorBrl,
                 precos = precos.Select(p => new { p.Modelo, p.EntradaUsdPorMilhao, p.SaidaUsdPorMilhao }),
                 resumo = new
@@ -42,6 +43,45 @@ public static class CobrancaEndpoints
             });
         });
 
+
+        // Financeiro por clínica no período: quanto cada uma pagou (recargas), quanto consumiu, quanto custou de verdade e o lucro
+        adm.MapGet("/financeiro", async (DateOnly? de, DateOnly? ate, VetusDb db) =>
+        {
+            var inicio = (de ?? DateOnly.MinValue).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var fim = (ate ?? DateOnly.FromDateTime(DateTime.UtcNow)).AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var movs = await db.MovimentosSaldo.Where(m => m.Em >= inicio && m.Em < fim)
+                .Select(m => new { m.ClinicaId, m.Tipo, m.Valor, m.CustoBrl, m.Ia }).ToListAsync();
+            var clinicas = await db.Clinicas.OrderBy(c => c.Numero).Select(c => new { c.Id, c.Nome, c.SaldoBrl }).ToListAsync();
+            var linhas = clinicas.Select(c =>
+            {
+                var m = movs.Where(x => x.ClinicaId == c.Id).ToList();
+                var consumo = -m.Where(x => x.Tipo == "debito").Sum(x => x.Valor);
+                var custo = m.Where(x => x.Tipo == "debito").Sum(x => x.CustoBrl);
+                return new
+                {
+                    clinicaId = c.Id, clinica = c.Nome, saldoAtual = c.SaldoBrl,
+                    recebido = m.Where(x => x.Tipo == "recarga").Sum(x => x.Valor),
+                    creditosGratis = m.Where(x => x.Tipo == "credito_inicial").Sum(x => x.Valor),
+                    ajustes = m.Where(x => x.Tipo == "ajuste").Sum(x => x.Valor),
+                    consumo, custo, lucro = consumo - custo,
+                    usos = m.Count(x => x.Tipo == "debito"),
+                    semCusto = m.Count(x => x.Tipo == "debito" && x.CustoBrl == 0),
+                };
+            }).ToList();
+            return Results.Ok(new
+            {
+                de, ate,
+                clinicas = linhas,
+                total = new
+                {
+                    recebido = linhas.Sum(x => x.recebido), creditosGratis = linhas.Sum(x => x.creditosGratis), ajustes = linhas.Sum(x => x.ajustes),
+                    consumo = linhas.Sum(x => x.consumo), custo = linhas.Sum(x => x.custo), lucro = linhas.Sum(x => x.lucro),
+                    usos = linhas.Sum(x => x.usos), semCusto = linhas.Sum(x => x.semCusto), saldoClinicas = linhas.Sum(x => x.saldoAtual),
+                },
+                custoPorIa = movs.Where(x => x.Tipo == "debito" && x.CustoBrl > 0).GroupBy(x => x.Ia ?? "?")
+                    .Select(g => new { ia = g.Key, custo = g.Sum(x => x.CustoBrl), usos = g.Count() }).OrderByDescending(x => x.custo),
+            });
+        });
         adm.MapPut("/cobranca", async (ConfigReq r, VetusDb db, Cobranca cobranca) =>
         {
             if (r.Fator is < 0.1m or > 1000m) return Erros.Invalido("Fator deve ficar entre 0,1 e 1000.");
@@ -51,7 +91,15 @@ public static class CobrancaEndpoints
             cfg.Fator = r.Fator;
             cfg.CambioUsdBrl = r.CambioUsdBrl;
             cfg.CreditoInicialClinica = r.CreditoInicialClinica;
-            cfg.SaldoProvedorBrl = r.SaldoProvedorBrl;
+            // saldos por provedor (conferidos no site de cada um); o total em reais é a soma, com o câmbio
+            if (r.SaldoGeminiBrl is { } g && r.SaldoClaudeUsd is { } cl)
+            {
+                if (g != cfg.SaldoGeminiBrl || cl != cfg.SaldoClaudeUsd) cfg.SaldosConferidosEm = DateTime.UtcNow;
+                cfg.SaldoGeminiBrl = g;
+                cfg.SaldoClaudeUsd = cl;
+                cfg.SaldoProvedorBrl = g + cl * r.CambioUsdBrl;
+            }
+            else cfg.SaldoProvedorBrl = r.SaldoProvedorBrl;
             cfg.AlertaSaldoProvedorBrl = r.AlertaSaldoProvedorBrl;
             cfg.AtualizadoEm = DateTime.UtcNow;
             foreach (var p in r.Precos ?? [])

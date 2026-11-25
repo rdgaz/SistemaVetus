@@ -75,8 +75,8 @@ public class Padronizador(VetusDb db, ConfiguracaoIa cfg, IEnumerable<IGeradorLa
                 }).Entity;
                 await db.SaveChangesAsync(ct);
                 if (valor.CobradoBrl > 0)
-                    await cobranca.Movimentar(e.ClinicaId, -valor.CobradoBrl, "debito", $"Padronização de texto ditado ({orgao}) — {e.Paciente.Nome}", e.Id, u.Id);
-                await cobranca.DescontarProvedor(valor.CustoBrl);
+                    await cobranca.Movimentar(e.ClinicaId, -valor.CobradoBrl, "debito", $"Padronização de texto ditado ({orgao}) — {e.Paciente.Nome}", e.Id, u.Id, valor.CustoBrl, r.Ia);
+                await cobranca.DescontarProvedor(r.Ia, valor.CustoUsd, valor.CustoBrl);
                 return (ditado, null, 200);
             }
             catch (Exception x) when (x is not OperationCanceledException)

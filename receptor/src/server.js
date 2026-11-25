@@ -13,6 +13,7 @@ const log = require('./log');
 const exames = require('./exames');
 const plataforma = require('./plataforma');
 const { processarExame } = require('./processador');
+const painel = require('./painel');
 
 dimse.log.setLevel(config.debug ? 'info' : 'error');
 const { Server, Scp, Transcoding } = dimse;
@@ -30,6 +31,12 @@ const ACCEPTED_TS = [
 // ------------------------------------------------------------ exames em recebimento
 // "<AE da clínica>|<StudyInstanceUID>" -> { ae, pasta, arquivos: [{file, formato}], timer }
 const recebendo = new Map();
+
+// para o painel local: último contato do aparelho e os últimos exames processados
+const estado = { inicio: new Date().toISOString(), ultimoContato: null, rejeicoes: [] };
+function contato(tipo, calling, called, ip, extra = {}) {
+  estado.ultimoContato = { tipo, em: new Date().toISOString(), aparelho: calling, ae: called, ip: ip || '', ...extra };
+}
 
 function registrarRecebido(uid, ae, pasta, file, formato) {
   let s = recebendo.get(uid);
@@ -93,7 +100,13 @@ class VetusScp extends Scp {
     this.association = association;
     const calling = association.getCallingAeTitle().trim();
     const called = association.getCalledAeTitle().trim();
+    const ip = this.socket ? String(this.socket.remoteAddress || '').replace(/^::ffff:/, '') : '';
+    const rejeitar = (motivo) => {
+      contato('rejeitado', calling, called, ip, { motivo });
+      estado.rejeicoes = [{ em: new Date().toISOString(), aparelho: calling, ae: called, ip, motivo }, ...estado.rejeicoes].slice(0, 10);
+    };
     if (config.allowedCallingAEs.length && !config.allowedCallingAEs.includes(calling)) {
+      rejeitar(`AE do aparelho "${calling}" não autorizado`);
       log(`[REJEITADO] AE "${calling}" não está em ALLOWED_AES`);
       return this.sendAssociationReject(RejectResult.Permanent, RejectSource.ServiceUser, RejectReason.CallingAeNotRecognized);
     }
@@ -105,6 +118,7 @@ class VetusScp extends Scp {
     }
     if (!clinica.aceito) {
       log(`[REJEITADO] ${clinica.motivo}`);
+      rejeitar(clinica.motivo);
       return this.sendAssociationReject(RejectResult.Permanent, RejectSource.ServiceUser, RejectReason.CalledAeNotRecognized);
     }
     this.aeClinica = clinica.ae;
@@ -121,6 +135,7 @@ class VetusScp extends Scp {
       else ctx.setResult(PresentationContextResult.RejectTransferSyntaxesNotSupported);
     }
     log(`[CONEXÃO]  ${calling} -> ${called}${this.aeClinica && this.aeClinica !== called ? ` (clínica ${this.aeClinica})` : ''} (${this.socket ? this.socket.remoteAddress : '?'})`);
+    contato('conexao', calling, called, ip);
     this.sendAssociationAccept();
   }
 
@@ -137,6 +152,7 @@ class VetusScp extends Scp {
 
   cEchoRequest(request, callback) {
     log(`[ECHO]      teste de conexão de ${this.association.getCallingAeTitle().trim()}`);
+    if (estado.ultimoContato) estado.ultimoContato = { ...estado.ultimoContato, tipo: 'teste', em: new Date().toISOString() };
     const res = CEchoResponse.fromRequest(request);
     res.setStatus(Status.Success);
     callback(res);
@@ -163,6 +179,7 @@ class VetusScp extends Scp {
 
       (this.estudos || (this.estudos = new Set())).add(uid);
       registrarRecebido(uid, this.aeClinica, pasta, file, formato);
+      if (estado.ultimoContato) estado.ultimoContato = { ...estado.ultimoContato, tipo: 'envio', em: new Date().toISOString() };
       res.setStatus(Status.Success);
     } catch (e) {
       log('[ERRO]      ao receber arquivo:', e.message);
@@ -180,7 +197,11 @@ class VetusScp extends Scp {
   exames.carregarPastasExistentes();
 
   const server = new Server(VetusScp);
-  server.on('networkError', (e) => log('[ERRO] rede:', e.message || e));
+  server.on('networkError', (e) => {
+    log('[ERRO] rede:', e.message || e);
+    // porta DICOM ocupada por outro programa: o painel avisa (o aparelho não vai conseguir enviar)
+    if (e && e.code === 'EADDRINUSE') estado.erroDicom = `A porta ${config.port} já está em uso por outro programa`;
+  });
   server.listen(config.port);
 
   const ips = Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i.address);
@@ -195,6 +216,10 @@ class VetusScp extends Scp {
     log(` Plataforma: ${config.plataformaUrl} (aceita o AE de cada clínica: ALV_C0002..., VETUS_C0001...)`);
     log(` AE ${config.aeTitle} : ${config.aeLegadoClinica ? `exames vão para a clínica ${config.aeLegadoClinica}` : 'exames ficam sem clínica'}`);
     if (!config.chaveInterna) log('[AVISO]     VETUS_CHAVE_INTERNA vazia: a plataforma vai recusar os avisos de exame');
+  }
+  if (config.painelPorta) {
+    painel.iniciar({ estado, recebendo: () => [...recebendo.values()].map((s) => ({ pasta: s.pasta, arquivos: s.arquivos.length })) });
+    log(` Painel    : http://127.0.0.1:${config.painelPorta}`);
   }
   log('==============================================');
 

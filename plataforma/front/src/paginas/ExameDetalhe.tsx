@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '../api';
 import { dataBR, nomeSexo, SeloStatus, type StatusExame } from '../exames';
 import { useSessao } from '../sessao';
@@ -123,6 +123,21 @@ export function ExameDetalhe() {
   const [fotoAberta, setFotoAberta] = useState<number | null>(null);
   // galeria só com as imagens do alerta de achado urgente
   const [galeria, setGaleria] = useState<{ fotos: Arquivo[]; indice: number } | null>(null);
+  const navegar = useNavigate();
+  const [excluindo, setExcluindo] = useState(false);
+  const excluir = async () => {
+    if (!d || excluindo) return;
+    if (!confirm(`Excluir o exame de ${d.paciente.nome} por completo?\n\nApaga pré-laudos, laudos e os arquivos enviados pelo pendrive. Não tem volta.`)) return;
+    setErro('');
+    setExcluindo(true);
+    try {
+      await api('DELETE', `/api/exames/${d.id}`);
+      navegar('/', { replace: true });
+    } catch (x) {
+      setErro((x as Error).message);
+      setExcluindo(false);
+    }
+  };
   const [grade, setGrade] = useState(false);
 
   const carregar = async () => {
@@ -215,6 +230,8 @@ export function ExameDetalhe() {
 
   const textoGerar = d.laudo ? 'Atualizar pré-laudo' : d.status === 'Erro' ? 'Gerar de novo' : 'Gerar pré-laudo';
   const podeGerar = d.status !== 'NaFila' && !somenteLeitura;
+  const perfilExclui = clinica?.perfil === 'Veterinario' || clinica?.perfil === 'AdministradorClinica';
+  const podeExcluir = d.status !== 'Gerando' && (clinica?.perfil === 'AdministradorClinica' || (clinica?.perfil === 'Veterinario' && !d.laudo?.assinadoEm));
 
   return (
     <div className="space-y-4 pb-28 md:pb-0">
@@ -225,14 +242,26 @@ export function ExameDetalhe() {
           <h1 className="mr-1 text-2xl font-semibold text-slate-800">{d.paciente.nome}</h1>
           <SeloStatus status={d.status} />
           {d.status !== 'Pronto' && (
-            <button onClick={alternarUrgente} disabled={salvando}
+            <button onClick={alternarUrgente} disabled={salvando || excluindo}
               className={`rounded-full border px-3 py-0.5 text-xs font-bold ${d.urgente ? 'border-red-600 bg-red-600 text-white' : 'border-slate-300 text-slate-600'}`}>
               {d.urgente ? 'Urgente ✓' : 'Marcar urgente'}
             </button>
           )}
+          {!somenteLeitura && (
+            <button type="button" onClick={() => { setEditando(true); setTimeout(() => document.getElementById('dados-exame')?.scrollIntoView({ behavior: 'smooth' }), 50); }}
+              className="rounded-full border border-slate-300 bg-white px-3 py-0.5 text-xs font-semibold text-[#0E4D64] hover:bg-slate-50">
+              ✎ Editar dados
+            </button>
+          )}
+          {podeExcluir && (
+            <button type="button" onClick={excluir} disabled={excluindo || salvando}
+              className="ml-auto rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
+              {excluindo ? 'Excluindo…' : 'Excluir exame'}
+            </button>
+          )}
         </div>
         <div className="mt-1 text-sm text-slate-500">
-          {[d.paciente.especie, d.tutor?.nome && `Tutor: ${d.tutor.nome}`, dataBR(d.data), `${d.fotos.length} foto(s)`].filter(Boolean).join(' · ')}
+          {[d.paciente.especie, d.tutor?.nome && `Responsável: ${d.tutor.nome}`, dataBR(d.data), `${d.fotos.length} foto(s)`].filter(Boolean).join(' · ')}
         </div>
       </div>
 
@@ -263,6 +292,16 @@ export function ExameDetalhe() {
       )}
       {d.laudo && d.laudo.motivoRetificacao && d.status !== 'Pronto' && (
         <Aviso tipo="info">Retificação do laudo assinado. Motivo: {d.laudo.motivoRetificacao}</Aviso>
+      )}
+      {d.laudo && d.status === 'AguardandoRevisao' && d.medidasComparadas.some((m) => m.situacao === 'acima' || m.situacao === 'abaixo') && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-xs text-amber-950">
+          <b className="mr-1.5">Medidas do aparelho fora da referência:</b>
+          {d.medidasComparadas.filter((m) => m.situacao === 'acima' || m.situacao === 'abaixo').map((m, i) => (
+            <span key={i} className="mr-3 inline-block">
+              {m. situacao === 'acima' ? '▲' : '▼'} <b>{m.grupo ? `${m.grupo} > ` : ''}{m.nome}:</b> {m.valor} {m.unidade} (ref. {m.faixaTexto})
+            </span>
+          ))}
+        </div>
       )}
       {d.laudo && (d.status === 'AguardandoRevisao' ? (
         <Revisao exameId={d.id} conteudoInicial={d.laudo.conteudo} imagensEnviadas={d.laudo.imagensEnviadas}
@@ -304,6 +343,7 @@ export function ExameDetalhe() {
       </Cartao>
 
       {/* dados do paciente e do exame */}
+      <div id="dados-exame" />
       <Cartao titulo="Dados do paciente e do exame"
         acoes={!somenteLeitura && (
           <button className="text-sm font-medium text-[#0E4D64] underline" onClick={() => setEditando(!editando)}>
@@ -407,6 +447,24 @@ export function ExameDetalhe() {
             </tbody>
           </table>
           <p className="mt-2 text-xs text-slate-500">Passe o mouse sobre uma linha para ver a fonte. Valores iniciais: confirme com a literatura adotada pela clínica.</p>
+        </details>
+      )}
+
+      {/* excluir o exame por completo (ex.: para enviar de novo pelo pendrive) */}
+      {perfilExclui && d.status !== 'Gerando' && (
+        <details className="rounded-xl border border-red-200 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-red-700">Excluir este exame</summary>
+          <p className="mt-2 text-sm text-slate-600">
+            Apaga o exame por completo: pré-laudos e laudos, envios, rótulos de imagem e as fotos, o PDF e os vídeos enviados pelo
+            pendrive. Depois disso dá para enviar o exame de novo pelo pendrive, como se fosse a primeira vez. Não tem volta.
+            {d.laudo && ' Os créditos já gastos com o pré-laudo não voltam: o lançamento fica no extrato, marcado como "exame excluído" (data e quem excluiu).'}
+            {d.laudo?.assinadoEm && ' Este exame tem laudo assinado: só o administrador da clínica pode excluí-lo, e o código de verificação deixa de valer.'}
+          </p>
+          {podeExcluir && (
+            <Botao variante="perigo" className="mt-3" disabled={excluindo || salvando} onClick={excluir}>
+              {excluindo ? 'Excluindo…' : `Excluir o exame de ${d.paciente.nome}`}
+            </Botao>
+          )}
         </details>
       )}
 

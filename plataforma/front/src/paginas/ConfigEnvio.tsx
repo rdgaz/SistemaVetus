@@ -31,6 +31,7 @@ const PROVEDORES: Record<string, { host: string; porta: number; seguranca: 'ssl'
 /** "Minha conta" → canais de envio que aparecem no Compartilhar e o SMTP próprio. */
 export function ConfigEnvio() {
   const [p, setP] = useState<Preferencias | null>(null);
+  const [inicial, setInicial] = useState('');
   const [senha, setSenha] = useState('');
   const [para, setPara] = useState('');
   const [erro, setErro] = useState('');
@@ -38,16 +39,19 @@ export function ConfigEnvio() {
   const [ocupado, setOcupado] = useState(false);
 
   useEffect(() => {
-    api<Preferencias>('GET', '/api/auth/envio').then(setP).catch((e) => setErro(e.message));
+    api<Preferencias>('GET', '/api/auth/envio')
+      .then((x) => { setP(x); setInicial(JSON.stringify(x)); })
+      .catch((e) => setErro(e.message));
   }, []);
   if (!p) return erro ? <Aviso>{erro}</Aviso> : null;
 
   const s = p.smtp;
-  const mudarSmtp = (m: Partial<Preferencias['smtp']>) => setP({ ...p, smtp: { ...s, ...m } });
+  const alterado = JSON.stringify(p) !== inicial || senha.length > 0;
+  const mudarSmtp = (m: Partial<Preferencias['smtp']>) => { setP({ ...p, smtp: { ...s, ...m } }); setOk(''); };
   const canal = (k: 'whatsapp' | 'email' | 'link' | 'pdf', titulo: string, dica: string) => (
-    <label className="flex min-h-11 cursor-pointer items-start gap-3">
-      <input type="checkbox" className="mt-1 size-5" checked={p[k]} onChange={(e) => setP({ ...p, [k]: e.target.checked })} />
-      <span><span className="font-medium">{titulo}</span><span className="block text-sm text-slate-500">{dica}</span></span>
+    <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-2.5 hover:bg-slate-50">
+      <input type="checkbox" className="mt-0.5 size-5" checked={p[k]} onChange={(e) => { setP({ ...p, [k]: e.target.checked }); setOk(''); }} />
+      <span><span className="font-medium">{titulo}</span><span className="block text-xs text-slate-500">{dica}</span></span>
     </label>
   );
 
@@ -73,6 +77,7 @@ export function ConfigEnvio() {
         smtp: { ...s, senha, limparSenha },
       });
       setP(novo);
+      setInicial(JSON.stringify(novo));
       setSenha('');
     }, 'Configuração de envio salva.');
   };
@@ -82,67 +87,81 @@ export function ConfigEnvio() {
 
   return (
     <Cartao titulo="Envio de laudos">
-      <form onSubmit={salvar} className="space-y-5">
+      <form onSubmit={salvar} className="space-y-4">
         {erro && <Aviso>{erro}</Aviso>}
         {ok && <Aviso tipo="ok">{ok}</Aviso>}
 
         <div className="space-y-2">
-          <p className="text-sm text-slate-600">Opções que aparecem para você no botão <b>Compartilhar</b> do laudo assinado:</p>
-          {canal('whatsapp', 'WhatsApp', 'Abre o WhatsApp com a mensagem e o link do laudo.')}
-          {canal('email', 'E-mail', 'Envia o PDF anexado pelo seu e-mail (precisa do SMTP abaixo).')}
-          {canal('link', 'Copiar link', 'Link público do laudo, sem login, com validade.')}
-          {canal('pdf', 'Baixar PDF', 'Baixar o arquivo ou, no celular, mandar pelo compartilhar do aparelho.')}
-          <div className="max-w-xs">
-            <Campo rotulo="Validade dos links (dias)" type="number" min={1} max={365} value={p.linkValidadeDias}
-              onChange={(e) => setP({ ...p, linkValidadeDias: Number(e.target.value) })} />
+          <p className="text-sm text-slate-600">Canais que aparecem para você no bloco <b>Compartilhar</b> do laudo assinado:</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {canal('whatsapp', 'WhatsApp', 'Abre o WhatsApp com a mensagem e o link do laudo.')}
+            {canal('pdf', 'Baixar PDF', 'Baixar o arquivo ou enviar pelo celular.')}
+            {canal('link', 'Copiar link', 'Link público do laudo, sem login, com validade.')}
+            {canal('email', 'E-mail (SMTP próprio)', 'Envia o PDF anexado direto da sua conta de e-mail.')}
           </div>
+          {(p.whatsapp || p.link) && (
+            <div className="max-w-xs pt-1">
+              <Campo rotulo="Validade dos links públicos (dias)" type="number" min={1} max={365} value={p.linkValidadeDias}
+                onChange={(e) => { setP({ ...p, linkValidadeDias: Number(e.target.value) }); setOk(''); }} />
+            </div>
+          )}
         </div>
 
-        <fieldset className="space-y-3 border-t border-slate-100 pt-4">
-          <legend className="font-semibold text-slate-700">Seu e-mail de saída (SMTP)</legend>
-          <p className="text-sm text-slate-600">
-            Os laudos saem do seu próprio e-mail. Em Gmail e Outlook, use uma <b>senha de app</b> (criada nas configurações
-            de segurança da conta), não a senha normal.
-            {p.smtpConfigurado ? <span className="ml-1 font-medium text-green-700">✓ Configurado</span> : <span className="ml-1 text-amber-800">Não configurado</span>}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(PROVEDORES).map(([nome, cfg]) => (
-              <button key={nome} type="button" onClick={() => mudarSmtp(cfg)}
-                className="min-h-9 rounded-full border border-slate-300 px-3 text-sm text-slate-700 hover:bg-slate-50">
-                {nome}
-              </button>
-            ))}
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Campo rotulo="Servidor (host)" placeholder="smtp.seudominio.com.br" value={s.host ?? ''} onChange={(e) => mudarSmtp({ host: e.target.value })} />
-            <Campo rotulo="Porta" type="number" placeholder="587" value={s.porta ?? ''} onChange={(e) => mudarSmtp({ porta: e.target.value ? Number(e.target.value) : null })} />
-            <Selecao rotulo="Segurança" value={s.seguranca} onChange={(e) => mudarSmtp({ seguranca: e.target.value as Preferencias['smtp']['seguranca'] })}>
-              <option value="starttls">STARTTLS (587)</option>
-              <option value="ssl">SSL (465)</option>
-              <option value="nenhuma">Nenhuma</option>
-            </Selecao>
-            <Campo rotulo="Usuário (login)" autoComplete="off" value={s.usuario ?? ''} onChange={(e) => mudarSmtp({ usuario: e.target.value })} />
-            <Campo rotulo="Senha (ou senha de app)" type="password" autoComplete="new-password" value={senha}
-              placeholder={s.senhaDefinida ? '•••••••• (guardada)' : ''} onChange={(e) => setSenha(e.target.value)}
-              dica={s.senhaDefinida ? 'Deixe em branco para manter a atual.' : undefined} />
-            <Campo rotulo="Nome do remetente" placeholder="Clínica Exemplo" value={s.remetenteNome ?? ''} onChange={(e) => mudarSmtp({ remetenteNome: e.target.value })} />
-            <Campo rotulo="E-mail do remetente" type="email" value={s.remetenteEmail ?? ''} onChange={(e) => mudarSmtp({ remetenteEmail: e.target.value })} />
-          </div>
-          {s.senhaDefinida && (
-            <button type="button" className="text-sm text-red-700 underline" onClick={() => salvar(undefined, true)}>Apagar a senha guardada</button>
-          )}
-        </fieldset>
-
-        <Botao type="submit" disabled={ocupado}>Salvar</Botao>
-
-        {p.smtpConfigurado && (
-          <div className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-4">
-            <div className="min-w-60 flex-1">
-              <Campo rotulo="Enviar e-mail de teste para" type="email" value={para} onChange={(e) => setPara(e.target.value)} />
+        {p.email && (
+          <details open={!p.smtpConfigurado} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+            <summary className="cursor-pointer font-semibold text-slate-700">
+              Configurar servidor de e-mail (SMTP)
+              {p.smtpConfigurado
+                ? <span className="ml-2 text-xs font-medium text-green-700">✓ Configurado ({s.remetenteEmail || s.usuario})</span>
+                : <span className="ml-2 text-xs font-medium text-amber-800">● Pendente</span>}
+            </summary>
+            <div className="mt-3 space-y-3">
+              <p className="text-sm text-slate-600">
+                Os laudos saem do seu próprio e-mail. Em Gmail e Outlook, use uma <b>senha de app</b> (criada nas configurações
+                de segurança da conta), não a senha normal.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(PROVEDORES).map(([nome, cfg]) => (
+                  <button key={nome} type="button" onClick={() => mudarSmtp(cfg)}
+                    className="min-h-8 rounded-full border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                    Preencher {nome}
+                  </button>
+                ))}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Campo rotulo="Servidor (host)" placeholder="smtp.seudominio.com.br" value={s.host ?? ''} onChange={(e) => mudarSmtp({ host: e.target.value })} />
+                <Campo rotulo="Porta" type="number" placeholder="587" value={s.porta ?? ''} onChange={(e) => mudarSmtp({ porta: e.target.value ? Number(e.target.value) : null })} />
+                <Selecao rotulo="Segurança" value={s.seguranca} onChange={(e) => mudarSmtp({ seguranca: e.target.value as Preferencias['smtp']['seguranca'] })}>
+                  <option value="starttls">STARTTLS (587)</option>
+                  <option value="ssl">SSL (465)</option>
+                  <option value="nenhuma">Nenhuma</option>
+                </Selecao>
+                <Campo rotulo="Usuário (login)" autoComplete="off" value={s.usuario ?? ''} onChange={(e) => mudarSmtp({ usuario: e.target.value })} />
+                <Campo rotulo="Senha (ou senha de app)" type="password" autoComplete="new-password" value={senha}
+                  placeholder={s.senhaDefinida ? '•••••••• (guardada)' : ''} onChange={(e) => { setSenha(e.target.value); setOk(''); }}
+                  dica={s.senhaDefinida ? 'Deixe em branco para manter a atual.' : undefined} />
+                <Campo rotulo="Nome do remetente" placeholder="Clínica Exemplo" value={s.remetenteNome ?? ''} onChange={(e) => mudarSmtp({ remetenteNome: e.target.value })} />
+                <Campo rotulo="E-mail do remetente" type="email" value={s.remetenteEmail ?? ''} onChange={(e) => mudarSmtp({ remetenteEmail: e.target.value })} />
+              </div>
+              {s.senhaDefinida && (
+                <button type="button" className="text-sm text-red-700 underline" onClick={() => salvar(undefined, true)}>Apagar a senha guardada</button>
+              )}
+              {p.smtpConfigurado && (
+                <div className="flex flex-wrap items-end gap-2 border-t border-slate-200 pt-3">
+                  <div className="min-w-60 flex-1">
+                    <Campo rotulo="Enviar e-mail de teste para" type="email" value={para} onChange={(e) => setPara(e.target.value)} />
+                  </div>
+                  <Botao type="button" variante="secundario" disabled={ocupado || !para} onClick={testar}>Enviar teste</Botao>
+                </div>
+              )}
             </div>
-            <Botao type="button" variante="secundario" disabled={ocupado || !para} onClick={testar}>Enviar teste</Botao>
-          </div>
+          </details>
         )}
+
+        <div className="flex items-center gap-3">
+          <Botao type="submit" disabled={!alterado || ocupado}>{ocupado ? 'Salvando…' : 'Salvar preferências'}</Botao>
+          {alterado && <span className="text-sm font-medium text-amber-800">● Alterações não salvas</span>}
+        </div>
       </form>
     </Cartao>
   );

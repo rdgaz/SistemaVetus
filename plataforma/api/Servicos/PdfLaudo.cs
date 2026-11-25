@@ -24,6 +24,25 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>Nome padrão do arquivo PDF do laudo (ex.: "laudo_ultrassonografico_Matilda.pdf").</summary>
+    public static string NomeArquivo(string? paciente)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in (paciente ?? "").Trim().Normalize(System.Text.NormalizationForm.FormD))
+        {
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.NonSpacingMark) continue;
+            if (char.IsLetterOrDigit(c) || c == '-') sb.Append(c);
+            else if (char.IsWhiteSpace(c) || c == '_') { if (sb.Length > 0 && sb[^1] != '_') sb.Append('_'); }
+        }
+        var limpo = sb.ToString().Trim('_');
+        if (string.IsNullOrEmpty(limpo)) limpo = "Exame";
+        return $"laudo_ultrassonografico_{limpo}.pdf";
+    }
+
+    /// <summary>Cabeçalho Content-Disposition simples e seguro (ASCII com underlines).</summary>
+    public static string CabecalhoArquivo(string? paciente, bool baixar = false) =>
+        $"{(baixar ? "attachment" : "inline")}; filename=\"{NomeArquivo(paciente)}\"";
+
     /// <summary>
     /// Gera o PDF. A aparência vem do layout da clínica; <paramref name="layout"/> permite simular outro (prévia da tela
     /// de personalização). Logo, assinatura e verificação online seguem as opções da clínica.
@@ -150,7 +169,16 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                     switch (secao.Id)
                     {
                         case "condicoes":
-                            if (Texto(c, "condicoesTecnicas") is { } cond) { TituloSecao(col, lay, "Condições técnicas"); col.Item().Text(cond); }
+                            if (Texto(c, "condicoesTecnicas") is { } cond)
+                            {
+                                col.Item().ShowEntire().Column(sec =>
+                                {
+                                    sec.Spacing(4);
+                                    TituloSecao(sec, lay, "Condições técnicas");
+                                    var tc = sec.Item().Text(cond);
+                                    if (lay.JustificarTexto) tc.Justify();
+                                });
+                            }
                             break;
                         case "achados":
                             TituloSecao(col, lay, lay.TextoTituloAchados ?? (lay.EstiloTitulos == "faixa" ? "Relatório Ultrassonográfico" : "Achados"));
@@ -164,6 +192,7 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                                     descricao = ModeloLaudo.LimparPrefixoOrgao(Texto(o, "orgao"), descricao); // sem "Baço: Baço: …"
                                     col.Item().Text(txt =>
                                     {
+                                        if (lay.JustificarTexto) txt.Justify();
                                         txt.Span($"{Texto(o, "orgao")}: ").Bold();
                                         txt.Span(descricao);
                                     });
@@ -172,8 +201,13 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                         case "impressao":
                             if (Texto(c, "impressaoDiagnostica") is { } imp)
                             {
-                                TituloSecao(col, lay, "Impressão diagnóstica", 11, 4);
-                                col.Item().Text(imp);
+                                col.Item().ShowEntire().Column(sec =>
+                                {
+                                    sec.Spacing(4);
+                                    TituloSecao(sec, lay, "Impressão diagnóstica", 11, 4);
+                                    var ti = sec.Item().Text(imp);
+                                    if (lay.JustificarTexto) ti.Justify();
+                                });
                             }
                             break;
                         case "diferenciais":
@@ -191,7 +225,7 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                                 av.Item().BorderTop(2).BorderColor(Colors.Grey.Lighten2);
                                 av.Item().PaddingTop(8).Text(lay.TextoAviso ?? ModeloLaudo.Observacao).FontSize(9).FontColor(Colors.Grey.Darken3);
                             });
-                            if (l.MotivoRetificacao is { } motivo)
+                            if (lay.MostrarRetificacao && l.MotivoRetificacao is { } motivo)
                                 col.Item().Text($"Retificação do laudo anterior. Motivo: {motivo}").FontSize(8.5f).FontColor(Colors.Red.Darken2);
                             break;
                         case "assinatura":
@@ -260,7 +294,9 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                 });
                 if (qr is not null && lay.PosicaoQr != "esquerda") row.ConstantItem(52).Height(52).Image(qr).FitArea();
             });
-        })).GeneratePdf();
+        }))
+        .WithMetadata(new DocumentMetadata { Title = Path.GetFileNameWithoutExtension(NomeArquivo(e.Paciente.Nome)) })
+        .GeneratePdf();
     }
 
     /// <summary>Título de seção: texto colorido, faixa com fundo ou, no estilo "caixa", dentro de uma caixa com borda.</summary>
@@ -280,7 +316,8 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
         "paciente" => p.Nome,
         "especie" => p.Especie,
         "raca" => p.Raca,
-        "sexo" => p.Sexo switch { "M" => "Macho", "F" => "Fêmea", "O" => "Outro", _ => null } + (p.Castrado == true ? " (castrado)" : ""),
+        // só o sexo, sem "(castrado/castrada)": a castração é um dado do cadastro, não aparece no laudo
+        "sexo" => p.Sexo switch { "M" => "Macho", "F" => "Fêmea", "O" => "Outro", _ => null },
         "idade" => e.Idade,
         "peso" => e.Peso,
         "responsavel" => p.Tutor?.Nome,
@@ -297,18 +334,33 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
     };
 
     /// <summary>Fotos escolhidas para a prancha (revisão) ou, se não houver escolha, as sugeridas pela IA.</summary>
+    /// <summary>Sugestão inicial de fotos na prancha (uma por órgão); a clínica pode pôr quantas quiser.</summary>
+    public const int SugestaoPrancha = 8;
+
+    /// <summary>
+    /// Fotos da prancha: as escolhidas na revisão; se não houve escolha, a sugestão: a primeira imagem que a IA associou a cada
+    /// órgão (até 8) ou, em laudos sem essa informação, as imagens sugeridas por ela.
+    /// </summary>
     private List<byte[]> FotosDaPrancha(Exame e, Laudo l, JsonElement c)
     {
+        var enviadas = JsonSerializer.Deserialize<List<string>>(l.ImagensEnviadas) ?? [];
+        string? Nome(int numero) => numero >= 1 && numero <= enviadas.Count ? enviadas[numero - 1] : null;
         var nomes = new List<string>();
         if (c.TryGetProperty("prancha", out var p) && p.ValueKind == JsonValueKind.Array)
             nomes = p.EnumerateArray().Select(x => x.GetString()).OfType<string>().ToList();
-        else if (c.TryGetProperty("imagensSugeridas", out var s) && s.ValueKind == JsonValueKind.Array)
+        else
         {
-            var enviadas = JsonSerializer.Deserialize<List<string>>(l.ImagensEnviadas) ?? [];
-            nomes = s.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number)
-                .Select(x => x.GetInt32() - 1).Where(i => i >= 0 && i < enviadas.Count).Select(i => enviadas[i]).ToList();
+            if (c.TryGetProperty("orgaos", out var orgaos) && orgaos.ValueKind == JsonValueKind.Array)
+                foreach (var o in orgaos.EnumerateArray())
+                    if (o.TryGetProperty("imagens", out var im) && im.ValueKind == JsonValueKind.Array
+                        && im.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => Nome(x.GetInt32())).OfType<string>().FirstOrDefault() is { } primeira
+                        && !nomes.Contains(primeira))
+                        nomes.Add(primeira);
+            if (nomes.Count == 0 && c.TryGetProperty("imagensSugeridas", out var s) && s.ValueKind == JsonValueKind.Array)
+                nomes = s.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => Nome(x.GetInt32())).OfType<string>().ToList();
+            nomes = nomes.Take(SugestaoPrancha).ToList();
         }
-        return nomes.Take(12)
+        return nomes
             .Select(nm => arq.Arquivo(e, Arquivos.Jpg, nm)).OfType<string>()
             .Select(File.ReadAllBytes).ToList();
     }

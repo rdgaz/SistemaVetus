@@ -11,6 +11,7 @@ Recebe exames do ultrassom veterinário (ex.: Mindray Vetus E7) por DICOM, gera 
 ```
 SistemaVetus/
 ├── receptor/        Receptor DICOM (Node.js): recebe, separa por formato e processa
+├── autolaudovet.desktop/  AutoLaudoVet Desktop: o receptor no notebook do cliente, ligado ao ultrassom por cabo de rede
 ├── plataforma/      Plataforma nova: API .NET 10 (api/) + telas React (front/) + PostgreSQL
 ├── web/             Área web antiga (protótipo): lista fotos, PDFs e medidas
 ├── tests/           e2e.js (ultrassom → fotos), plataforma.js (login, clínicas), exames.js (exames por clínica)
@@ -20,6 +21,15 @@ SistemaVetus/
 ├── .env.example     Modelo de configuração (copie para .env)
 └── .github/workflows/ci.yml   GitHub Actions: build dos containers + testes
 ```
+
+## AutoLaudoVet Desktop (ultrassom → notebook por cabo de rede)
+
+Para o veterinário volante (só o Vetus, um notebook e o celular). O ultrassom fica ligado ao notebook por **cabo de rede direto** (adaptador USB-Ethernet se precisar), numa rede particular de IP fixo (notebook `10.77.0.1`, aparelho `10.77.0.2`) que não depende do Wi-Fi do lugar. O aparelho envia por **DICOM**, e o notebook roda o mesmo `receptor/` sem a plataforma, com um painel local (`http://127.0.0.1:23460`). O IP fixo fica só na placa com fio, sem gateway: o Wi-Fi e a internet continuam normais.
+
+- Instalação e configuração do aparelho: [autolaudovet.desktop/LEIA-ME.md](autolaudovet.desktop/LEIA-ME.md)
+- Pacote com `node.exe`: `node ferramentas/empacotar-desktop.js` → `dist/autolaudovet.desktop.zip`
+- Teste: `node tests/desktop.js`
+- Envio para a nuvem: ainda não (plano em [docs/PLANO-AGENTE-LOCAL.md](docs/PLANO-AGENTE-LOCAL.md))
 
 ## Plataforma (clínicas, usuários e login)
 

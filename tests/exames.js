@@ -80,25 +80,35 @@ function montarExame(uid, paciente, tutor, imagensExtras = 0, duplicadas = 0, co
     Manufacturer: 'Teste', ManufacturerModelName: 'Simulador',
   };
   const img = { Rows: 1, Columns: 1, SamplesPerPixel: 1, PhotometricInterpretation: 'MONOCHROME2', BitsAllocated: 8, BitsStored: 8, HighBit: 7, PixelRepresentation: 0, _vrMap: { PixelData: 'OB' } };
-  const r = Array.from({ length: 2 + imagensExtras }, (_, k) => k + 1).map((i) => new CStoreRequest(new Dataset({ ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.6.1',
-    SOPInstanceUID: `${uid}.1.${i}`, SeriesInstanceUID: `${uid}.1`, InstanceNumber: String(i), PixelData: [ab(variante(i))] }, '1.2.840.10008.1.2.4.50')));
+  const r = Array.from({ length: 2 + imagensExtras }, (_, k) => k + 1).map((i) => new CStoreRequest(new Dataset({
+    ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.6.1',
+    SOPInstanceUID: `${uid}.1.${i}`, SeriesInstanceUID: `${uid}.1`, InstanceNumber: String(i), PixelData: [ab(variante(i))]
+  }, '1.2.840.10008.1.2.4.50')));
   for (let k = 1; k <= duplicadas; k++) {
-    r.push(new CStoreRequest(new Dataset({ ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.6.1',
-      SOPInstanceUID: `${uid}.9.${k}`, SeriesInstanceUID: `${uid}.1`, InstanceNumber: String(20 + k), PixelData: [ab(variante(1))] }, '1.2.840.10008.1.2.4.50')));
+    r.push(new CStoreRequest(new Dataset({
+      ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.6.1',
+      SOPInstanceUID: `${uid}.9.${k}`, SeriesInstanceUID: `${uid}.1`, InstanceNumber: String(20 + k), PixelData: [ab(variante(1))]
+    }, '1.2.840.10008.1.2.4.50')));
   }
-  r.push(new CStoreRequest(new Dataset({ ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.3.1', SOPInstanceUID: `${uid}.2.1`,
-    SeriesInstanceUID: `${uid}.1`, InstanceNumber: '3', NumberOfFrames: '3', PixelData: [ab(variante(100)), ab(variante(101)), ab(variante(102))] }, '1.2.840.10008.1.2.4.50')));
+  r.push(new CStoreRequest(new Dataset({
+    ...comum, ...img, SOPClassUID: '1.2.840.10008.5.1.4.1.1.3.1', SOPInstanceUID: `${uid}.2.1`,
+    SeriesInstanceUID: `${uid}.1`, InstanceNumber: '3', NumberOfFrames: '3', PixelData: [ab(variante(100)), ab(variante(101)), ab(variante(102))]
+  }, '1.2.840.10008.1.2.4.50')));
   if (comMedidas) {
     // relatório estruturado (SR) com 2 medidas: rim esquerdo 4,8 cm e parede do jejuno 2,0 mm
     const code = (v, m) => [{ CodeValue: v, CodingSchemeDesignator: '99TESTE', CodeMeaning: m }];
-    const num = (nome, valor, un) => ({ RelationshipType: 'CONTAINS', ValueType: 'NUM', ConceptNameCodeSequence: code(nome, nome),
-      MeasuredValueSequence: [{ NumericValue: valor, MeasurementUnitsCodeSequence: [{ CodeValue: un, CodingSchemeDesignator: 'UCUM', CodeMeaning: un }] }] });
-    r.push(new CStoreRequest(new Dataset({ ...comum, SOPClassUID: '1.2.840.10008.5.1.4.1.1.88.33', SOPInstanceUID: `${uid}.6.1`,
+    const num = (nome, valor, un) => ({
+      RelationshipType: 'CONTAINS', ValueType: 'NUM', ConceptNameCodeSequence: code(nome, nome),
+      MeasuredValueSequence: [{ NumericValue: valor, MeasurementUnitsCodeSequence: [{ CodeValue: un, CodingSchemeDesignator: 'UCUM', CodeMeaning: un }] }]
+    });
+    r.push(new CStoreRequest(new Dataset({
+      ...comum, SOPClassUID: '1.2.840.10008.5.1.4.1.1.88.33', SOPInstanceUID: `${uid}.6.1`,
       SeriesInstanceUID: `${uid}.6`, InstanceNumber: '1', ValueType: 'CONTAINER', ConceptNameCodeSequence: code('R', 'Relatório'),
       ContentSequence: [
         { RelationshipType: 'CONTAINS', ValueType: 'CONTAINER', ConceptNameCodeSequence: code('RE', 'Rim E'), ContentSequence: [num('Comprimento', '4.8', 'cm')] },
         { RelationshipType: 'CONTAINS', ValueType: 'CONTAINER', ConceptNameCodeSequence: code('AI', 'Alças intestinais'), ContentSequence: [num('Parede do jejuno', '2.0', 'mm')] },
-      ] }, '1.2.840.10008.1.2.1')));
+      ]
+    }, '1.2.840.10008.1.2.1')));
   }
   return r;
 }
@@ -240,7 +250,7 @@ async function esperarExame(nav, filtro, segundos = 40) {
     }
     ok(comLaudo && comLaudo.status === 'AguardandoRevisao', `fila gera o pré-laudo: Na fila -> Gerando -> Aguardando revisão (${comLaudo && comLaudo.status})`);
     const orgaos = comLaudo && comLaudo.laudo ? comLaudo.laudo.conteudo.orgaos.map((o) => o.orgao) : [];
-    ok(orgaos.includes('Fígado') && orgaos.includes('Próstata e testículos'), `pré-laudo com os órgãos do abdômen conforme o sexo (${orgaos.length})`);
+    ok(orgaos.includes('Fígado') && orgaos.includes('Próstata') && orgaos.includes('Testículos'), `pré-laudo com os órgãos do abdômen conforme o sexo (${orgaos.length})`);
     ok(comLaudo && comLaudo.laudo.versao === 1 && comLaudo.laudo.imagensEnviadas.length === 3, 'fotos enviadas à IA: 2 imagens + 1º quadro do vídeo');
 
     // cobrança: simulado = 5.000 tokens de entrada (2.000 + 3 fotos) e 3.000 de saída
@@ -302,6 +312,12 @@ async function esperarExame(nav, filtro, segundos = 40) {
     ok(resumo.resumo.cobradoBrl > 0 && resumo.resumo.cobradoBrl > resumo.resumo.custoBrl && resumo.saldoProvedorBrl < 40,
       `resumo do administrador: cobrado R$ ${resumo.resumo.cobradoBrl.toFixed(2)} > custo R$ ${resumo.resumo.custoBrl.toFixed(2)}; saldo no provedor descontado`);
     ok((await Y.nav.req('GET', '/api/admin/cobranca')).status === 403, 'clínica não acessa a configuração de cobrança');
+    const fin = (await adm.req('GET', '/api/admin/financeiro')).dados;
+    const finY = fin.clinicas.find((x) => x.clinicaId === Y.id);
+    ok(finY && finY.creditosGratis > 0 && finY.consumo > 0 && finY.custo > 0 && Math.abs(finY.lucro - (finY.consumo - finY.custo)) < 0.0001 && finY.usos >= 1,
+      `financeiro por clínica: consumido R$ ${finY && finY.consumo.toFixed(2)}, custo R$ ${finY && finY.custo.toFixed(4)}, lucro calculado`);
+    ok((await adm.req('GET', '/api/admin/financeiro?de=2000-01-01&ate=2000-01-31')).dados.total.usos === 0, 'financeiro filtra pelo período');
+    ok((await Y.nav.req('GET', '/api/admin/financeiro')).status === 403, 'clínica não vê o financeiro');
 
     // ---- passo 6: revisão, assinatura, PDF, verificação, retificação
     const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
@@ -314,6 +330,10 @@ async function esperarExame(nav, filtro, segundos = 40) {
     const revisado = JSON.parse(JSON.stringify(v4.conteudo));
     revisado.orgaos[0].descricao = 'Fígado revisado pelo veterinário.';
     revisado.prancha = salvo.fotos.slice(0, 2).map((f) => f.nome);
+    const p13 = JSON.parse(JSON.stringify(revisado)); p13.prancha = Array.from({ length: 13 }, (_, i) => salvo.fotos[i % salvo.fotos.length].nome);
+    ok((await Y.nav.req('PUT', `/api/exames/${idY}/laudo`, { conteudo: p13 })).status === 204, 'prancha com mais de 12 fotos é aceita');
+    const p31 = JSON.parse(JSON.stringify(revisado)); p31.prancha = Array.from({ length: 40 }, (_, i) => salvo.fotos[i % salvo.fotos.length].nome);
+    ok((await Y.nav.req('PUT', `/api/exames/${idY}/laudo`, { conteudo: p31 })).status === 204, 'prancha sem limite de fotos (40 aceitas)');
     ok((await Y.nav.req('PUT', `/api/exames/${idY}/laudo`, { conteudo: revisado })).status === 204, 'salva a revisão do laudo');
     const comRevisao = (await Y.nav.req('GET', `/api/exames/${idY}`)).dados.laudo;
     ok(comRevisao.revisado && comRevisao.conteudo.orgaos[0].descricao.includes('revisado') && comRevisao.conteudo.prancha.length === 2, 'revisão e prancha guardadas');
@@ -376,7 +396,16 @@ async function esperarExame(nav, filtro, segundos = 40) {
       'aprendizados: a discordância do alerta (com a leitura correta) vai para a IA');
     ok(apr.texto.includes('confundiu') && apr.texto.includes('"Fígado"') && apr.texto.includes('"Vesícula biliar"'), 'aprendizados: órgãos que a IA confundiu nas imagens');
     ok(apr.texto.includes('como o médico desta clínica escreve') && apr.texto.includes('Fígado de tamanho normal'), 'aprendizados: exemplo de como o médico escreve');
-    ok((await X.nav.req('GET', '/api/clinica/aprendizados')).dados.vazio === true, 'aprendizados são por clínica: outra clínica não recebe');
+    const aprX = (await X.nav.req('GET', '/api/clinica/aprendizados')).dados;
+    ok(!aprX.vazio && aprX.texto.includes('confundiu') && !aprX.texto.includes('como o médico desta clínica escreve'),
+      'aprendizados de imagens valem para todas as clínicas; estilo de escrita fica só na clínica');
+
+    // ---- o que vai para a IA: só o administrador do sistema vê (instruções, banco de frases, aprendizados, dados, fotos)
+    const pr = await adm.req('GET', `/api/admin/exames/${idY}/prompt`);
+    ok(pr.status === 200 && pr.dados.sistema.includes('PADRÃO DO MÉDICO') && pr.dados.sistema.includes('APRENDIZADOS DESTA CLÍNICA')
+      && pr.dados.texto.includes('ÓRGÃOS A AVALIAR') && pr.dados.fotos.length > 0, 'administrador do sistema vê o prompt completo do exame');
+    ok((await Y.nav.req('GET', `/api/admin/exames/${idY}/prompt`)).status === 403, 'a clínica não vê o prompt');
+    ok((await adm.req('GET', '/api/admin/exames')).dados.some((x) => x.id === idY), 'lista de exames de todas as clínicas para o administrador');
 
     const semCrmv = await Y.nav.req('POST', `/api/exames/${idY}/laudo/assinar`, {});
     ok(semCrmv.status === 400 && /CRMV/.test(semCrmv.dados.erro), 'assinar sem CRMV: recusado');

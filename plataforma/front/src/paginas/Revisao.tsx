@@ -46,10 +46,17 @@ const corBotaoSelecionado: Record<SituacaoOrgao, string> = {
 
 /** Prancha inicial: a escolhida na revisão ou as fotos sugeridas pela IA. */
 export function pranchaInicial(c: ConteudoLaudo, imagensEnviadas: string[]) {
-  return c.prancha ?? (c.imagensSugeridas ?? []).map((n) => imagensEnviadas[n - 1]).filter((x): x is string => !!x);
+  if (c.prancha) return c.prancha;
+  // sugestão: a primeira imagem que a IA associou a cada órgão (até 8); laudos sem isso usam as imagens sugeridas por ela
+  const porOrgao: string[] = [];
+  for (const o of c.orgaos ?? []) {
+    const nome = (o.imagens ?? []).map((n) => imagensEnviadas[n - 1]).find((x): x is string => !!x);
+    if (nome && !porOrgao.includes(nome)) porOrgao.push(nome);
+  }
+  const sugeridas = (c.imagensSugeridas ?? []).map((n) => imagensEnviadas[n - 1]).filter((x): x is string => !!x);
+  return (porOrgao.length > 0 ? porOrgao : sugeridas).slice(0, 8);
 }
 
-const MAX_PRANCHA = 12;
 const area = 'w-full rounded-lg border border-slate-300 bg-white p-2.5 text-[15px] outline-none focus:border-[#0E4D64] focus:ring-2 focus:ring-[#0E4D64]/20';
 
 /**
@@ -111,7 +118,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
   };
   const alternarFoto = (nome: string) => {
     if (prancha.includes(nome)) setC({ ...c, prancha: prancha.filter((x) => x !== nome) });
-    else if (prancha.length < MAX_PRANCHA) setC({ ...c, prancha: [...prancha, nome] });
+    else setC({ ...c, prancha: [...prancha, nome] }); // sem limite de fotos
   };
 
   const executar = async (acao: () => Promise<unknown>, ok: string) => {
@@ -145,7 +152,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
     <Cartao titulo="Revisão do laudo">
       {documento && (
         <DocumentoEditavel c={c} setC={setC} dados={dados} fotos={fotos} imagensEnviadas={imagensEnviadas} prancha={prancha}
-          alternarFoto={alternarFoto} maxPrancha={MAX_PRANCHA} aoSalvar={salvar} aoPrevia={previa} aoFechar={() => setDocumento(false)}
+          alternarFoto={alternarFoto} aoSalvar={salvar} aoPrevia={previa} aoFechar={() => setDocumento(false)}
           ocupado={ocupado} alterado={alterado} />
       )}
       {detalhe !== null && c.orgaos[detalhe] && (
@@ -168,12 +175,12 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
         <div className="space-y-3">
           <span className="block text-sm font-semibold text-slate-700">Achados por órgão</span>
           {c.orgaos.map((o, i) => (
-            <div key={o.orgao} className="rounded-lg border border-slate-200 p-3">
+            <div key={o.orgao} className={`rounded-lg border p-3 transition-colors ${o.situacao === 'alterado' ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200 bg-white'}`}>
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="mr-auto font-medium">{o.orgao}</span>
                 <button type="button" onClick={() => setDetalhe(i)} className="min-h-9 rounded-full border border-[#0E4D64]/40 bg-white px-3 text-xs font-semibold text-[#0E4D64] hover:bg-slate-50" title="Descrição, imagens do órgão e ditado por voz">Mais detalhes</button>
                 <FrasesProntas orgao={o.orgao} aoEscolher={(f) => {
-                  const normal = /^normai?s?\b/i.test(f.titulo);
+                  const normal = /^(normai?s?|ov[aá]rios normais|apenas um ov[aá]rio|castrad|padr[aã]o castrad|n[aã]o caracterizad|pelve renal normal)/i.test(f.titulo);
                   mudarOrgao(i, { situacao: normal ? 'normal' : 'alterado', descricao: f.descricao });
                   const novas = f.impressoes.filter((x) => !c.impressaoDiagnostica.includes(x));
                   if (novas.length) setC((atual) => ({ ...atual, impressaoDiagnostica: [atual.impressaoDiagnostica, ...novas].filter(Boolean).join('\n') }));
@@ -189,7 +196,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
               </div>
               <ImagensDoOrgao orgao={o} exameId={exameId} imagensEnviadas={imagensEnviadas} fotos={fotos} rotulos={rotulos} opcoes={opcoesRotulo}
                 aoRotular={(r) => setRotulos((atual) => ({ ...atual, [r.foto]: r }))} aoAbrirGaleria={aoAbrirGaleria} />
-              <textarea rows={3} className={area} value={o.descricao} onChange={(e) => mudarOrgao(i, { descricao: e.target.value })} />
+              <textarea rows={o.situacao === 'alterado' ? 3 : 2} className={area} value={o.descricao} onChange={(e) => mudarOrgao(i, { descricao: e.target.value })} />
             </div>
           ))}
         </div>
@@ -223,7 +230,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
         {/* prancha */}
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">Prancha do laudo ({prancha.length} de até {MAX_PRANCHA} fotos)</span>
+            <span className="text-sm font-semibold text-slate-700">Prancha do laudo ({prancha.length} foto(s))</span>
             <button type="button" className="text-sm font-medium text-[#0E4D64] underline" onClick={() => setEscolhendo(!escolhendo)}>
               {escolhendo ? 'Concluir escolha' : 'Escolher fotos'}
             </button>
@@ -259,8 +266,8 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
           )}
         </div>
 
-        {/* ações */}
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+        {/* ações: barra fixa inferior para salvar, ver prévia ou assinar de qualquer ponto da revisão */}
+        <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
           {alterado && <span className="mr-auto text-sm font-medium text-amber-800">● Revisão não salva</span>}
           <Botao variante="secundario" disabled={!alterado || ocupado} onClick={salvar}>Salvar revisão</Botao>
           <Botao variante="secundario" disabled={ocupado} onClick={() => setDocumento(true)}>Editar como documento</Botao>

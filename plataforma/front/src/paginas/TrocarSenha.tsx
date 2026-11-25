@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../api';
 import { useSessao } from '../sessao';
-import { Aviso, Botao, Campo, Cartao } from '../ui';
+import { Aviso, Botao, Campo } from '../ui';
 import { Logo } from '../marca';
 
 /** Troca de senha. Obrigatória no primeiro acesso (senha provisória); também usada em "Minha conta". */
@@ -48,7 +48,13 @@ export function TrocarSenha({ obrigatoria = false }: { obrigatoria?: boolean }) 
     </form>
   );
 
-  if (!obrigatoria) return <Cartao titulo="Senha">{formulario}</Cartao>;
+  if (!obrigatoria)
+    return (
+      <details open={!!erro || ok} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer font-semibold text-slate-800">Alterar minha senha</summary>
+        <div className="mt-3 max-w-md">{formulario}</div>
+      </details>
+    );
   return (
     <div className="flex min-h-dvh items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-md">

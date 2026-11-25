@@ -5,9 +5,9 @@ using Vetus.Api.Dados;
 namespace Vetus.Api.Servicos.Ia;
 
 /// <summary>
-/// O que a IA já aprendeu com as correções dos veterinários DESTA clínica, em texto para o prompt de cada pré-laudo:
-/// discordâncias de alertas urgentes, órgãos que ela confundiu nas imagens e exemplos de como o médico escreve.
-/// Por clínica: o critério e o estilo de uma clínica não vazam para outra.
+/// O que a IA já aprendeu com as correções dos veterinários, em texto para o prompt de cada pré-laudo:
+/// - Global (todas as clínicas usam): órgãos que a IA confundiu nas imagens e discordâncias de alertas urgentes.
+/// - Por clínica: exemplos de como o médico daquela clínica escreve (ditados aceitos).
 /// </summary>
 public class Aprendizados(VetusDb db)
 {
@@ -28,12 +28,15 @@ public class Aprendizados(VetusDb db)
     /// <summary>Texto dos aprendizados (vazio se ainda não há nenhum).</summary>
     public async Task<string> TextoParaIa(Guid clinicaId, CancellationToken ct = default)
     {
-        var discordancias = await db.DiscordanciasAlerta.Where(d => d.ClinicaId == clinicaId)
-            .OrderByDescending(d => d.CriadaEm).Take(8).ToListAsync(ct);
-        var confusoes = (await db.RotulosImagem.Where(r => r.ClinicaId == clinicaId && r.Tipo == "correcao" && r.OrgaoIa != null)
+        // aprendizados de imagem e diagnóstico (alertas e órgãos confundidos) valem para todas as clínicas,
+        // priorizando primeiro os casos da própria clínica
+        var discordancias = await db.DiscordanciasAlerta
+            .OrderByDescending(d => d.ClinicaId == clinicaId).ThenByDescending(d => d.CriadaEm).Take(8).ToListAsync(ct);
+        var confusoes = (await db.RotulosImagem.Where(r => r.Tipo == "correcao" && r.OrgaoIa != null)
                 .Select(r => new { r.OrgaoIa, r.OrgaoCorreto }).ToListAsync(ct))
             .GroupBy(r => (r.OrgaoIa, r.OrgaoCorreto)).Select(g => new { g.Key.OrgaoIa, g.Key.OrgaoCorreto, N = g.Count() })
-            .OrderByDescending(x => x.N).Take(6).ToList();
+            .OrderByDescending(x => x.N).Take(8).ToList();
+        // estilo de escrita continua específico da clínica
         var ditados = await db.DitadosOrgao.Where(d => d.ClinicaId == clinicaId && d.Aceito && d.TextoFinal != null)
             .OrderByDescending(d => d.CriadoEm).Take(3).ToListAsync(ct);
 
