@@ -117,12 +117,15 @@ public static class CobrancaEndpoints
         });
 
         // recarga (valor positivo) ou ajuste (negativo) no saldo de uma clínica
-        adm.MapPost("/clinicas/{id:guid}/saldo", async (Guid id, MovimentoReq r, HttpContext http, VetusDb db, Cobranca cobranca) =>
+        adm.MapPost("/clinicas/{id:guid}/saldo", async (Guid id, MovimentoReq r, HttpContext http, VetusDb db, Cobranca cobranca, RegistroAtividades registros) =>
         {
             if (!await db.Clinicas.AnyAsync(c => c.Id == id)) return Erros.NaoEncontrado("Clínica não encontrada.");
             if (r.Valor == 0 || Math.Abs(r.Valor) > 1_000_000) return Erros.Invalido("Informe um valor diferente de zero.");
             var saldo = await cobranca.Movimentar(id, Math.Round(r.Valor, 2), r.Valor > 0 ? "recarga" : "ajuste",
                 Texto.Opcional(r.Descricao) ?? (r.Valor > 0 ? "Recarga de créditos" : "Ajuste"), usuarioId: Acesso.UsuarioId(http.User));
+            await registros.Gravar(http, "creditos_lancados",
+                $"{(r.Valor > 0 ? "Recarga" : "Ajuste")} de R$ {Math.Round(r.Valor, 2):N2} — saldo R$ {saldo:N2}{(Texto.Opcional(r.Descricao) is { } d ? $" ({d})" : "")}",
+                clinicaId: id, clinicaNome: await db.Clinicas.Where(c => c.Id == id).Select(c => c.Nome).FirstAsync());
             return Results.Ok(new { saldo });
         });
 

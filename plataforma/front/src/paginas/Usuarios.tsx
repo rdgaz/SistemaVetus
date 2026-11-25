@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api, nomePerfil, type Perfil } from '../api';
+import { iniciaisNome } from '../App';
 import { useSessao } from '../sessao';
-import { Aviso, Botao, Campo, Cartao, Segredo, Selecao, Titulo } from '../ui';
+import { Aviso, Botao, Campo, Cartao, Segredo, Selecao } from '../ui';
+import { AbasClinica } from './DadosClinica';
+
+const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
 type UsuarioClinica = {
   usuarioId: string;
@@ -43,7 +47,7 @@ export function Usuarios() {
 
   return (
     <>
-      <Titulo>Usuários</Titulo>
+      <AbasClinica />
       <div className="space-y-4">
         {erro && <Aviso>{erro}</Aviso>}
         {criado && (
@@ -59,7 +63,14 @@ export function Usuarios() {
           </Cartao>
         )}
 
-        {novo ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-slate-600">
+            Equipe com acesso aos exames desta clínica ({lista.filter((u) => u.ativo).length} ativo(s)).
+          </p>
+          {!novo && <Botao onClick={() => setNovo(true)}>+ Adicionar usuário</Botao>}
+        </div>
+
+        {novo && (
           <NovoUsuario
             aoCancelar={() => setNovo(false)}
             aoCriar={(c) => {
@@ -68,34 +79,52 @@ export function Usuarios() {
               carregar();
             }}
           />
-        ) : (
-          <Botao onClick={() => setNovo(true)}>+ Adicionar usuário</Botao>
         )}
 
         <div className="space-y-2">
-          {lista.map((u) => (
-            <div key={u.usuarioId}
-              className={`flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center ${u.ativo ? '' : 'opacity-60'}`}>
-              <div className="min-w-0 flex-1">
-                <div className="font-medium">
-                  {u.nome} {!u.ativo && <span className="text-sm text-slate-500">(desativado)</span>}
+          {lista.map((u) => {
+            const ehVoce = u.usuarioId === usuario?.id;
+            const temCrmv = !!(u.crmv && u.crmvUf);
+            const assina = u.perfil === 'Veterinario' || u.perfil === 'AdministradorClinica';
+            return (
+              <div key={u.usuarioId}
+                className={`flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center ${u.ativo ? '' : 'opacity-60'}`}>
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#0E4D64]/10 text-sm font-bold text-[#0E4D64]">
+                    {iniciaisNome(u.nome)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
+                      <span className="truncate">{u.nome}</span>
+                      {ehVoce && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">Você</span>}
+                      {!u.ativo && <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Desativado</span>}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                      <span className="truncate">{u.email}</span>
+                      {temCrmv ? (
+                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800">
+                          CRMV-{u.crmvUf!.toUpperCase()} {u.crmv}
+                        </span>
+                      ) : assina ? (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                          Sem CRMV (não assina)
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
-                <div className="truncate text-sm text-slate-500">
-                  {u.email}
-                  {u.crmv && ` · CRMV ${u.crmv}${u.crmvUf ? `/${u.crmvUf}` : ''}`}
+                <div className="flex gap-2">
+                  <Selecao aria-label="Perfil" value={u.perfil} disabled={!u.ativo}
+                    onChange={(e) => alterar(u, { perfil: e.target.value as Perfil })}>
+                    {perfis.map((p) => <option key={p} value={p}>{nomePerfil[p]}</option>)}
+                  </Selecao>
+                  <Botao variante={u.ativo ? 'perigo' : 'secundario'} onClick={() => alterar(u, { ativo: !u.ativo })}>
+                    {u.ativo ? 'Desativar' : 'Reativar'}
+                  </Botao>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Selecao aria-label="Perfil" value={u.perfil} disabled={!u.ativo}
-                  onChange={(e) => alterar(u, { perfil: e.target.value as Perfil })}>
-                  {perfis.map((p) => <option key={p} value={p}>{nomePerfil[p]}</option>)}
-                </Selecao>
-                <Botao variante={u.ativo ? 'perigo' : 'secundario'} onClick={() => alterar(u, { ativo: !u.ativo })}>
-                  {u.ativo ? 'Desativar' : 'Reativar'}
-                </Botao>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>
@@ -118,7 +147,7 @@ function NovoUsuario({ aoCancelar, aoCriar }: { aoCancelar: () => void; aoCriar:
   };
 
   return (
-    <Cartao titulo="Adicionar usuário">
+    <Cartao titulo="Adicionar usuário à clínica">
       <form onSubmit={enviar} className="space-y-4">
         {erro && <Aviso>{erro}</Aviso>}
         <p className="text-sm text-slate-500">
@@ -131,9 +160,12 @@ function NovoUsuario({ aoCancelar, aoCriar }: { aoCancelar: () => void; aoCriar:
           <Selecao rotulo="Perfil" value={f.perfil} onChange={mudar('perfil')}>
             {perfis.map((p) => <option key={p} value={p}>{nomePerfil[p]}</option>)}
           </Selecao>
-          <div className="grid grid-cols-[1fr_5rem] gap-2">
+          <div className="grid grid-cols-[1fr_7rem] gap-2">
             <Campo rotulo="CRMV" value={f.crmv} onChange={mudar('crmv')} dica="Veterinários" />
-            <Campo rotulo="UF" maxLength={2} value={f.crmvUf} onChange={mudar('crmvUf')} />
+            <Selecao rotulo="UF" value={f.crmvUf} onChange={mudar('crmvUf')}>
+              <option value="">—</option>
+              {UFS.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
+            </Selecao>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -26,19 +26,21 @@ public static class LayoutEndpoints
             });
         }).ExigirClinica();
 
-        g.MapPut("", async (LayoutLaudo r, HttpContext http, VetusDb db) =>
+        g.MapPut("", async (LayoutLaudo r, HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             var c = http.VinculoAtual().Clinica;
             c.LayoutLaudo = r.Serializar();
             await db.SaveChangesAsync();
+            await registros.Gravar(http, "layout_alterado", "Aparência do laudo alterada");
             return Results.Ok(new { layout = LayoutLaudo.Ler(c.LayoutLaudo) });
         }).ExigirClinica(Perfil.AdministradorClinica);
 
         // volta ao padrão
-        g.MapDelete("", async (HttpContext http, VetusDb db) =>
+        g.MapDelete("", async (HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             http.VinculoAtual().Clinica.LayoutLaudo = null;
             await db.SaveChangesAsync();
+            await registros.Gravar(http, "layout_alterado", "Aparência do laudo voltou ao padrão");
             return Results.NoContent();
         }).ExigirClinica(Perfil.AdministradorClinica);
 

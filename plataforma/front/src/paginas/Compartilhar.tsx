@@ -132,16 +132,58 @@ export function Compartilhar({ exameId, paciente, tutor, telefone, emailTutor, c
       <h3 className="font-semibold text-slate-700">Compartilhar</h3>
       {erro && <Aviso>{erro}</Aviso>}
       {ok && <Aviso tipo="ok">{ok}</Aviso>}
-      {nenhum && <p className="text-sm text-slate-500">Nenhum canal de envio ativo. Ative em "Minha conta" → Envio de laudos.</p>}
+      {nenhum && <p className="text-sm text-slate-500">Nenhum canal de envio ativo. Ative em "Clínica" → Envio de laudos.</p>}
 
       <div className="flex flex-wrap gap-2">
-        {pref.whatsapp && <button className={botao(aberto === 'whatsapp')} onClick={() => setAberto(aberto === 'whatsapp' ? null : 'whatsapp')}>WhatsApp</button>}
+        {pref.whatsapp && (
+          <button
+            className={botao(aberto === 'whatsapp')}
+            onClick={() => setAberto(aberto === 'whatsapp' ? null : 'whatsapp')}
+            title="Abre o WhatsApp com a mensagem e o link de acesso do laudo"
+          >
+            WhatsApp
+          </button>
+        )}
         {pref.email && (pref.smtpConfigurado
-          ? <button className={botao(aberto === 'email')} onClick={() => setAberto(aberto === 'email' ? null : 'email')}>E-mail</button>
-          : <span className="self-center text-xs text-slate-500">E-mail: configure o SMTP em "Minha conta".</span>)}
-        {pref.link && <button className={botao(false)} disabled={ocupado} onClick={copiarLink}>Copiar link</button>}
-        {pref.pdf && <button className={botao(false)} onClick={baixarPdf}>Baixar PDF</button>}
-        {pref.pdf && podeCompartilharArquivo && <button className={botao(false)} disabled={ocupado} onClick={compartilharArquivo}>Enviar PDF (celular)</button>}
+          ? (
+            <button
+              className={botao(aberto === 'email')}
+              onClick={() => setAberto(aberto === 'email' ? null : 'email')}
+              title="Envia o PDF do laudo anexado por e-mail"
+            >
+              E-mail
+            </button>
+          )
+          : <span className="self-center text-xs text-slate-500">E-mail: configure o SMTP em "Clínica".</span>)}
+        {pref.link && (
+          <button
+            className={botao(false)}
+            disabled={ocupado}
+            onClick={copiarLink}
+            title="Copia o link de acesso do exame para a sua área de transferência"
+          >
+            Copiar link
+          </button>
+        )}
+        {pref.pdf && (
+          <button
+            className={botao(false)}
+            onClick={baixarPdf}
+            title="Faz o download do PDF do laudo para o seu dispositivo"
+          >
+            Baixar PDF
+          </button>
+        )}
+        {pref.pdf && podeCompartilharArquivo && (
+          <button
+            className={botao(false)}
+            disabled={ocupado}
+            onClick={compartilharArquivo}
+            title="Envia o arquivo PDF pelos aplicativos instalados no seu celular ou computador"
+          >
+            Compartilhar por app
+          </button>
+        )}
       </div>
 
       {(aberto === 'whatsapp' || aberto === 'email') && (

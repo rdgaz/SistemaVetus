@@ -27,7 +27,7 @@ public static class ClinicaEndpoints
             });
         }).ExigirClinica();
 
-        g.MapPut("", async (DadosClinicaReq r, HttpContext http, VetusDb db) =>
+        g.MapPut("", async (DadosClinicaReq r, HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             if (string.IsNullOrWhiteSpace(r.Nome)) return Erros.Invalido("Informe o nome da clínica.");
             var c = http.VinculoAtual().Clinica;
@@ -40,6 +40,7 @@ public static class ClinicaEndpoints
             if (r.InformacoesObrigatorias is { } obrig) c.InformacoesObrigatorias = obrig;
             if (r.VerificacaoOnline is { } verif) c.VerificacaoOnline = verif;
             await db.SaveChangesAsync();
+            await registros.Gravar(http, "clinica_alterada", "Dados e configurações da clínica alterados");
             return Results.NoContent();
         }).ExigirClinica(Perfil.AdministradorClinica);
 
@@ -58,7 +59,7 @@ public static class ClinicaEndpoints
         }).ExigirClinica(Perfil.AdministradorClinica);
 
         // Dá acesso a um usuário: cria a conta (com senha provisória) ou vincula uma conta existente
-        g.MapPost("/usuarios", async (NovoUsuarioReq r, HttpContext http, VetusDb db) =>
+        g.MapPost("/usuarios", async (NovoUsuarioReq r, HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             var clinicaId = http.VinculoAtual().ClinicaId;
             var email = Seguranca.NormalizarEmail(r.Email);
@@ -88,6 +89,7 @@ public static class ClinicaEndpoints
 
             db.Vinculos.Add(new Vinculo { Usuario = u, ClinicaId = clinicaId, Perfil = perfil });
             await db.SaveChangesAsync();
+            await registros.Gravar(http, "usuario_criado", $"{u.Nome} ({u.Email}) adicionado à clínica como {perfil}");
             return Results.Created($"/api/clinica/usuarios/{u.Id}", new
             {
                 usuarioId = u.Id, u.Nome, u.Email, perfil,
@@ -96,7 +98,7 @@ public static class ClinicaEndpoints
             });
         }).ExigirClinica(Perfil.AdministradorClinica);
 
-        g.MapPut("/usuarios/{usuarioId:guid}", async (Guid usuarioId, AlterarVinculoReq r, HttpContext http, VetusDb db) =>
+        g.MapPut("/usuarios/{usuarioId:guid}", async (Guid usuarioId, AlterarVinculoReq r, HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             var clinicaId = http.VinculoAtual().ClinicaId;
             var v = await db.Vinculos.FirstOrDefaultAsync(x => x.UsuarioId == usuarioId && x.ClinicaId == clinicaId);
@@ -113,6 +115,9 @@ public static class ClinicaEndpoints
             v.Perfil = novoPerfil;
             v.Ativo = novoAtivo;
             if (r.IdentidadePropria is { } propria) v.IdentidadePropria = propria;
+            var alvo = await db.Usuarios.Where(x => x.Id == usuarioId).Select(x => new { x.Nome, x.Email }).FirstAsync();
+            await registros.Adicionar(http, "usuario_alterado",
+                $"{alvo.Nome} ({alvo.Email}): {(novoAtivo ? "ativo" : "desativado")}, perfil {novoPerfil}");
             await db.SaveChangesAsync();
             return Results.NoContent();
         }).ExigirClinica(Perfil.AdministradorClinica);

@@ -4,7 +4,7 @@ import { api } from '../api';
 import { dataBR, nomeSexo, SeloStatus, type StatusExame } from '../exames';
 import { useSessao } from '../sessao';
 import { Aviso, AvisoIa, Botao, Campo, Cartao, Selecao } from '../ui';
-import { AlertaUrgente, corSituacao, nomeSituacao, pranchaInicial, Revisao, type ConteudoLaudo } from './Revisao';
+import { AlertaUrgente, corSituacao, nomeSituacao, pranchaInicial, Revisao, type ConteudoLaudo, type ControleRevisao } from './Revisao';
 import { Compartilhar } from './Compartilhar';
 import { reais } from '../dinheiro';
 
@@ -120,6 +120,9 @@ export function ExameDetalhe() {
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
   const [salvando, setSalvando] = useState(false);
+  // revisão em andamento: a barra de baixo salva e assina por ela
+  const [revisaoCtl, setRevisaoCtl] = useState<ControleRevisao | null>(null);
+  const [pedindoAnalise, setPedindoAnalise] = useState(false);
   const [fotoAberta, setFotoAberta] = useState<number | null>(null);
   // galeria só com as imagens do alerta de achado urgente
   const [galeria, setGaleria] = useState<{ fotos: Arquivo[]; indice: number } | null>(null);
@@ -229,6 +232,27 @@ export function ExameDetalhe() {
     executar(() => api('PUT', `/api/exames/${d.id}`, { urgente: !d.urgente }), d.urgente ? 'Urgência removida.' : 'Marcado como urgente: passa na frente na fila.');
 
   const textoGerar = d.laudo ? 'Atualizar pré-laudo' : d.status === 'Erro' ? 'Gerar de novo' : 'Gerar pré-laudo';
+  // em revisão: um "Salvar" para tudo (dados do exame + texto do laudo) e "Aprovar e assinar" na barra
+  const emRevisao = d.status === 'AguardandoRevisao' && !!d.laudo && !!revisaoCtl;
+  const algoAlterado = alterado || !!revisaoCtl?.alterado;
+  const salvarTudo = () => executar(async () => {
+    if (alterado) await api('PUT', `/api/exames/${d.id}`, paraApi(f));
+    if (revisaoCtl?.alterado) await revisaoCtl.salvar();
+  }, 'Alterações salvas.');
+  const assinarTudo = async () => {
+    if (!revisaoCtl) return;
+    if (alterado) {
+      try { await api('PUT', `/api/exames/${d.id}`, paraApi(f)); } catch (x) { setErro((x as Error).message); return; }
+    }
+    await revisaoCtl.assinar(); // pergunta se conferiu, salva o texto pendente e assina
+  };
+  const novaAnalise = async (completa: boolean) => {
+    if (revisaoCtl?.alterado) {
+      try { await revisaoCtl.salvar(); } catch (x) { setErro((x as Error).message); return; }
+    }
+    setPedindoAnalise(false);
+    await gerar(completa);
+  };
   const podeGerar = d.status !== 'NaFila' && !somenteLeitura;
   const perfilExclui = clinica?.perfil === 'Veterinario' || clinica?.perfil === 'AdministradorClinica';
   const podeExcluir = d.status !== 'Gerando' && (clinica?.perfil === 'AdministradorClinica' || (clinica?.perfil === 'Veterinario' && !d.laudo?.assinadoEm));
@@ -251,12 +275,6 @@ export function ExameDetalhe() {
             <button type="button" onClick={() => { setEditando(true); setTimeout(() => document.getElementById('dados-exame')?.scrollIntoView({ behavior: 'smooth' }), 50); }}
               className="rounded-full border border-slate-300 bg-white px-3 py-0.5 text-xs font-semibold text-[#0E4D64] hover:bg-slate-50">
               ✎ Editar dados
-            </button>
-          )}
-          {podeExcluir && (
-            <button type="button" onClick={excluir} disabled={excluindo || salvando}
-              className="ml-auto rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">
-              {excluindo ? 'Excluindo…' : 'Excluir exame'}
             </button>
           )}
         </div>
@@ -305,7 +323,7 @@ export function ExameDetalhe() {
       )}
       {d.laudo && (d.status === 'AguardandoRevisao' ? (
         <Revisao exameId={d.id} conteudoInicial={d.laudo.conteudo} imagensEnviadas={d.laudo.imagensEnviadas}
-          fotos={d.fotos} mascaras={d.mascaras} aoMudar={() => carregar()}
+          fotos={d.fotos} mascaras={d.mascaras} aoMudar={() => carregar()} registrar={setRevisaoCtl}
           aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))}
           aoAbrirGaleria={(lista, indice) => setGaleria({ fotos: lista, indice })}
           dados={{ clinicaId: d.clinicaId, paciente: d.paciente, tutor: d.tutor?.nome ?? null, idade: d.idade, peso: d.peso, data: d.data, hora: d.hora,
@@ -450,32 +468,49 @@ export function ExameDetalhe() {
         </details>
       )}
 
-      {/* excluir o exame por completo (ex.: para enviar de novo pelo pendrive) */}
-      {perfilExclui && d.status !== 'Gerando' && (
-        <details className="rounded-xl border border-red-200 bg-white p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-red-700">Excluir este exame</summary>
-          <p className="mt-2 text-sm text-slate-600">
-            Apaga o exame por completo: pré-laudos e laudos, envios, rótulos de imagem e as fotos, o PDF e os vídeos enviados pelo
-            pendrive. Depois disso dá para enviar o exame de novo pelo pendrive, como se fosse a primeira vez. Não tem volta.
-            {d.laudo && ' Os créditos já gastos com o pré-laudo não voltam: o lançamento fica no extrato, marcado como "exame excluído" (data e quem excluiu).'}
-            {d.laudo?.assinadoEm && ' Este exame tem laudo assinado: só o administrador da clínica pode excluí-lo, e o código de verificação deixa de valer.'}
-          </p>
-          {podeExcluir && (
-            <Botao variante="perigo" className="mt-3" disabled={excluindo || salvando} onClick={excluir}>
-              {excluindo ? 'Excluindo…' : `Excluir o exame de ${d.paciente.nome}`}
-            </Botao>
-          )}
-        </details>
-      )}
-
       {/* ações: barra fixa embaixo no celular */}
       {!somenteLeitura && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0">
-          {alterado && (
+          {(emRevisao ? algoAlterado : alterado) && (
             <p className="mx-auto mb-2 max-w-6xl text-center text-sm font-medium text-amber-800 md:text-right">
               ● Alterações não salvas
             </p>
           )}
+          {emRevisao ? (
+            <>
+              <div className="mx-auto flex max-w-6xl gap-2 md:justify-end">
+                <Botao variante="secundario" className="flex-1 md:flex-none" disabled={!algoAlterado || salvando || revisaoCtl.ocupado} onClick={salvarTudo}>
+                  Salvar
+                </Botao>
+                <Botao className="flex-[2] md:flex-none" disabled={salvando || revisaoCtl.ocupado || !revisaoCtl.podeAssinar} onClick={assinarTudo}>
+                  {salvando || revisaoCtl.ocupado ? 'Aguarde…' : 'Aprovar e assinar'}
+                </Botao>
+              </div>
+              {revisaoCtl.motivoNaoAssina && (
+                <p className="mx-auto mt-1 max-w-6xl text-center text-xs text-amber-800 md:text-right">{revisaoCtl.motivoNaoAssina}</p>
+              )}
+              <p className="mx-auto mt-2 max-w-6xl text-center text-xs md:text-right">
+                <button type="button" className="font-medium text-[#0E4D64] underline" disabled={salvando} onClick={() => setPedindoAnalise(!pedindoAnalise)}>
+                  Pedir nova análise à IA (usa créditos)
+                </button>
+              </p>
+              {pedindoAnalise && (
+                <div className="mx-auto mt-2 grid max-w-6xl gap-2 sm:grid-cols-2">
+                  <button type="button" disabled={salvando || faltaParaGerar.length > 0} onClick={() => novaAnalise(false)}
+                    className="rounded-lg border border-slate-300 bg-white p-3 text-left hover:bg-slate-50 disabled:opacity-50">
+                    <span className="block text-sm font-semibold text-slate-800">Atualizar com o que mudou</span>
+                    <span className="block text-xs text-slate-500">Usa o laudo atual, com as suas edições. Sem foto nova, vai sem imagens. Custo baixo.</span>
+                  </button>
+                  <button type="button" disabled={salvando || faltaParaGerar.length > 0} onClick={() => novaAnalise(true)}
+                    className="rounded-lg border border-slate-300 bg-white p-3 text-left hover:bg-slate-50 disabled:opacity-50">
+                    <span className="block text-sm font-semibold text-slate-800">Refazer análise completa</span>
+                    <span className="block text-xs text-slate-500">A IA olha todas as imagens de novo. Custo de um pré-laudo inteiro.</span>
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+          <>
           <div className="mx-auto flex max-w-6xl gap-2 md:justify-end">
             <Botao variante="secundario" className="flex-1 md:flex-none" disabled={!alterado || salvando} onClick={salvar}>
               Salvar
@@ -492,6 +527,24 @@ export function ExameDetalhe() {
                 Refazer análise completa
               </button>
             </p>
+          )}
+          </>
+          )}
+        </div>
+      )}
+
+      {/* excluir o exame por completo: fica apenas no final da página do exame */}
+      {perfilExclui && d.status !== 'Gerando' && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-white p-4">
+          <div className="min-w-0 flex-1 text-xs text-slate-600">
+            <span className="font-semibold text-red-700">Excluir este exame: </span>
+            apaga o exame, laudos e arquivos enviados (os aprendizados da IA são preservados).
+            {d.laudo?.assinadoEm && !podeExcluir && ' Este exame possui laudo assinado (só o administrador da clínica pode excluí-lo).'}
+          </div>
+          {podeExcluir && (
+            <Botao variante="perigo" disabled={excluindo || salvando} onClick={excluir}>
+              {excluindo ? 'Excluindo…' : 'Excluir exame'}
+            </Botao>
           )}
         </div>
       )}
@@ -538,12 +591,18 @@ function LaudoAssinado({ exameId, laudo, verificacao, aoMudar, compartilhar }: {
           Código de verificação: <span className="font-mono font-semibold">{laudo.codigoVerificacao}</span>{' '}
           <a className="text-[#0E4D64] underline" href={`/verificar/${laudo.codigoVerificacao}`} target="_blank" rel="noreferrer">verificar</a>
         </p>}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-3 pt-1">
           <a href={`/api/exames/${exameId}/laudo.pdf`} target="_blank" rel="noreferrer"
-            className="inline-flex min-h-11 items-center rounded-lg bg-[#0E4D64] px-4 font-medium text-white hover:bg-[#0B3D50]">
-            Abrir PDF
+            title="Abre o PDF do laudo assinado em uma nova aba para visualizar ou imprimir"
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#0E4D64] px-6 text-base font-semibold text-white shadow-sm transition hover:bg-[#0B3D50]">
+            <span>📄</span>
+            <span>Visualizar Laudo em PDF</span>
           </a>
-          {podeRetificar && <Botao variante="secundario" onClick={retificar}>Retificar</Botao>}
+          {podeRetificar && (
+            <Botao variante="secundario" onClick={retificar} title="Cria uma nova versão do laudo para corrigir alguma informação">
+              Retificar
+            </Botao>
+          )}
         </div>
         {compartilhar}
       </div>

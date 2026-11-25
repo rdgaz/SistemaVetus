@@ -57,8 +57,9 @@ public static partial class PendriveEndpoints
             HttpContext http, Arquivos arq, ILoggerFactory logs) =>
         {
             if (Validar(idAnimal, subpasta) is { } erro) return Erros.Invalido(erro);
-            if (!NomeArquivoRegex().IsMatch(nome)) return Erros.Invalido("Arquivo não aceito (só fotos .jpg, o relatório .pdf e vídeos .mp4).");
+            if (!NomeArquivoRegex().IsMatch(nome)) return Erros.Invalido("Arquivo não aceito (só fotos .jpg/.jpeg, o relatório .pdf e vídeos .mp4).");
             var sub = Path.GetExtension(nome).TrimStart('.').ToLowerInvariant();
+            if (sub == "jpeg") { sub = Arquivos.Jpg; nome = Path.ChangeExtension(nome, ".jpg"); }
             var max = sub == Arquivos.Mp4 ? MaxVideo : MaxFoto;
             if (http.Request.ContentLength is > 0 and var n && n > max)
                 return Results.Json(new { erro = $"Arquivo grande demais (máximo {max / 1024 / 1024} MB)." }, statusCode: 413);
@@ -87,7 +88,7 @@ public static partial class PendriveEndpoints
         }).ExigirClinica();
 
         // Todos os arquivos enviados: lê o PDF e cria o exame (ou atualiza o mesmo exame)
-        g.MapPost("/{idAnimal}/{subpasta}/concluir", async (string idAnimal, string subpasta, ConcluirReq r,
+        g.MapPost("/{idAnimal}/{subpasta}/concluir", async (string idAnimal, string subpasta, ConcluirReq r, RegistroAtividades registros,
             HttpContext http, VetusDb db, Arquivos arq, ILoggerFactory logs) =>
         {
             if (Validar(idAnimal, subpasta) is { } erro) return Erros.Invalido(erro);
@@ -112,7 +113,7 @@ public static partial class PendriveEndpoints
                 }
                 catch (Exception x) { logs.CreateLogger("Pendrive").LogWarning("PDF {Pasta} não lido: {Erro}", pasta, x.Message); }
             }
-            if (rel is not null && rel.IdAnimal is { } idPdf && idPdf != idAnimal)
+            if (!idAnimal.EndsWith("-0000", StringComparison.Ordinal) && rel is not null && rel.IdAnimal is { } idPdf && idPdf != idAnimal)
                 return Erros.Invalido($"O relatório (PDF) é de outro animal ({idPdf}), não de {idAnimal}.");
             await File.WriteAllTextAsync(Path.Combine(dir, "medidas.json"), JsonSerializer.Serialize(
                 (rel?.Medidas ?? []).Select(m => new { grupo = m.Grupo ?? "", nome = m.Nome, valor = m.Valor, unidade = m.Unidade ?? "", complemento = m.Complemento, origem = "pdf" })));
@@ -151,7 +152,7 @@ public static partial class PendriveEndpoints
             }
 
             exame.PastaPendrive = pasta;
-            exame.IdAnimal ??= idAnimal;
+            exame.IdAnimal ??= rel?.IdAnimal ?? idAnimal;
             // dados do aparelho: só preenchem o que está vazio (não apagam o que a clínica corrigiu)
             exame.Tipo ??= prefixo;
             exame.Data ??= data;
@@ -168,6 +169,9 @@ public static partial class PendriveEndpoints
             exame.AtualizadoEm = DateTime.UtcNow;
             await db.SaveChangesAsync();
 
+            await registros.Gravar(http, "exame_enviado_pendrive",
+                $"{(novo ? "Exame enviado" : "Exame reenviado")} pelo pendrive ({fotos.Count} foto(s), {pdfs.Count} PDF, {videos.Count} vídeo(s))",
+                exame.Id, exame.Paciente.Nome);
             return Results.Ok(new
             {
                 exame.Id, exame.Status, exame.Origem, novo, exame.FotosPendrive,
@@ -209,5 +213,5 @@ public static partial class PendriveEndpoints
 
     [GeneratedRegex(@"^\d{8}-\d{6}-[0-9A-Fa-f]{4}$")] private static partial Regex IdAnimalRegex();
     [GeneratedRegex(@"^([A-Z]{2,5})\d{14}$")] private static partial Regex PrefixoRegex();
-    [GeneratedRegex(@"^[\w\-#. ()]{1,120}\.(jpg|pdf|mp4)$", RegexOptions.IgnoreCase)] private static partial Regex NomeArquivoRegex();
+    [GeneratedRegex(@"^[\w\-#. ()]{1,120}\.(jpg|jpeg|pdf|mp4)$", RegexOptions.IgnoreCase)] private static partial Regex NomeArquivoRegex();
 }

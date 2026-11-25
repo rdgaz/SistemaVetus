@@ -18,6 +18,7 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
     public DbSet<DiscordanciaAlerta> DiscordanciasAlerta => Set<DiscordanciaAlerta>();
     public DbSet<RotuloImagem> RotulosImagem => Set<RotuloImagem>();
     public DbSet<DitadoOrgao> DitadosOrgao => Set<DitadoOrgao>();
+    public DbSet<RegistroAtividade> RegistrosAtividade => Set<RegistroAtividade>();
     public DbSet<ConfiguracaoCobranca> ConfiguracoesCobranca => Set<ConfiguracaoCobranca>();
     public DbSet<PrecoModelo> PrecosModelos => Set<PrecoModelo>();
     public DbSet<MovimentoSaldo> MovimentosSaldo => Set<MovimentoSaldo>();
@@ -115,6 +116,20 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.HasIndex(x => x.ExameId);
             e.HasOne(x => x.Exame).WithMany().HasForeignKey(x => x.ExameId);
             e.Property(x => x.Token).HasMaxLength(40);
+        });
+
+        b.Entity<RegistroAtividade>(e =>
+        {
+            e.ToTable("registros_atividade");
+            e.HasIndex(x => new { x.ClinicaId, x.Em });
+            e.HasIndex(x => new { x.Tipo, x.Em });
+            e.Property(x => x.Tipo).HasMaxLength(40);
+            e.Property(x => x.Descricao).HasMaxLength(500);
+            e.Property(x => x.ClinicaNome).HasMaxLength(200);
+            e.Property(x => x.Paciente).HasMaxLength(200);
+            e.Property(x => x.UsuarioNome).HasMaxLength(200);
+            e.Property(x => x.UsuarioEmail).HasMaxLength(200);
+            e.Property(x => x.Perfil).HasMaxLength(30);
         });
 
         b.Entity<DitadoOrgao>(e =>

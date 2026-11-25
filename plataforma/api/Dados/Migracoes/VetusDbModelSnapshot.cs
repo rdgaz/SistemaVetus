@@ -268,6 +268,68 @@ namespace Vetus.Api.Dados.Migracoes
                     b.ToTable("ditados_orgao", (string)null);
                 });
 
+            modelBuilder.Entity("Vetus.Api.Dados.RegistroAtividade", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ClinicaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClinicaNome")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Detalhes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Em")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ExameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Paciente")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Perfil")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("UsuarioEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UsuarioNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicaId", "Em");
+
+                    b.HasIndex("Tipo", "Em");
+
+                    b.ToTable("registros_atividade", (string)null);
+                });
+
             modelBuilder.Entity("Vetus.Api.Dados.DiscordanciaAlerta", b =>
                 {
                     b.Property<Guid>("Id")

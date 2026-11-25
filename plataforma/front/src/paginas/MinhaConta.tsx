@@ -1,15 +1,15 @@
 import { useState, type FormEvent } from 'react';
-import { api } from '../api';
+import { api, nomePerfil } from '../api';
+import { iniciaisNome } from '../App';
 import { useSessao } from '../sessao';
 import { Aviso, Botao, Campo, Cartao, Selecao, Titulo } from '../ui';
 import { TrocarSenha } from './TrocarSenha';
 import { EnvioImagem } from './EnvioImagem';
-import { ConfigEnvio } from './ConfigEnvio';
 
 const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
 export function MinhaConta() {
-  const { usuario, recarregar } = useSessao();
+  const { usuario, clinica, recarregar } = useSessao();
   const [nome, setNome] = useState(usuario!.nome);
   const [crmv, setCrmv] = useState(usuario!.crmv ?? '');
   const [crmvUf, setCrmvUf] = useState((usuario!.crmvUf ?? '').toUpperCase());
@@ -18,6 +18,7 @@ export function MinhaConta() {
   const [salvando, setSalvando] = useState(false);
 
   const alterado = nome !== usuario!.nome || crmv !== (usuario!.crmv ?? '') || crmvUf !== (usuario!.crmvUf ?? '').toUpperCase();
+  const temCrmv = !!(usuario?.crmv && usuario?.crmvUf);
 
   const salvar = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,6 +40,32 @@ export function MinhaConta() {
     <>
       <Titulo>Minha conta</Titulo>
       <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[#0E4D64] text-lg font-bold text-white shadow-sm">
+            {iniciaisNome(nome || usuario!.nome)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-lg font-semibold text-slate-900">{usuario!.nome}</div>
+            <div className="truncate text-sm text-slate-500">{usuario!.email}</div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {clinica && (
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                  {clinica.nome} · {nomePerfil[clinica.perfil]}
+                </span>
+              )}
+              {temCrmv ? (
+                <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                  ✓ Apto a assinar (CRMV-{usuario!.crmvUf?.toUpperCase()} {usuario!.crmv})
+                </span>
+              ) : (
+                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                  ● Preencha o CRMV abaixo para assinar laudos
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
         <Cartao titulo="Dados profissionais">
           <form onSubmit={salvar} className="space-y-4">
             {erro && <Aviso>{erro}</Aviso>}
@@ -63,7 +90,6 @@ export function MinhaConta() {
         </Cartao>
         <EnvioImagem titulo="Assinatura digitalizada" alt="Assinatura" urlVer="/api/auth/assinatura" urlEnviar="/api/auth/assinatura" urlUso="/api/auth/assinatura/uso"
           explicacao="Imagem da sua assinatura ou carimbo, impressa nos laudos que você assinar. Opcional: sem ela, o laudo sai com o seu nome e CRMV." />
-        <ConfigEnvio />
         <TrocarSenha />
       </div>
     </>

@@ -456,3 +456,28 @@ public class DitadoOrgao
     public string UsuarioNome { get; set; } = "";
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 }
+
+/// <summary>
+/// Registro de atividades: quem fez o quê e quando (exame excluído, laudo assinado, análise pedida à IA, usuário criado...).
+/// Fica mesmo que o exame ou o laudo sejam apagados, para a clínica e o administrador do sistema conferirem depois.
+/// </summary>
+public class RegistroAtividade
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public DateTime Em { get; set; } = DateTime.UtcNow;
+    /// <summary>Tipo do evento (ver <c>RegistroAtividades.Tipos</c>), ex.: exame_excluido, laudo_assinado.</summary>
+    public string Tipo { get; set; } = "";
+    /// <summary>O que aconteceu, em uma frase (ex.: "Laudo assinado (versão 2)").</summary>
+    public string Descricao { get; set; } = "";
+    public Guid? ClinicaId { get; set; }
+    public string? ClinicaNome { get; set; }
+    public Guid? ExameId { get; set; }
+    public string? Paciente { get; set; }
+    /// <summary>Detalhes do evento em JSON (ex.: na exclusão, as versões de laudo e o código de verificação).</summary>
+    public string? Detalhes { get; set; }
+    public Guid? UsuarioId { get; set; }
+    public string UsuarioNome { get; set; } = "";
+    public string UsuarioEmail { get; set; } = "";
+    /// <summary>Perfil de quem fez, na clínica (Veterinario, AdministradorClinica) ou "Sistema".</summary>
+    public string? Perfil { get; set; }
+}

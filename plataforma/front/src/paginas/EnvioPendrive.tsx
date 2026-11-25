@@ -29,32 +29,91 @@ const RE_SUBPASTA = /^([A-Z]{2,5})(\d{14})$/;
 const tipoNome: Record<string, string> = { ABD: 'Abdômen', REP: 'Reprodução', SMP: 'Partes pequenas' };
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(n > 10 * 1024 * 1024 ? 0 : 1)} MB`;
 
-/** Agrupa os arquivos escolhidos (pasta inteira ou várias) em exames. */
+/** Detecta se o navegador está em um celular ou tablet (onde o seletor de pastas webkitdirectory não se aplica). */
+const ehCelular = typeof navigator !== 'undefined' && (
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+);
+
+/** Normaliza o nome do arquivo para caracteres seguros aceitos pela API e converte .jpeg para .jpg. */
+function nomeArquivoSeguro(nome: string, indice: number): string {
+  const ponto = nome.lastIndexOf('.');
+  const baseBruta = (ponto > 0 ? nome.slice(0, ponto) : nome)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\-#. ()]/g, '_')
+    .trim();
+  const base = (baseBruta || `ARQ_${indice + 1}`).slice(0, 100);
+  const extBruta = (ponto > 0 ? nome.slice(ponto + 1) : 'jpg').toLowerCase();
+  const ext = extBruta === 'jpeg' ? 'jpg' : extBruta;
+  return `${base}.${ext}`;
+}
+
+/** Gera data (AAAAMMDD) e hora (HHMMSS) atuais para exames enviados a partir de arquivos soltos. */
+function agoraPartes() {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  const data = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+  const hora = `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  return { data, hora };
+}
+
+/** Agrupa os arquivos escolhidos (pasta do ultrassom, pasta comum ou arquivos soltos) em exames. */
 function agrupar(arquivos: File[]): Item[] {
   const mapa = new Map<string, Item>();
+  const avulsos: File[] = [];
+  let nomePastaAvulsa = '';
+
   for (const f of arquivos) {
-    const partes = ((f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name).split('/');
-    // procura "<ANIMAL><ID>/<SUBPASTA>/<arquivo>" em qualquer nível (a pessoa pode escolher o pendrive inteiro)
-    let i = partes.findIndex((p, k) => k < partes.length - 2 && RE_PASTA_ANIMAL.test(p) && RE_SUBPASTA.test(partes[k + 1]));
-    if (i < 0) continue;
-    const m = RE_PASTA_ANIMAL.exec(partes[i])!;
-    const s = RE_SUBPASTA.exec(partes[i + 1])!;
-    const chave = `${m[2]}/${partes[i + 1]}`;
-    let it = mapa.get(chave);
-    if (!it) {
-      it = {
-        chave, idAnimal: m[2], subpasta: partes[i + 1], nome: m[1].replace(/_/g, ' ').trim(),
-        data: s[2].slice(0, 8), hora: s[2].slice(8), fotos: [], pdfs: [], videos: [],
-        existe: null, jaRecebidos: new Set(), situacao: 'pronto', progresso: 0, marcado: true,
-      };
-      mapa.set(chave, it);
+    const rel = (f as File & { webkitRelativePath?: string }).webkitRelativePath || '';
+    const partes = (rel || f.name).split('/');
+    // procura "<ANIMAL><ID>/<SUBPASTA>/<arquivo>" em qualquer nível (ex.: pasta exportada pelo ultrassom)
+    const i = partes.findIndex((p, k) => k < partes.length - 2 && RE_PASTA_ANIMAL.test(p) && RE_SUBPASTA.test(partes[k + 1]));
+    if (i >= 0) {
+      const m = RE_PASTA_ANIMAL.exec(partes[i])!;
+      const s = RE_SUBPASTA.exec(partes[i + 1])!;
+      const chave = `${m[2]}/${partes[i + 1]}`;
+      let it = mapa.get(chave);
+      if (!it) {
+        it = {
+          chave, idAnimal: m[2], subpasta: partes[i + 1], nome: m[1].replace(/_/g, ' ').trim(),
+          data: s[2].slice(0, 8), hora: s[2].slice(8), fotos: [], pdfs: [], videos: [],
+          existe: null, jaRecebidos: new Set(), situacao: 'pronto', progresso: 0, marcado: true,
+        };
+        mapa.set(chave, it);
+      }
+      const n = f.name.toLowerCase();
+      if (n.endsWith('.jpg') || n.endsWith('.jpeg')) it.fotos.push(f);
+      else if (n.endsWith('.pdf')) it.pdfs.push(f);
+      else if (n.endsWith('.mp4')) it.videos.push(f);
+    } else {
+      const n = f.name.toLowerCase();
+      if (n.endsWith('.jpg') || n.endsWith('.jpeg') || n.endsWith('.pdf') || n.endsWith('.mp4')) {
+        avulsos.push(f);
+        if (!nomePastaAvulsa && partes.length >= 2) nomePastaAvulsa = partes[partes.length - 2].replace(/_/g, ' ').trim();
+      }
     }
-    const n = f.name.toLowerCase();
-    if (n.endsWith('.jpg')) it.fotos.push(f);
-    else if (n.endsWith('.pdf')) it.pdfs.push(f);
-    else if (n.endsWith('.mp4')) it.videos.push(f);
-    i = -1;
   }
+
+  // se escolheu arquivos soltos (no celular ou no PC) ou uma pasta comum sem o padrão do aparelho, cria um exame com eles
+  if (avulsos.length > 0) {
+    const { data, hora } = agoraPartes();
+    const idAnimal = `${data}-${hora}-0000`;
+    const subpasta = `ABD${data}${hora}`;
+    const chave = `${idAnimal}/${subpasta}`;
+    const it: Item = {
+      chave, idAnimal, subpasta, nome: nomePastaAvulsa,
+      data, hora, fotos: [], pdfs: [], videos: [],
+      existe: null, jaRecebidos: new Set(), situacao: 'pronto', progresso: 0, marcado: true,
+    };
+    for (const f of avulsos) {
+      const n = f.name.toLowerCase();
+      if (n.endsWith('.jpg') || n.endsWith('.jpeg')) it.fotos.push(f);
+      else if (n.endsWith('.pdf')) it.pdfs.push(f);
+      else if (n.endsWith('.mp4')) it.videos.push(f);
+    }
+    if (it.fotos.length + it.pdfs.length > 0) mapa.set(chave, it);
+  }
+
   const lista = [...mapa.values()];
   for (const it of lista) for (const l of [it.fotos, it.pdfs, it.videos]) l.sort((a, b) => a.name.localeCompare(b.name));
   return lista.filter((it) => it.fotos.length + it.pdfs.length > 0)
@@ -84,7 +143,7 @@ export function EnvioPendrive() {
     try {
       const novos = agrupar([...lista]);
       if (novos.length === 0) {
-        setErro('Não encontrei exames nesta seleção. Escolha a pasta do animal (ex.: JADE20261105-083824-3E0C) ou o pendrive inteiro.');
+        setErro('Nenhum arquivo compatível encontrado. Selecione fotos (.jpg / .jpeg) ou o relatório (.pdf) do exame.');
         return;
       }
       const r = await api<{ idAnimal: string; subpasta: string; erro?: string;
@@ -106,17 +165,25 @@ export function EnvioPendrive() {
 
   async function enviar() {
     setErro('');
+    const selecionados = itens.filter((x) => x.marcado && x.situacao !== 'ok');
+    const semNome = selecionados.find((x) => x.pdfs.length === 0 && !x.nome.trim());
+    if (semNome) {
+      setErro('Informe o nome do animal nos exames que não possuem relatório PDF.');
+      return;
+    }
     setEnviando(true);
-    for (const it of itens.filter((x) => x.marcado && x.situacao !== 'ok')) {
+    for (const it of selecionados) {
       const todos = [...it.pdfs, ...it.fotos, ...(comVideos ? it.videos : [])];
       const total = todos.reduce((s, f) => s + f.size, 0) || 1;
       let enviado = 0;
       atualizar(it.chave, { situacao: 'enviando', progresso: 0, mensagem: undefined });
       try {
-        for (const f of todos) {
+        for (let idx = 0; idx < todos.length; idx++) {
+          const f = todos[idx];
+          const nomeEnvio = nomeArquivoSeguro(f.name, idx);
           // retomar: pula o que já chegou inteiro
-          if (!it.jaRecebidos.has(`${f.name}:${f.size}`)) {
-            await enviarArquivo(`/api/exames/pendrive/${it.idAnimal}/${it.subpasta}/arquivos/${encodeURIComponent(f.name)}`, f);
+          if (!it.jaRecebidos.has(`${nomeEnvio}:${f.size}`)) {
+            await enviarArquivo(`/api/exames/pendrive/${it.idAnimal}/${it.subpasta}/arquivos/${encodeURIComponent(nomeEnvio)}`, f);
           }
           enviado += f.size;
           atualizar(it.chave, { progresso: Math.round((enviado / total) * 100) });
@@ -138,19 +205,29 @@ export function EnvioPendrive() {
 
   return (
     <>
-      <Titulo>Enviar exame do pendrive</Titulo>
+      <Titulo>Enviar exame</Titulo>
       <p className="mb-4 text-sm text-slate-600">
-        Copie a pasta do exame do ultrassom para o pendrive e escolha-a aqui. O sistema lê o relatório (PDF) do aparelho
-        e preenche paciente, tutor, idade, medidas e comentários. Se o mesmo exame já chegou pelo DICOM, as fotos de melhor
-        qualidade do pendrive passam a ser usadas, desde que ainda não exista pré-laudo.
+        {ehCelular
+          ? 'Selecione as fotos do ultrassom (e o relatório em PDF, se tiver) direto do seu celular para criar o exame.'
+          : 'Envie a pasta do exame salva no computador ou pendrive, ou escolha arquivos soltos (.jpg, .pdf, .mp4). Se houver o relatório (PDF) do aparelho, o sistema preenche paciente, responsável, idade, medidas e comentários automaticamente.'}
       </p>
 
-      <Cartao titulo="1. Escolha a pasta">
-        <div className="flex flex-wrap gap-2">
-          <Botao onClick={() => pasta.current?.click()} disabled={enviando || lendo}>Escolher pasta do pendrive</Botao>
-          <Botao variante="secundario" onClick={() => arquivos.current?.click()} disabled={enviando || lendo}>
-            Escolher arquivos (celular)
-          </Botao>
+      <Cartao titulo={ehCelular ? '1. Escolha as fotos e arquivos' : '1. Escolha a pasta ou arquivos'}>
+        <div className="flex flex-wrap items-center gap-3">
+          {ehCelular ? (
+            <Botao onClick={() => arquivos.current?.click()} disabled={enviando || lendo}>
+              Escolher fotos e arquivos
+            </Botao>
+          ) : (
+            <>
+              <Botao onClick={() => pasta.current?.click()} disabled={enviando || lendo}>
+                Escolher pasta (computador / pendrive)
+              </Botao>
+              <Botao variante="secundario" onClick={() => arquivos.current?.click()} disabled={enviando || lendo}>
+                Escolher arquivos soltos
+              </Botao>
+            </>
+          )}
           <input ref={pasta} type="file" className="hidden" multiple
             // @ts-expect-error atributo não padronizado, aceito por Chrome, Edge, Safari e Firefox
             webkitdirectory="" onChange={(e) => { void escolher(e.target.files); e.target.value = ''; }} />
@@ -158,8 +235,9 @@ export function EnvioPendrive() {
             onChange={(e) => { void escolher(e.target.files); e.target.value = ''; }} />
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          Pode ser a pasta de um animal (ex.: JADE20261105-083824-3E0C) ou o pendrive inteiro, com vários exames.
-          No celular, a escolha de pasta nem sempre existe: use o computador.
+          {ehCelular
+            ? 'Você pode selecionar várias fotos (.jpg / .jpeg), o relatório (.pdf) e vídeos (.mp4) de uma só vez.'
+            : 'Você pode escolher a pasta de um animal, uma unidade inteira com vários exames ou selecionar fotos e PDF soltos.'}
         </p>
         {lendo && <p className="mt-2 text-sm text-slate-500">Lendo…</p>}
       </Cartao>

@@ -333,13 +333,9 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
         _ => null,
     };
 
-    /// <summary>Fotos escolhidas para a prancha (revisão) ou, se não houver escolha, as sugeridas pela IA.</summary>
-    /// <summary>Sugestão inicial de fotos na prancha (uma por órgão); a clínica pode pôr quantas quiser.</summary>
-    public const int SugestaoPrancha = 8;
-
     /// <summary>
-    /// Fotos da prancha: as escolhidas na revisão; se não houve escolha, a sugestão: a primeira imagem que a IA associou a cada
-    /// órgão (até 8) ou, em laudos sem essa informação, as imagens sugeridas por ela.
+    /// Fotos da prancha: as escolhidas na revisão (sem limite); sem escolha, a sugestão: todas as fotos que o sistema associou
+    /// aos órgãos, na ordem dos órgãos do laudo, e depois as outras que a IA destacou como principais.
     /// </summary>
     private List<byte[]> FotosDaPrancha(Exame e, Laudo l, JsonElement c)
     {
@@ -350,15 +346,18 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
             nomes = p.EnumerateArray().Select(x => x.GetString()).OfType<string>().ToList();
         else
         {
+            // sem escolha na revisão: primeiro todas as fotos associadas aos órgãos, na ordem dos órgãos; depois as
+            // outras que a IA destacou como principais (a mesma sugestão da tela de revisão)
+            void Incluir(JsonElement numeros)
+            {
+                if (numeros.ValueKind != JsonValueKind.Array) return;
+                foreach (var x in numeros.EnumerateArray())
+                    if (x.ValueKind == JsonValueKind.Number && Nome(x.GetInt32()) is { } nome && !nomes.Contains(nome)) nomes.Add(nome);
+            }
             if (c.TryGetProperty("orgaos", out var orgaos) && orgaos.ValueKind == JsonValueKind.Array)
                 foreach (var o in orgaos.EnumerateArray())
-                    if (o.TryGetProperty("imagens", out var im) && im.ValueKind == JsonValueKind.Array
-                        && im.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => Nome(x.GetInt32())).OfType<string>().FirstOrDefault() is { } primeira
-                        && !nomes.Contains(primeira))
-                        nomes.Add(primeira);
-            if (nomes.Count == 0 && c.TryGetProperty("imagensSugeridas", out var s) && s.ValueKind == JsonValueKind.Array)
-                nomes = s.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => Nome(x.GetInt32())).OfType<string>().ToList();
-            nomes = nomes.Take(SugestaoPrancha).ToList();
+                    if (o.TryGetProperty("imagens", out var im)) Incluir(im);
+            if (c.TryGetProperty("imagensSugeridas", out var s)) Incluir(s);
         }
         return nomes
             .Select(nm => arq.Arquivo(e, Arquivos.Jpg, nm)).OfType<string>()

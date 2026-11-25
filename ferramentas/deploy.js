@@ -3,7 +3,8 @@
  * Deploy local no Docker com controle de versão: sobe a versão do AutoLaudoVet (plataforma/front/package.json),
  * registra em docs/VERSOES.md e reconstrói os containers. A versão aparece no rodapé e na Ajuda.
  *
- * Uso: node ferramentas/deploy.js [--minor | --major] [--nota "o que mudou"] [--sem-docker]
+ * Uso: node ferramentas/deploy.js [--minor | --major] [--nota "o que mudou"] [--sem-docker] [--tudo]
+ *   (por padrão reconstrói só a plataforma web e o banco; --tudo inclui os demais serviços, como o receptor DICOM)
  *   (sem opção: sobe o último número, ex.: 0.10.0 -> 0.10.1)
  */
 const fs = require('fs');
@@ -39,5 +40,7 @@ fs.appendFileSync(log, `- **${nova}** — ${dia}${nota ? ` — ${nota}` : ''}\n`
 console.log(`Versão ${pkg.version.replace(/.*/, nova)} registrada em docs/VERSOES.md`);
 
 if (args.includes('--sem-docker')) process.exit(0);
-const r = spawnSync('docker', ['compose', 'up', '-d', '--build'], { cwd: raiz, stdio: 'inherit', shell: process.platform === 'win32' });
+// por padrão, só a plataforma web e o banco (o receptor DICOM é outro projeto); --tudo sobe todos os serviços do compose
+const servicos = args.includes('--tudo') ? [] : ['postgres', 'plataforma'];
+const r = spawnSync('docker', ['compose', 'up', '-d', '--build', ...servicos], { cwd: raiz, stdio: 'inherit', shell: process.platform === 'win32' });
 process.exit(r.status ?? 1);

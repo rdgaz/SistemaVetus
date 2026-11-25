@@ -185,7 +185,7 @@ const relatorio = (idAnimal, nome) => pdfRelatorio([
   ok((await navUsr.req('DELETE', `/api/exames/${exameId}`)).status === 403, 'perfil Usuario não pode excluir exame');
 
   const del = await A.nav.req('DELETE', `/api/exames/${exameId}`);
-  ok(del.status === 204, 'exclui o exame com sucesso');
+  ok(del.status === 204, `exclui o exame com sucesso (${del.status} ${JSON.stringify(del.dados).slice(0, 200)})`);
   ok((await A.nav.req('GET', `/api/exames/${exameId}`)).status === 404, 'exame excluído não existe mais');
   const vApos = await A.nav.req('POST', '/api/exames/pendrive/verificar', { exames: [{ idAnimal, subpasta: sub }] });
   ok(vApos.dados[0].exame === null && vApos.dados[0].recebidos.length === 0, 'exclusão apaga também os arquivos do pendrive (pronto para reenviar do zero)');
@@ -197,6 +197,21 @@ const relatorio = (idAnimal, nome) => pdfRelatorio([
   const d4 = (await A.nav.req('GET', `/api/exames/${c4.dados.id}`)).dados;
   ok(d4.fotos.length === 1 && d4.fotos[0].nome === '999999999999EDITADA.JPG', 'tela do exame lista só a foto nova');
   ok((await A.nav.req('DELETE', `/api/exames/${c4.dados.id}`)).status === 204, 'exclui o exame refeito (limpeza do teste)');
+
+  // registro de atividades: quem fez o quê e quando (exclusão é um dos tipos); a clínica vê os seus, o sistema vê todos
+  const regs = await A.nav.req('GET', '/api/clinica/registros');
+  const excl = regs.status === 200 && regs.dados.registros.find((x) => x.tipo === 'exame_excluido' && x.exameId === exameId);
+  ok(excl && excl.paciente === 'TESTEPEN' && excl.usuarioNome.startsWith('Adm ') && excl.usuarioEmail.includes('@')
+    && excl.perfil === 'AdministradorClinica' && JSON.parse(excl.detalhes).totalFotos >= 1 && !!excl.em, 'exclusão registrada com o usuário, o paciente e a data');
+  ok(regs.dados.registros.some((x) => x.tipo === 'exame_excluido' && x.exameId === c4.dados.id), 'a segunda exclusão também foi registrada');
+  ok(regs.dados.registros.some((x) => x.tipo === 'exame_enviado_pendrive' && x.exameId === exameId), 'envio pelo pendrive registrado');
+  ok(!!regs.dados.tipos.laudo_assinado && !!regs.dados.tipos.exame_excluido, 'tipos de registro disponíveis para o filtro');
+  const soExcl = (await A.nav.req('GET', '/api/clinica/registros?tipo=exame_excluido')).dados.registros;
+  ok(soExcl.length >= 2 && soExcl.every((x) => x.tipo === 'exame_excluido'), 'filtro por tipo');
+  ok((await A.nav.req('GET', '/api/clinica/registros?de=2000-01-01&ate=2000-01-31')).dados.registros.length === 0, 'filtro por período');
+  ok((await B.nav.req('GET', '/api/clinica/registros')).dados.registros.every((x) => x.exameId !== exameId), 'outra clínica não vê os registros desta');
+  ok((await adm.req('GET', '/api/admin/registros')).dados.registros.some((x) => x.exameId === exameId), 'administrador do sistema vê os registros de todas as clínicas');
+  ok((await A.nav.req('GET', '/api/admin/registros')).status === 403, 'clínica não acessa os registros do sistema');
 
   console.log(falhas ? `\n${falhas} falha(s)` : '\nTudo certo');
   process.exitCode = falhas ? 1 : 0;

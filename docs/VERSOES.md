@@ -9,3 +9,8 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.4** — 24/11/2026, 20:35:07 — Botão para excluir exame (lista e tela do exame)
 - **0.10.5** — 24/11/2026, 22:26:20 — Nome do PDF (Laudo Ultrassonográfico <Paciente>), nota de exame excluído no extrato e exclusão atômica da pasta do pendrive
 - **0.10.6** — 25/11/2026, 00:05:13 — PDF com underlines (laudo_ultrassonografico_<Nome>.pdf), separação de Próstata/Testículos e Útero/Ovários, aprendizado global de imagens entre clínicas com preservação de fotos de treino e melhorias de layout/agilidade na revisão, conta e configurações
+- **0.10.7** — 25/11/2026, 01:04:13 — Avatar do usuário com iniciais e menu rápido, configurações da clínica unificadas (Dados, Aparência do PDF e Usuários), envio de exames adaptado para celular/computador com arquivos soltos, botão destacado Visualizar Laudo em PDF e botão Excluir exame apenas no rodapé do exame
+- **0.10.8** — 25/11/2026, 13:34:53 — Revisão: um Salvar só (laudo + dados do exame), Aprovar e assinar na barra, nova análise à IA em link com as duas opções; excluir exame
+- **0.10.9** — 25/11/2026, 13:46:16 — Prancha: fotos associadas aos órgãos primeiro, na ordem dos órgãos
+- **0.10.10** — 25/11/2026, 15:42:29 — Registro de exames excluídos (quem, quando, o que havia) e telas Exames excluídos (clínica) e Exclusões (sistema)
+- **0.10.11** — 25/11/2026, 16:17:40 — Registro geral de atividades (exclusão, assinatura, retificação, análise pedida, pendrive, usuários, configurações, créditos) com tela e filtro por tipo

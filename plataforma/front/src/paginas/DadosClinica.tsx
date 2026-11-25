@@ -1,10 +1,30 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, NavLink } from 'react-router';
 import { api } from '../api';
 import { useSessao } from '../sessao';
 import { Aviso, Botao, Campo, Cartao, Titulo } from '../ui';
 import { EnvioImagem } from './EnvioImagem';
 import { SaldoClinica } from './SaldoClinica';
+import { ConfigEnvio } from './ConfigEnvio';
+
+/** Cabeçalho e abas compartilhadas das configurações da clínica. */
+export function AbasClinica({ titulo = 'Configurações da clínica' }: { titulo?: string }) {
+  const aba = ({ isActive }: { isActive: boolean }) =>
+    `inline-flex min-h-10 items-center rounded-lg px-4 text-sm font-semibold transition ${
+      isActive ? 'bg-[#0E4D64] text-white shadow-sm' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+    }`;
+
+  return (
+    <div className="mb-5 space-y-3">
+      <Titulo>{titulo}</Titulo>
+      <div className="flex flex-wrap gap-2">
+        <NavLink to="/clinica" end className={aba}>Dados e Funcionamento</NavLink>
+        <NavLink to="/clinica/layout" className={aba}>Aparência do PDF</NavLink>
+        <NavLink to="/usuarios" className={aba}>Usuários da clínica</NavLink>
+      </div>
+    </div>
+  );
+}
 
 type Dados = {
   id: string;
@@ -56,12 +76,7 @@ export function DadosClinica() {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Titulo>Clínica</Titulo>
-        <Link to="/clinica/layout" className="inline-flex min-h-10 items-center rounded-lg bg-[#0E4D64] px-4 text-sm font-medium text-white hover:bg-[#0B3D50]">
-          Personalizar aparência do laudo (PDF) →
-        </Link>
-      </div>
+      <AbasClinica />
       <form onSubmit={salvar} className="space-y-4">
         {erro && <Aviso>{erro}</Aviso>}
         {ok && <Aviso tipo="ok">Dados salvos.</Aviso>}
@@ -123,11 +138,15 @@ export function DadosClinica() {
           explicacao="Aparece no cabeçalho do PDF de todos os laudos da clínica: centralizado por padrão, ou à esquerda/direita." />
 
         <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-3 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
-          <Botao type="submit" disabled={!alterado || salvando}>{salvando ? 'Salvando…' : 'Salvar alterações'}</Botao>
-          <Link to="/clinica/layout" className="text-sm font-medium text-[#0E4D64] underline">Personalizar cores, fontes e seções do PDF</Link>
+          <Botao type="submit" disabled={!alterado || salvando}>{salvando ? 'Salvando…' : 'Salvar dados da clínica'}</Botao>
+          <Link to="/clinica/layout" className="text-sm font-medium text-[#0E4D64] underline">Personalizar cores, fontes e seções do PDF →</Link>
           {alterado && <span className="text-sm font-medium text-amber-800">● Alterações não salvas</span>}
         </div>
       </form>
+
+      <div className="mt-6">
+        <ConfigEnvio />
+      </div>
     </>
   );
 }

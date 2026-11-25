@@ -52,6 +52,8 @@ public static class Acesso
 
     /// <summary>Vínculo resolvido pelo filtro <see cref="ExigirClinica"/>.</summary>
     public static Vinculo VinculoAtual(this HttpContext http) => (Vinculo)http.Items[ItemVinculo]!;
+    /// <summary>Vínculo da requisição, se ela passou pelo filtro de clínica (senão, null).</summary>
+    public static Vinculo? VinculoSeHouver(this HttpContext http) => http.Items.TryGetValue(ItemVinculo, out var v) ? v as Vinculo : null;
 
     /// <summary>
     /// Filtro dos endpoints de clínica: exige o cabeçalho X-Clinica-Id de uma clínica ativa à qual o usuário

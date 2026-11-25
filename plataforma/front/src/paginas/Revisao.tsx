@@ -47,14 +47,13 @@ const corBotaoSelecionado: Record<SituacaoOrgao, string> = {
 /** Prancha inicial: a escolhida na revisão ou as fotos sugeridas pela IA. */
 export function pranchaInicial(c: ConteudoLaudo, imagensEnviadas: string[]) {
   if (c.prancha) return c.prancha;
-  // sugestão: a primeira imagem que a IA associou a cada órgão (até 8); laudos sem isso usam as imagens sugeridas por ela
-  const porOrgao: string[] = [];
-  for (const o of c.orgaos ?? []) {
-    const nome = (o.imagens ?? []).map((n) => imagensEnviadas[n - 1]).find((x): x is string => !!x);
-    if (nome && !porOrgao.includes(nome)) porOrgao.push(nome);
-  }
-  const sugeridas = (c.imagensSugeridas ?? []).map((n) => imagensEnviadas[n - 1]).filter((x): x is string => !!x);
-  return (porOrgao.length > 0 ? porOrgao : sugeridas).slice(0, 8);
+  // sugestão: primeiro TODAS as fotos que o sistema associou aos órgãos, na ordem dos órgãos do laudo;
+  // depois, as outras que a IA destacou como principais
+  const lista: string[] = [];
+  const incluir = (nome: string | undefined) => { if (nome && !lista.includes(nome)) lista.push(nome); };
+  for (const o of c.orgaos ?? []) for (const n of o.imagens ?? []) incluir(imagensEnviadas[n - 1]);
+  for (const n of c.imagensSugeridas ?? []) incluir(imagensEnviadas[n - 1]);
+  return lista;
 }
 
 const area = 'w-full rounded-lg border border-slate-300 bg-white p-2.5 text-[15px] outline-none focus:border-[#0E4D64] focus:ring-2 focus:ring-[#0E4D64]/20';
@@ -63,7 +62,17 @@ const area = 'w-full rounded-lg border border-slate-300 bg-white p-2.5 text-[15p
  * Revisão do pré-laudo pelo veterinário: cada órgão editável (com "Normal"), conclusão, prancha;
  * salvar, pré-visualizar o PDF e aprovar/assinar.
  */
-export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, mascaras, aoMudar, aoAbrirFoto, aoAbrirGaleria, dados }: {
+/** O que a tela do exame usa da revisão: a barra de baixo salva e assina por ela (um "Salvar" só para tudo). */
+export type ControleRevisao = {
+  alterado: boolean;
+  ocupado: boolean;
+  salvar: () => Promise<void>;
+  assinar: () => Promise<void>;
+  podeAssinar: boolean;
+  motivoNaoAssina: string | null;
+};
+
+export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, mascaras, aoMudar, aoAbrirFoto, aoAbrirGaleria, dados, registrar }: {
   exameId: string;
   conteudoInicial: ConteudoLaudo;
   imagensEnviadas: string[];
@@ -73,6 +82,8 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
   aoAbrirFoto: (nome: string) => void;
   aoAbrirGaleria: (lista: Foto[], indice: number) => void;
   dados: DadosDocumento;
+  /** recebe os controles (salvar, assinar, se há alteração) para a barra de baixo da tela do exame */
+  registrar?: (c: ControleRevisao | null) => void;
 }) {
   const { usuario, clinica } = useSessao();
   const inicial = useMemo(() => ({
@@ -144,6 +155,20 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
     if (!confirm('Você conferiu todas as informações com as imagens e com o exame? O texto é uma sugestão de inteligência artificial e a responsabilidade pelo laudo é sua.\n\nAprovar e assinar? Depois de assinado ele não pode mais ser editado (só retificado).')) return;
     return executar(() => api('POST', `/api/exames/${exameId}/laudo/assinar`, { conteudo: c }), 'Laudo assinado.');
   };
+
+  // controles para a barra de baixo da tela do exame (salvar sem recarregar: a tela recarrega uma vez no fim)
+  useEffect(() => {
+    registrar?.({
+      alterado, ocupado,
+      salvar: async () => { if (alterado) await api('PUT', `/api/exames/${exameId}/laudo`, { conteudo: c }); },
+      assinar: async () => { await assinar(); },
+      podeAssinar: perfilAssina && temCrmv,
+      motivoNaoAssina: !perfilAssina ? 'Somente veterinário pode assinar.'
+        : !temCrmv ? 'Para assinar, cadastre o seu CRMV e a UF em "Minha conta".' : null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alterado, ocupado, c, perfilAssina, temCrmv]);
+  useEffect(() => () => registrar?.(null), [registrar]);
 
   const linhas = (lista: string[]) => (lista ?? []).join('\n');
   const deLinhas = (texto: string) => texto.split('\n').map((s) => s.trim()).filter(Boolean);
@@ -266,19 +291,12 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
           )}
         </div>
 
-        {/* ações: barra fixa inferior para salvar, ver prévia ou assinar de qualquer ponto da revisão */}
-        <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur">
-          {alterado && <span className="mr-auto text-sm font-medium text-amber-800">● Revisão não salva</span>}
-          <Botao variante="secundario" disabled={!alterado || ocupado} onClick={salvar}>Salvar revisão</Botao>
+        {/* salvar e assinar ficam na barra de baixo da tela do exame; aqui, só as formas de ver o laudo */}
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
           <Botao variante="secundario" disabled={ocupado} onClick={() => setDocumento(true)}>Editar como documento</Botao>
           <Botao variante="secundario" disabled={ocupado} onClick={previa}>Prévia do PDF</Botao>
-          <Botao disabled={ocupado || !perfilAssina || !temCrmv} onClick={assinar}>Aprovar e assinar</Botao>
         </div>
         {erro && <div className="mt-3"><Aviso>{erro}</Aviso></div>}
-        {!perfilAssina && <p className="text-right text-xs text-slate-500">Somente veterinário pode assinar.</p>}
-        {perfilAssina && !temCrmv && (
-          <p className="text-right text-xs text-amber-800">Para assinar, cadastre o seu CRMV e a UF em "Minha conta" (e, se quiser, a imagem da assinatura).</p>
-        )}
       </div>
     </Cartao>
   );

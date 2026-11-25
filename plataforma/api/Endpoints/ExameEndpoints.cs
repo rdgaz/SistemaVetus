@@ -169,7 +169,7 @@ public static class ExameEndpoints
 
         // Excluir o exame por completo (para enviar de novo, por exemplo pelo pendrive): laudos, envios, rótulos, ditados e os
         // arquivos enviados pelo pendrive. Laudo já assinado: só o administrador da clínica exclui.
-        g.MapDelete("/{id:guid}", async (Guid id, HttpContext http, VetusDb db, Arquivos arq, ILoggerFactory logs) =>
+        g.MapDelete("/{id:guid}", async (Guid id, HttpContext http, VetusDb db, Arquivos arq, ILoggerFactory logs, RegistroAtividades registros) =>
         {
             var v = http.VinculoAtual();
             var e = await db.Exames.Include(x => x.Paciente).FirstOrDefaultAsync(x => x.Id == id && x.ClinicaId == v.ClinicaId);
@@ -218,6 +218,19 @@ public static class ExameEndpoints
             try
             {
                 await using var tx = await db.Database.BeginTransactionAsync();
+                // registro de atividades: quem excluiu, quando e o que havia (fica mesmo com o exame apagado)
+                var laudosDoExame = await db.Laudos.Where(l => l.ExameId == id)
+                    .Select(l => new { l.Versao, l.AssinadoEm, l.CodigoVerificacao }).ToListAsync();
+                var ultimoAssinado = laudosDoExame.Where(l => l.AssinadoEm != null).OrderByDescending(l => l.Versao).FirstOrDefault();
+                var responsavelExame = e.Paciente.TutorId is { } idTutor ? await db.Tutores.Where(t => t.Id == idTutor).Select(t => t.Nome).FirstOrDefaultAsync() : null;
+                await registros.Adicionar(http, "exame_excluido",
+                    $"Exame excluído ({laudosDoExame.Count} versão(ões) de laudo{(ultimoAssinado is not null ? $", assinado — código {ultimoAssinado.CodigoVerificacao} deixou de valer" : "")})",
+                    id, e.Paciente.Nome, new
+                    {
+                        especie = e.Paciente.Especie, responsavel = responsavelExame, dataExame = e.Data, idAnimal = e.IdAnimal,
+                        origem = e.Origem, situacao = e.Status.ToString(), versoesLaudo = laudosDoExame.Count,
+                        assinado = ultimoAssinado is not null, codigoVerificacao = ultimoAssinado?.CodigoVerificacao, totalFotos = e.TotalFotos,
+                    });
                 await db.Compartilhamentos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
                 await db.LinksPublicos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
                 // RotulosImagem, DitadosOrgao e DiscordanciasAlerta são preservados mesmo ao excluir o exame,
@@ -282,7 +295,7 @@ public static class ExameEndpoints
         }).ExigirClinica();
 
         // Gerar pré-laudo: (opcionalmente salva os dados e) coloca o exame na fila da IA
-        g.MapPost("/{id:guid}/gerar", async (Guid id, SalvarExameReq? r, HttpContext http, VetusDb db, ServicoLaudo laudos) =>
+        g.MapPost("/{id:guid}/gerar", async (Guid id, SalvarExameReq? r, HttpContext http, VetusDb db, ServicoLaudo laudos, RegistroAtividades registros) =>
         {
             var e = await CarregarParaEditar(id, http, db);
             if (e is null) return Erros.NaoEncontrado("Exame não encontrado.");
@@ -313,6 +326,9 @@ public static class ExameEndpoints
             e.Status = StatusExame.NaFila;
             e.AtualizadoEm = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            await registros.Gravar(http, "analise_solicitada",
+                $"Análise pedida à IA ({plano.Modo switch { ServicoLaudo.SoDados => "só o que mudou, sem imagens", ServicoLaudo.SoImagensNovas => $"com {plano.Enviar.Count} foto(s) nova(s)", _ => "análise completa" }})",
+                e.Id, e.Paciente.Nome, new { modo = plano.Modo, mudancas = plano.Mudancas });
             return Results.Ok(new { e.Id, e.Status, e.EnfileiradoEm, modo = plano.Modo, mudancas = plano.Mudancas, imagensNovas = plano.Enviar.Count });
         }).ExigirClinica();
 

@@ -2,8 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { api, clinicaGuardada } from '../api';
 import { useSessao } from '../sessao';
-import { Aviso, Botao, Cartao, Titulo } from '../ui';
+import { Aviso, Botao, Cartao } from '../ui';
 import { EnvioImagem } from './EnvioImagem';
+import { AbasClinica } from './DadosClinica';
 
 type Item = { id: string; mostrar: boolean };
 type Layout = {
@@ -112,7 +113,7 @@ export function LayoutLaudo() {
       .catch((e) => setErro(e.message));
   }, []);
 
-  if (!r || !l) return <><Titulo>Aparência do laudo</Titulo>{erro ? <Aviso>{erro}</Aviso> : <p className="text-slate-500">Carregando…</p>}</>;
+  if (!r || !l) return <><AbasClinica />{erro ? <Aviso>{erro}</Aviso> : <p className="text-slate-500">Carregando…</p>}</>;
 
   const alterado = JSON.stringify(l) !== inicial;
   const mudar = (p: Partial<Layout>) => { setL({ ...l, ...p }); setOk(''); };
@@ -162,8 +163,7 @@ export function LayoutLaudo() {
 
   return (
     <>
-      <Link to="/clinica" className="text-sm text-[#0E4D64] underline">← Clínica</Link>
-      <div className="mt-1"><Titulo>Aparência do laudo</Titulo></div>
+      <AbasClinica />
       <p className="mb-4 text-sm text-slate-600">
         Personalize o PDF dos laudos da clínica. Use <b>Ver prévia (PDF)</b> na barra inferior para conferir com um laudo de exemplo antes de salvar.
       </p>

@@ -38,7 +38,7 @@ public static class LaudoEndpoints
 
         // O veterinário discorda do alerta de achado urgente da IA: o alerta sai do laudo e a discordância fica guardada
         // (com o que a IA disse e a leitura correta) para melhorar a IA.
-        g.MapPost("/alerta/discordar", async (Guid id, DiscordarReq r, HttpContext http, VetusDb db) =>
+        g.MapPost("/alerta/discordar", async (Guid id, DiscordarReq r, HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             var (e, l, erro) = await LaudoEmRevisao(id, http, db);
             if (erro is not null) return erro;
@@ -66,6 +66,9 @@ public static class LaudoEndpoints
                 AlertaFotos = JsonSerializer.Serialize(fotos),
                 Ia = l.Ia, Modelo = l.Modelo,
             });
+            await registros.Adicionar(http, "alerta_discordado",
+                $"Discordou do alerta da IA ({r.Motivo switch { "falso_alarme" => "falso alarme", "achado_diferente" => "achado diferente", _ => "imagens insuficientes" }}): {no["motivoUrgencia"]?.GetValue<string>()}",
+                e!.Id, e.Paciente.Nome, new { comentario = Texto.Opcional(r.Comentario) });
             no["achadoUrgente"] = false;
             no["alertaDiscordado"] = true;
             l.ConteudoRevisado = no.ToJsonString();
@@ -103,7 +106,7 @@ public static class LaudoEndpoints
         }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
 
         // Aprovar e assinar: só quem tem CRMV; depois disso o laudo não muda mais
-        g.MapPost("/assinar", async (Guid id, AssinarReq? r, HttpContext http, VetusDb db) =>
+        g.MapPost("/assinar", async (Guid id, AssinarReq? r, HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             var (e, l, erro) = await LaudoEmRevisao(id, http, db);
             if (erro is not null) return erro;
@@ -135,11 +138,12 @@ public static class LaudoEndpoints
             e.Status = StatusExame.Pronto;
             e.AtualizadoEm = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            await registros.Gravar(http, "laudo_assinado", $"Laudo assinado (versão {l.Versao}, código {l.CodigoVerificacao})", e.Id, e.Paciente.Nome);
             return Results.Ok(new { e.Status, l.Versao, l.CodigoVerificacao, l.AssinadoEm });
         }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
 
         // Retificação: o laudo assinado fica guardado como "retificado" e abre uma nova versão para revisar e assinar
-        g.MapPost("/retificar", async (Guid id, RetificarReq r, HttpContext http, VetusDb db) =>
+        g.MapPost("/retificar", async (Guid id, RetificarReq r, HttpContext http, VetusDb db, RegistroAtividades registros) =>
         {
             var clinicaId = http.VinculoAtual().ClinicaId;
             var e = await db.Exames.FirstOrDefaultAsync(x => x.Id == id && x.ClinicaId == clinicaId);
@@ -160,6 +164,8 @@ public static class LaudoEndpoints
             e.Status = StatusExame.AguardandoRevisao;
             e.AtualizadoEm = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            await registros.Gravar(http, "laudo_retificado", $"Laudo retificado: a versão {assinado.Versao} será substituída pela {assinado.Versao + 1}. Motivo: {motivo}",
+                id, await db.Pacientes.Where(p => p.Id == e.PacienteId).Select(p => p.Nome).FirstOrDefaultAsync());
             return Results.Ok(new { e.Status, versao = assinado.Versao + 1 });
         }).ExigirClinica(Perfil.Veterinario, Perfil.AdministradorClinica);
 
