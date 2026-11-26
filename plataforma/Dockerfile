@@ -1,6 +1,6 @@
 # Plataforma Vetus: API .NET + telas React numa única imagem
 # 1) compila as telas (React)
-FROM node:22-slim AS front
+FROM node:25-slim AS front
 WORKDIR /front
 COPY front/package.json front/package-lock.json ./
 RUN npm ci
