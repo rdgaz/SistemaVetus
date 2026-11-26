@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '../api';
 import { Aviso, Botao, Cartao, Titulo } from '../ui';
 import { corSituacao, nomeSituacao, type ConteudoLaudo, type Orgao, type SituacaoOrgao } from './Revisao';
+import { CamadaAnotacao, SeloAnotacao, type MapaAnotacoes } from './EditorAnotacao';
 
 type Medida = { grupo: string; nome: string; valor: number; unidade: string; situacao?: string; faixaTexto?: string };
 type Dados = {
@@ -11,6 +12,9 @@ type Dados = {
   souMentor: boolean; mentorado: string; exameId: string | null;
   conteudoEnviado: ConteudoLaudo; conteudoMentor: ConteudoLaudo | null;
   comentarios: Record<string, string>; rotulos: Record<string, string>; imagensEnviadas: string[];
+  /** o que o mentorado confirmou (confirmacao) ou corrigiu (correcao) em cada foto */
+  rotulosMentorado: Record<string, { orgaoCorreto: string; tipo: string }>;
+  anotacoes: MapaAnotacoes;
   exame: {
     tipoExame: string | null; data: string | null; idade: string | null; peso: string | null; suspeitaClinica: string | null; historico: string | null;
     jejum: string | null; informacoesAdicionais: string | null; equipamento: string | null;
@@ -42,8 +46,14 @@ export function RevisaoMentor() {
   const [ocupado, setOcupado] = useState(false);
   const [foto, setFoto] = useState<number | null>(null);
   const [mudou, setMudou] = useState(false);
+  /** o mentorado cancelou: mostra o aviso e volta para a lista (sem erro) */
+  const [cancelada, setCancelada] = useState(false);
+  /** o mentor já salvou algo (nesta tela ou antes): no cancelamento, avisa que foi descartado */
+  const [salvouAlgo, setSalvouAlgo] = useState(false);
+  const ir = useNavigate();
 
   const carregar = useCallback(() => api<Dados>('GET', `/api/revisoes-mentor/${id}`).then((x) => {
+    if (x.souMentor && x.situacao === 'cancelada') { setCancelada(true); setMudou(false); }
     setD(x); setC(x.conteudoMentor ?? x.conteudoEnviado); setComentarios(x.comentarios ?? {}); setRotulos(x.rotulos ?? {}); setParecer(x.parecer ?? ''); setMudou(false);
   }).catch((e) => setErro(e.message)), [id]);
   useEffect(() => { carregar(); }, [carregar]);
@@ -51,9 +61,33 @@ export function RevisaoMentor() {
   // órgão que a IA (ou o mentorado) associou a cada foto
   const orgaoDaFoto = useMemo(() => {
     const m: Record<string, string> = {};
-    d?.conteudoEnviado.orgaos.forEach((o) => (o.imagens ?? []).forEach((n) => { const nome = d.imagensEnviadas[n - 1]; if (nome && !m[nome]) m[nome] = o.orgao; }));
+    for (const o of d?.conteudoEnviado.orgaos ?? [])
+      for (const n of o.imagens ?? []) { const nome = d?.imagensEnviadas[n - 1]; if (nome && !m[nome]) m[nome] = o.orgao; }
     return m;
   }, [d]);
+
+  // foto ampliada: Esc fecha, setas passam
+  useEffect(() => {
+    if (foto === null || !d) return;
+    const n = d.fotos.length;
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFoto(null);
+      else if (e.key === 'ArrowRight') setFoto((foto + 1) % n);
+      else if (e.key === 'ArrowLeft') setFoto((foto + n - 1) % n);
+    };
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, [foto, d]);
+
+  // enquanto o mentor revisa, confere de tempos em tempos se o mentorado cancelou
+  useEffect(() => {
+    if (!d?.souMentor || d.situacao !== 'pendente' || cancelada) return;
+    const t = setInterval(() => {
+      api<{ situacao: string }>('GET', `/api/revisoes-mentor/${id}`)
+        .then((x) => { if (x.situacao === 'cancelada') { setCancelada(true); setMudou(false); } }).catch(() => undefined);
+    }, 15000);
+    return () => clearInterval(t);
+  }, [d, id, cancelada]);
 
   useEffect(() => {
     if (!mudou) return;
@@ -71,10 +105,17 @@ export function RevisaoMentor() {
   const mudarOrgao = (i: number, x: Partial<Orgao>) => mudar({ orgaos: c.orgaos.map((o, j) => (j === i ? { ...o, ...x } : o)) });
   const corpo = () => ({ conteudo: c, comentarios, rotulos, parecer });
 
+  /** Falhou ao salvar/concluir: se o mentorado cancelou, mostra o aviso em vez do erro. */
+  const tratarFalha = async (e: unknown) => {
+    const atual = await api<{ situacao: string }>('GET', `/api/revisoes-mentor/${id}`).catch(() => null);
+    if (atual?.situacao === 'cancelada') { setCancelada(true); setMudou(false); setErro(''); setOk(''); return; }
+    setErro((e as Error).message);
+  };
+
   const salvar = async () => {
     setOcupado(true); setErro(''); setOk('');
-    try { await api('PUT', `/api/revisoes-mentor/${d.id}`, corpo()); setOk('Rascunho salvo.'); setMudou(false); }
-    catch (e) { setErro((e as Error).message); } finally { setOcupado(false); }
+    try { await api('PUT', `/api/revisoes-mentor/${d.id}`, corpo()); setOk('Rascunho salvo.'); setMudou(false); setSalvouAlgo(true); }
+    catch (e) { await tratarFalha(e); } finally { setOcupado(false); }
   };
   const concluir = async (confirmar: boolean) => {
     const msg = confirmar
@@ -87,15 +128,49 @@ export function RevisaoMentor() {
       setMudou(false);
       setOk(r.resultado === 'confirmado' ? 'Revisão concluída: laudo confirmado.' : 'Revisão concluída: as sugestões foram enviadas ao mentorado.');
       await carregar();
-    } catch (e) { setErro((e as Error).message); } finally { setOcupado(false); }
+    } catch (e) { await tratarFalha(e); } finally { setOcupado(false); }
   };
 
   const p = d.exame.paciente;
   const fora = d.medidasComparadas.filter((m) => m.situacao === 'acima' || m.situacao === 'abaixo');
   const opcoes = [...d.orgaos, INDEFINIDO];
 
+  /** As mesmas miniaturas que o mentorado via no órgão (até 4 fotos que a IA associou), com o que ele marcou em cada uma. */
+  const miniaturasOrgao = (numeros?: number[]) => {
+    const itens = [...new Set(numeros ?? [])].slice(0, 4)
+      .map((n) => ({ n, i: d.fotos.findIndex((f) => f.nome === d.imagensEnviadas[n - 1]) }))
+      .filter((x) => x.i >= 0);
+    if (itens.length === 0) return <p className="mb-2 text-xs text-slate-500">A IA não associou imagens a este órgão.</p>;
+    return (
+      <div className="mb-2 flex flex-wrap gap-2">
+        {itens.map(({ n, i }) => {
+          const f = d.fotos[i];
+          const marca = d.rotulosMentorado?.[f.nome];
+          const doMentor = rotulos[f.nome];
+          return (
+            <div key={f.nome} className={`w-40 overflow-hidden rounded-lg border-2 bg-white ${marca?.tipo === 'correcao' ? 'border-amber-400' : marca ? 'border-emerald-500' : 'border-slate-200'}`}>
+              <button type="button" onClick={() => setFoto(i)} className="relative block w-full bg-black" title="Ampliar">
+                <img src={f.url} alt={`Imagem ${n}`} loading="lazy" className="h-24 w-full object-contain" />
+                <SeloAnotacao itens={d.anotacoes?.[f.nome]} />
+              </button>
+              <div className="px-1.5 py-1 text-[11px] leading-tight">
+                <div className="text-slate-500">Img {n}</div>
+                {marca && (
+                  <div className={marca.tipo === 'correcao' ? 'text-amber-800' : 'text-emerald-800'}>
+                    {marca.tipo === 'correcao' ? `✗ mentorado: é ${marca.orgaoCorreto}` : '✓ mentorado confirmou'}
+                  </div>
+                )}
+                {doMentor && <div className="text-violet-800">Mentor: {doMentor}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   /** Texto enviado pelo mentorado, mostrado quando o mentor mudou o campo. */
-  const Antes = ({ antes, agora }: { antes: string; agora: string }) =>
+  const textoEnviado = (antes: string, agora: string) =>
     igual(antes.trim(), agora.trim()) ? null : (
       <p className="mt-1 rounded-md bg-slate-50 px-2 py-1 text-xs text-slate-500"><b>Enviado pelo mentorado:</b> {antes || '(vazio)'}</p>
     );
@@ -138,7 +213,7 @@ export function RevisaoMentor() {
           {fora.length > 0 && (
             <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
               <b className="mr-1">Medidas fora da referência:</b>
-              {fora.map((m, i) => <span key={i} className="mr-3 inline-block">{m.situacao === 'acima' ? '▲' : '▼'} {m.grupo ? `${m.grupo} > ` : ''}{m.nome}: {m.valor} {m.unidade} (ref. {m.faixaTexto})</span>)}
+              {fora.map((m) => <span key={`${m.grupo}-${m.nome}-${m.valor}`} className="mr-3 inline-block">{m.situacao === 'acima' ? '▲' : '▼'} {m.grupo ? `${m.grupo} > ` : ''}{m.nome}: {m.valor} {m.unidade} (ref. {m.faixaTexto})</span>)}
             </div>
           )}
         </Cartao>
@@ -182,7 +257,7 @@ export function RevisaoMentor() {
             <label className="block">
               <span className="mb-1 block text-sm font-semibold text-slate-700">Condições técnicas</span>
               <textarea rows={2} className={area} disabled={!editavel} value={c.condicoesTecnicas ?? ''} onChange={(e) => mudar({ condicoesTecnicas: e.target.value })} />
-              <Antes antes={enviado.condicoesTecnicas ?? ''} agora={c.condicoesTecnicas ?? ''} />
+              {textoEnviado(enviado.condicoesTecnicas ?? '', c.condicoesTecnicas ?? '')}
             </label>
 
             {c.orgaos.map((o, i) => {
@@ -203,6 +278,7 @@ export function RevisaoMentor() {
                       ))}
                     </div>
                   </div>
+                  {miniaturasOrgao((antes ?? o).imagens)}
                   <textarea rows={3} className={area} disabled={!editavel} value={o.descricao} onChange={(e) => mudarOrgao(i, { descricao: e.target.value })} />
                   {antes && (antes.situacao !== o.situacao || antes.descricao.trim() !== o.descricao.trim()) && (
                     <p className="mt-1 rounded-md bg-slate-50 px-2 py-1 text-xs text-slate-500">
@@ -221,19 +297,19 @@ export function RevisaoMentor() {
             <label className="block">
               <span className="mb-1 block text-sm font-semibold text-slate-700">Impressão diagnóstica</span>
               <textarea rows={3} className={area} disabled={!editavel} value={c.impressaoDiagnostica ?? ''} onChange={(e) => mudar({ impressaoDiagnostica: e.target.value })} />
-              <Antes antes={enviado.impressaoDiagnostica ?? ''} agora={c.impressaoDiagnostica ?? ''} />
+              {textoEnviado(enviado.impressaoDiagnostica ?? '', c.impressaoDiagnostica ?? '')}
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-semibold text-slate-700">Diagnósticos diferenciais (um por linha)</span>
               <textarea rows={3} className={area} disabled={!editavel} defaultValue={linhas(c.diferenciais)} key={`dif-${d.situacao}`}
                 onChange={(e) => mudar({ diferenciais: lista(e.target.value) })} />
-              <Antes antes={linhas(enviado.diferenciais)} agora={linhas(c.diferenciais)} />
+              {textoEnviado(linhas(enviado.diferenciais), linhas(c.diferenciais))}
             </label>
             <label className="block">
               <span className="mb-1 block text-sm font-semibold text-slate-700">Recomendações (uma por linha)</span>
               <textarea rows={3} className={area} disabled={!editavel} defaultValue={linhas(c.recomendacoes)} key={`rec-${d.situacao}`}
                 onChange={(e) => mudar({ recomendacoes: lista(e.target.value) })} />
-              <Antes antes={linhas(enviado.recomendacoes)} agora={linhas(c.recomendacoes)} />
+              {textoEnviado(linhas(enviado.recomendacoes), linhas(c.recomendacoes))}
             </label>
           </div>
         </Cartao>
@@ -255,15 +331,31 @@ export function RevisaoMentor() {
         )}
       </div>
 
+      {cancelada && (
+        <div role="dialog" aria-modal="true" aria-labelledby="titulo-cancelada" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-xl">
+            <div className="mb-2 text-3xl" aria-hidden="true">🎓</div>
+            <h2 id="titulo-cancelada" className="mb-1 text-lg font-semibold text-slate-800">Revisão cancelada</h2>
+            <p className="mb-4 text-sm text-slate-600">
+              {d.mentorado} pediu o cancelamento da revisão. O laudo voltou para o mentorado{d.iniciadaEm || salvouAlgo ? ' e o que você tinha feito foi descartado' : ''}.
+            </p>
+            <Botao className="w-full" onClick={() => ir('/mentoria/revisoes')}>Voltar aos pedidos de revisão</Botao>
+          </div>
+        </div>
+      )}
+
       {foto !== null && d.fotos[foto] && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-40 flex flex-col bg-black/90" onClick={() => setFoto(null)}>
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-40 flex flex-col bg-black/90">
           <div className="flex items-center justify-between px-3 py-2 text-sm text-white">
             <span>{d.fotos[foto].nome} ({foto + 1}/{d.fotos.length})</span>
-            <button type="button" className="min-h-10 rounded-lg border border-white/40 px-3">Fechar ✕</button>
+            <button type="button" onClick={() => setFoto(null)} className="min-h-10 rounded-lg border border-white/40 px-3">Fechar ✕</button>
           </div>
-          <div className="flex flex-1 items-center justify-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-1 items-center justify-center gap-2 p-2">
             <button type="button" aria-label="Anterior" className="min-h-12 min-w-10 text-3xl text-white" onClick={() => setFoto((foto + d.fotos.length - 1) % d.fotos.length)}>‹</button>
-            <img src={d.fotos[foto].url} alt={d.fotos[foto].nome} className="max-h-[85vh] max-w-full object-contain" />
+            <div className="relative inline-flex max-h-full max-w-full items-center justify-center">
+              <img src={d.fotos[foto].url} alt={d.fotos[foto].nome} className="block max-h-[85vh] max-w-full object-contain" />
+              <CamadaAnotacao itens={d.anotacoes?.[d.fotos[foto].nome]} />
+            </div>
             <button type="button" aria-label="Próxima" className="min-h-12 min-w-10 text-3xl text-white" onClick={() => setFoto((foto + 1) % d.fotos.length)}>›</button>
           </div>
         </div>

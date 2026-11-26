@@ -1,0 +1,33 @@
+# Avisos de atualização das bibliotecas (o Dependabot abre um pull request; o CI valida antes de qualquer merge).
+# O receptor DICOM é outro projeto e fica de fora.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /plataforma/front
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      front:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: nuget
+    directory: /plataforma/api
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      api:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /plataforma
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

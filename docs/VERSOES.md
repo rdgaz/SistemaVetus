@@ -20,3 +20,7 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.15** — 26/11/2026, 04:09:20 — Mentoria (etapa 1): mentores definidos pelo administrador do sistema, perfil do mentor, diretório, pedido/aceite/encerramento e sino de avisos
 - **0.10.16** — 26/11/2026, 05:22:12 — Mentoria (etapa 2): enviar laudo ao mentor, pedidos de revisao e revisao do mentor; anotacao manual de imagens (Antigravity)
 - **0.10.17** — 26/11/2026, 05:22:47 — sistema de mentoria e edicao de imagens
+- **0.10.18** — 26/11/2026, 05:44:18 — Revisao do mentor: miniaturas de cada orgao iguais as do mentorado, com as marcas dele e as anotacoes
+- **0.10.19** — 26/11/2026, 05:55:05 — Revisao do mentor: mentorado cancela a qualquer momento (descarta o trabalho do mentor) e o mentor ve um aviso e volta a lista
+- **0.10.20** — 26/11/2026, 06:18:33 — ajustes na tela de mentoria
+- **0.10.21** — 26/11/2026, 06:38:55 — Seguranca: cabecalhos de protecao (CSP, X-Frame-Options, nosniff), lint (Biome e .NET) e validacoes de seguranca no CI

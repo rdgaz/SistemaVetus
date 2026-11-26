@@ -94,6 +94,14 @@ class Navegador {
   ok(det.status === 'AguardandoRevisao', `pré-laudo gerado (${det.status})`);
   const conteudo = det.laudo.conteudo;
 
+  // o mentorado associa as fotos ao Fígado e marca o que cada uma mostra (as miniaturas que o mentor vai ver)
+  ok(det.laudo.imagensEnviadas.length >= 2, 'pré-laudo tem as fotos enviadas à IA');
+  conteudo.orgaos[0].imagens = [1, 2];
+  ok((await aluno.req('PUT', `/api/exames/${exameId}/laudo`, { conteudo })).status === 204, 'mentorado salva o laudo com as fotos do órgão');
+  const fotoA = det.laudo.imagensEnviadas[0], fotoB = det.laudo.imagensEnviadas[1];
+  await aluno.req('PUT', `/api/exames/${exameId}/rotulos`, { foto: fotoA, orgaoIa: conteudo.orgaos[0].orgao, orgaoCorreto: conteudo.orgaos[0].orgao });
+  await aluno.req('PUT', `/api/exames/${exameId}/rotulos`, { foto: fotoB, orgaoIa: conteudo.orgaos[0].orgao, orgaoCorreto: 'Baço' });
+
   // ---- enviar
   const base = `/api/exames/${exameId}/revisao-mentor`;
   const disp = (await aluno.req('GET', base)).dados;
@@ -121,6 +129,11 @@ class Navegador {
   ok(rv.status === 200 && rv.dados.souMentor && rv.dados.exame.paciente.nome === 'Thor' && rv.dados.exameId === null, 'mentor abre a revisão');
   ok(!rv.texto.includes('Maria Responsável') && !rv.texto.includes('51999990000'), 'mentor não vê os dados do responsável');
   ok(rv.dados.fotos.length === 2 && (await mentor.req('GET', rv.dados.fotos[0].url)).status === 200, 'mentor vê as fotos pela revisão');
+  ok(JSON.stringify(rv.dados.conteudoEnviado.orgaos[0].imagens) === '[1,2]' && rv.dados.imagensEnviadas[0] === fotoA,
+    'mentor recebe as mesmas fotos do órgão que o mentorado via (miniaturas)');
+  ok(rv.dados.rotulosMentorado[fotoA]?.tipo === 'confirmacao' && rv.dados.rotulosMentorado[fotoB]?.orgaoCorreto === 'Baço',
+    'mentor vê o que o mentorado confirmou e corrigiu em cada foto');
+  ok(typeof rv.dados.anotacoes === 'object', 'mentor recebe as anotações das fotos');
   ok((await mentor.req('GET', `/api/exames/${exameId}`)).status !== 200, 'mentor não acessa o exame direto (sem vínculo com a clínica)');
   ok((await colega.req('GET', `/api/revisoes-mentor/${rid}`)).status === 404 && (await colega.req('GET', rv.dados.fotos[0].url)).status === 404,
     'outra pessoa não vê a revisão nem as fotos');
@@ -130,7 +143,6 @@ class Navegador {
   sugestao.orgaos[0].situacao = 'alterado';
   sugestao.orgaos[0].descricao = 'Dimensões aumentadas, contornos regulares, ecogenicidade aumentada.';
   ok((await mentor.req('PUT', `/api/revisoes-mentor/${rid}`, { conteudo: sugestao, parecer: 'Rascunho' })).status === 204, 'mentor salva o rascunho');
-  ok((await aluno.req('POST', `/api/revisoes-mentor/${rid}/cancelar`)).status === 409, 'depois que o mentor começou, o mentorado não cancela');
   const concluir = await mentor.req('POST', `/api/revisoes-mentor/${rid}/concluir`, {
     conteudo: sugestao, comentarios: { [sugestao.orgaos[0].orgao]: 'Repare na ecogenicidade comparada ao baço.' },
     rotulos: { 'FOTO_1.JPG': 'Fígado', 'FOTO_2.JPG': 'Baço' }, parecer: 'Bom laudo; atenção ao fígado.', confirmar: false,
@@ -158,7 +170,15 @@ class Navegador {
 
   // ---- cancelar antes de o mentor começar
   const env3 = await aluno.req('POST', base, { mentorId: mentor.id });
-  ok((await aluno.req('POST', `/api/revisoes-mentor/${env3.dados.id}/cancelar`)).status === 204, 'mentorado cancela antes de o mentor começar');
+  ok((await mentor.req('PUT', `/api/revisoes-mentor/${env3.dados.id}`, { conteudo: sugestao, parecer: 'Começando', comentarios: { Fígado: 'x' }, rotulos: { [fotoA]: 'Baço' } })).status === 204,
+    'mentor começa a revisar');
+  ok((await aluno.req('POST', `/api/revisoes-mentor/${env3.dados.id}/cancelar`)).status === 204, 'mentorado cancela mesmo com o mentor revisando');
+  const cancelada = (await mentor.req('GET', `/api/revisoes-mentor/${env3.dados.id}`)).dados;
+  ok(cancelada.situacao === 'cancelada' && cancelada.conteudoMentor === null && cancelada.parecer === null
+    && Object.keys(cancelada.comentarios).length === 0 && Object.keys(cancelada.rotulos).length === 0, 'cancelar descarta tudo o que o mentor tinha feito');
+  ok((await mentor.req('GET', '/api/notificacoes')).dados.itens.some((x) => x.tipo === 'revisao_cancelada' && x.texto.includes('descartado')),
+    'mentor é avisado do cancelamento');
+  ok((await mentor.req('PUT', `/api/revisoes-mentor/${env3.dados.id}`, { parecer: 'depois' })).status === 409, 'salvar depois de cancelada não grava nada');
   ok((await mentor.req('GET', '/api/revisoes-mentor')).dados.revisoes.every((x) => x.id !== env3.dados.id), 'revisão cancelada some da lista do mentor');
   ok((await aluno.req('PUT', `/api/exames/${exameId}/laudo`, { conteudo })).status === 204, 'laudo volta a ser editável depois de cancelar');
 

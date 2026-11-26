@@ -6,11 +6,111 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
+  # 1) Lint: roda antes de qualquer imagem Docker (o build só começa se passar)
+  lint:
+    name: Lint (front e API)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plataforma/front/package-lock.json
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Sintaxe dos scripts (receptor, web, testes, ferramentas)
+        run: |
+          for f in receptor/src/*.js web/src/*.js tests/*.js ferramentas/*.js; do node --check "$f"; done
+
+      - name: Front - dependências
+        run: npm ci --prefix plataforma/front
+
+      - name: Front - lint (Biome; erros travam, avisos só aparecem)
+        run: npm run lint --prefix plataforma/front
+
+      - name: Front - TypeScript
+        working-directory: plataforma/front
+        run: npx tsc --noEmit
+
+      - name: API - compila sem nenhum aviso
+        run: dotnet build plataforma/api -warnaserror -nologo
+
+      - name: API - analisadores do .NET
+        run: dotnet format analyzers plataforma/api --verify-no-changes --severity error --no-restore
+
+  # 2) Segurança do código: segredos no Git e bibliotecas com vulnerabilidade conhecida
+  seguranca-codigo:
+    name: Segredos e dependências
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # todo o histórico: um segredo apagado depois continua no Git
+
+      - name: Segredos no Git (Gitleaks)
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest git /repo --redact --no-banner -v
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Front - vulnerabilidades graves nas bibliotecas (npm audit)
+        run: |
+          cd plataforma/front
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
+
+      - name: API - pacotes NuGet vulneráveis (grave ou crítico)
+        run: |
+          dotnet list plataforma/api package --vulnerable --include-transitive | tee nuget-vulneraveis.txt
+          if grep -Eiq '(High|Critical)' nuget-vulneraveis.txt; then echo "Há pacote NuGet com vulnerabilidade grave ou crítica."; exit 1; fi
+
+  # 3) Análise do código (CodeQL): C# da API e TypeScript do front
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        linguagem: [csharp, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.linguagem }}
+          build-mode: none
+          queries: security-extended
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.linguagem }}
+
+  # 4) Sistema no ar: imagens, containers, testes de ponta a ponta, ataque automático (ZAP) e testes de segurança
   containers:
     name: Build e teste ponta a ponta
+    needs: lint
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     env:
       ADMIN_USER: ci
       ADMIN_PASSWORD: ci-senha-teste
@@ -35,10 +135,6 @@ jobs:
           cache-dependency-path: |
             receptor/package-lock.json
             web/package-lock.json
-
-      - name: Verificar sintaxe
-        run: |
-          for f in receptor/src/*.js web/src/*.js tests/*.js ferramentas/*.js; do node --check "$f"; done
 
       - name: Validar docker-compose.yml
         run: docker compose config --quiet
@@ -94,6 +190,24 @@ jobs:
 
       - name: Teste do envio por pendrive (pasta sintética)
         run: node tests/pendrive.js
+
+      - name: Ataque automático leve (OWASP ZAP baseline)
+        run: |
+          mkdir -p zap && chmod 777 zap
+          # -I: avisos ficam no relatório; só falha nas regras marcadas como FAIL
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://127.0.0.1:5080 -I -r zap-relatorio.html -J zap-relatorio.json
+
+      - name: Testes de segurança do acesso (por último; esgota o limite de logins)
+        run: node tests/seguranca.js
+
+      - name: Relatório do ZAP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-relatorio
+          path: zap/
+          if-no-files-found: ignore
 
       - name: Logs dos containers
         if: always()

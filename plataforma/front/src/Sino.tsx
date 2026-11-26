@@ -73,7 +73,7 @@ export function Sino() {
               <button key={x.id} type="button" onClick={() => abrir(x)}
                 className={`block w-full border-b border-slate-50 px-3 py-2.5 text-left hover:bg-slate-50 ${x.lida ? '' : 'bg-sky-50/60'}`}>
                 <div className="flex items-start gap-2">
-                  {!x.lida && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-[#0E4D64]" aria-label="não lido" />}
+                  {!x.lida && <><span className="mt-1.5 size-2 shrink-0 rounded-full bg-[#0E4D64]" aria-hidden="true" /><span className="sr-only">Não lido:</span></>}
                   <div className="min-w-0">
                     <div className={`text-sm ${x.lida ? 'text-slate-700' : 'font-semibold text-slate-900'}`}>{x.titulo}</div>
                     {x.texto && <div className="line-clamp-2 text-xs text-slate-600">{x.texto}</div>}

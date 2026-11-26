@@ -159,6 +159,7 @@ function Diretorio({ aoPedir, versao }: { aoPedir: (mentorId: string, mensagem: 
   const [pedindo, setPedindo] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState('');
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: "versao" muda quando as mentorias mudam e recarrega o diretório
   useEffect(() => {
     const t = setTimeout(() => {
       api<Mentor[]>('GET', `/api/mentores${busca.trim() ? `?busca=${encodeURIComponent(busca.trim())}` : ''}`).then(setLista).catch(() => setLista([]));

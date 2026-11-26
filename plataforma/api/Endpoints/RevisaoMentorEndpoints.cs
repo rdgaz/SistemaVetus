@@ -94,7 +94,7 @@ public static class RevisaoMentorEndpoints
         // ---------- revisões (mentor e mentorado)
         var g = app.MapGroup("/api/revisoes-mentor").RequireAuthorization();
 
-        // o mentorado desiste antes de o mentor começar
+        // o mentorado desiste a qualquer momento: o que o mentor já tinha feito é descartado e ele é avisado
         g.MapPost("/{rid:guid}/cancelar", async (Guid rid, HttpContext http, VetusDb db, Notificacoes avisos, RegistroAtividades registros) =>
         {
             var eu = Acesso.UsuarioId(http.User);
@@ -102,9 +102,11 @@ public static class RevisaoMentorEndpoints
                 .FirstOrDefaultAsync(x => x.Id == rid && x.MentoradoId == eu);
             if (r is null) return Erros.NaoEncontrado("Revisão não encontrada.");
             if (r.Situacao != RevisaoMentor.Pendente) return Erros.Conflito("Esta revisão não está mais pendente.");
-            if (r.IniciadaEm is not null) return Erros.Conflito("O mentor já começou a revisar: não dá mais para cancelar.");
+            var comecada = r.IniciadaEm is not null;
             r.Situacao = RevisaoMentor.Cancelada; r.CanceladaEm = DateTime.UtcNow;
-            avisos.Adicionar(r.MentorId, "revisao_cancelada", "Pedido de revisão cancelado", $"{r.Mentorado.Nome} cancelou o pedido de revisão ({Descricao(r.Exame)}).", "/mentoria/revisoes");
+            r.ConteudoMentor = null; r.Comentarios = "{}"; r.Rotulos = "{}"; r.Parecer = null;
+            avisos.Adicionar(r.MentorId, "revisao_cancelada", "Pedido de revisão cancelado",
+                $"{r.Mentorado.Nome} cancelou o pedido de revisão ({Descricao(r.Exame)})." + (comecada ? " O que você tinha feito foi descartado." : ""), "/mentoria/revisoes");
             await registros.Adicionar(http, "revisao_mentor_cancelada", "Pedido de revisão ao mentor cancelado", r.ExameId, r.Exame.Paciente.Nome,
                 clinicaId: r.ClinicaId, clinicaNome: await db.Clinicas.Where(c => c.Id == r.ClinicaId).Select(c => c.Nome).FirstAsync());
             await db.SaveChangesAsync();
@@ -144,8 +146,14 @@ public static class RevisaoMentorEndpoints
             var medidasAparelho = arq.LerJson(e, "medidas.json") is { } json ? JsonSerializer.Deserialize<JsonElement>(json) : (JsonElement?)null;
             var anotacoes = await db.AnotacoesImagem.Where(a => a.ExameId == e.Id).ToListAsync();
             var medidas = DesenhoAnotacao.MesclarMedidas(medidasAparelho, anotacoes);
+            // o que o mentorado confirmou ou corrigiu em cada foto (o último rótulo dele vale)
+            var rotulosMentorado = (await db.RotulosImagem.Where(x => x.ExameId == e.Id && x.UsuarioId == r.MentoradoId)
+                    .OrderBy(x => x.CriadoEm).ToListAsync())
+                .GroupBy(x => x.Foto).ToDictionary(x => x.Key, x => new { x.Last().OrgaoCorreto, x.Last().Tipo });
             return Results.Ok(new
             {
+                rotulosMentorado,
+                anotacoes = anotacoes.ToDictionary(a => a.Foto, a => DesenhoAnotacao.Ler(a.Itens)),
                 r.Id, r.Situacao, r.Resultado, r.ParaEnsino, r.Mensagem, r.Parecer, r.EnviadaEm, r.IniciadaEm, r.ConcluidaEm, r.LaudoVersao,
                 souMentor = r.MentorId == eu,
                 // só o mentorado abre o exame (o mentor não tem acesso à clínica)

@@ -27,7 +27,7 @@ export function AdminMentores() {
       api<Candidato[]>('GET', `/api/admin/mentores/candidatos?busca=${encodeURIComponent(busca.trim())}`).then(setCandidatos).catch(() => setCandidatos([]));
     }, 250);
     return () => clearTimeout(t);
-  }, [busca, lista]);
+  }, [busca]);
 
   const definir = async (c: Candidato) => {
     setErro(''); setOk('');

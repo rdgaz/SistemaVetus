@@ -67,6 +67,7 @@ if (args.Length >= 2 && args[0] == "--detectar-anotacoes")
 }
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false); // não anuncia o servidor web
 var cfg = builder.Configuration;
 
 var conexao = cfg.GetConnectionString("Vetus")
@@ -164,6 +165,7 @@ if (args.Length >= 2 && args[0] == "--redefinir-senha")
     return 0;
 }
 
+app.UseCabecalhosSeguranca(); // antes de tudo: vale também para as telas e arquivos estáticos
 app.UseDefaultFiles();
 app.UseStaticFiles(); // telas (React compiladas em wwwroot)
 app.UseAuthentication();

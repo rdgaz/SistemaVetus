@@ -40,6 +40,10 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 - **Padrão do laudo (Gabriela Peil)**: órgãos na ordem Fígado, Vesícula Biliar, Estômago, Alças Intestinais, Pâncreas, Baço,
   Rins (uma linha), Adrenais, Vesícula Urinária, reprodutor, Linfonodos; descrição sem repetir o nome do órgão; medidas em cm
   com vírgula; "Peristaltismo presente e evolutivo"; sem "(castrado/castrada)" no sexo.
+- **Lint e segurança (CI)**: antes do build Docker roda o lint — front: `npm run lint` (Biome, `plataforma/front/biome.json`;
+  regras que o código antigo ainda descumpre estão como aviso, o resto é erro) e `tsc`; API: `dotnet build -warnaserror` e
+  `dotnet format analyzers`. Código novo não deve criar avisos novos. Testes de segurança em `tests/seguranca.js` (sempre por
+  último: esgota o limite de logins). Deploy local com as mesmas validações: `C:Gitdeploy-autolaudovet.bat`.
 - **Prancha**: sem limite de fotos; sugestão = todas as fotos associadas aos órgãos, na ordem dos órgãos, depois as que a IA destacou.
 - **Revisão**: um botão "Salvar" (texto do laudo + dados do exame) e "Aprovar e assinar" na barra; nova análise à IA num link
   com "Atualizar com o que mudou" e "Refazer análise completa".
@@ -53,6 +57,30 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (versão 0.10.21)
+- **Lint antes do Docker** (pedido do usuário): job `lint` no `.github/workflows/ci.yml`; o job dos containers só roda se ele
+  passar. Biome no front (`biome.json`, script `lint`), `-warnaserror` e analisadores no .NET. Corrigidos os apontamentos em
+  `RevisaoMentor.tsx` (funções no lugar de componentes internos, Esc/setas na foto ampliada), `Sino.tsx`, `AdminMentores.tsx`,
+  `Mentoria.tsx`. Restam 114 avisos antigos (acessibilidade, dependências de efeitos) para corrigir aos poucos.
+- **Segurança no CI**: job `seguranca-codigo` (Gitleaks no histórico, `npm audit` grave, NuGet vulnerável), job `codeql`
+  (C# e TypeScript, `security-extended`), OWASP ZAP baseline no sistema no ar (relatório como artefato; hoje 0 falhas, 5 avisos
+  informativos) e `tests/seguranca.js` (28 verificações). `.github/dependabot.yml` (npm, NuGet, Docker, Actions; receptor fora).
+- **Cabeçalhos de segurança**: `Servicos/CabecalhosSeguranca.cs` (CSP só em HTML, X-Frame-Options, nosniff, Referrer-Policy,
+  Permissions-Policy com microfone, COOP, HSTS em HTTPS) e sem cabeçalho `Server` (`Program.cs`).
+- `C:Gitdeploy-autolaudovet.bat`: lint no passo 3, `-warnaserror` no passo 2 e `seguranca.js` no fim dos testes.
+- Antes disso, por fora: versão 0.10.20 ("ajustes na tela de mentoria"), sem registro aqui.
+
+### 26/11/2026 — Claude (versão 0.10.19)
+- Revisão do mentor: o mentorado cancela a qualquer momento; o cancelamento descarta o que o mentor fez (conteúdo, comentários,
+  rótulos e parecer) e avisa o mentor. Na tela do mentor, uma verificação a cada 15 s e o salvar/concluir mostram o modal
+  "Revisão cancelada" (sem mensagem de erro) e voltam a "Pedidos de revisão". `RevisaoMentorEndpoints.cs`, `RevisaoMentor.tsx`,
+  `EnviarMentor.tsx`, `Ajuda.tsx`, `tests/revisao-mentor.js`.
+
+### 26/11/2026 — Claude (versão 0.10.18)
+- Revisão do mentor: cada órgão mostra as mesmas miniaturas que o mentorado via (até 4 fotos de `orgaos[].imagens` do laudo enviado),
+  com o que o mentorado confirmou/corrigiu (`rotulosMentorado`, último rótulo dele por foto) e o selo/camada das anotações
+  (`anotacoes`). `RevisaoMentorEndpoints.cs`, `RevisaoMentor.tsx`, `tests/revisao-mentor.js`.
 
 ### 26/11/2026 — Claude (mentoria etapa 2, versão 0.10.16; logo depois saiu a 0.10.17 com os mesmos arquivos)
 - Publicado com o OK do usuário pelo `C:Gitdeploy-autolaudovet.bat`, levando junto a anotação de imagens do Antigravity.

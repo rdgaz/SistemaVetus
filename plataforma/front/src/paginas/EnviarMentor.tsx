@@ -46,7 +46,10 @@ export function EnviarMentor({ exameId, podeEnviar, assinado, aoMudar }: {
     }
   };
   const cancelar = async (id: string) => {
-    if (!confirm('Cancelar o pedido de revisão? O laudo volta a poder ser editado.')) return;
+    const comecou = !!r?.revisoes.find((x) => x.id === id)?.iniciadaEm;
+    if (!confirm(comecou
+      ? 'O mentor já começou a revisar. Cancelar mesmo assim? O que ele fez será descartado, ele será avisado e o laudo volta a poder ser editado.'
+      : 'Cancelar o pedido de revisão? O laudo volta a poder ser editado.')) return;
     setOcupado(true); setErro('');
     try { await api('POST', `/api/revisoes-mentor/${id}/cancelar`); await carregar(); aoMudar(); }
     catch (e) { setErro((e as Error).message); } finally { setOcupado(false); }
@@ -65,11 +68,9 @@ export function EnviarMentor({ exameId, podeEnviar, assinado, aoMudar }: {
             Enviado em {dataHora(pendente.enviadaEm)}{pendente.iniciadaEm ? ' · o mentor já começou a revisar' : ' · aguardando o mentor'}.
             {!pendente.paraEnsino && ' Enquanto isso, o laudo não pode ser editado nem assinado.'}
           </div>
-          {!pendente.iniciadaEm && (
-            <button type="button" disabled={ocupado} onClick={() => cancelar(pendente.id)} className="mt-2 text-xs font-semibold text-violet-900 underline">
-              Cancelar o pedido
-            </button>
-          )}
+          <button type="button" disabled={ocupado} onClick={() => cancelar(pendente.id)} className="mt-2 text-xs font-semibold text-violet-900 underline">
+            Cancelar o pedido
+          </button>
         </div>
       )}
 
