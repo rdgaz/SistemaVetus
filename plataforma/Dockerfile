@@ -16,7 +16,7 @@ COPY api/ ./
 RUN dotnet publish -c Release -o /out --no-restore
 
 # 3) imagem final: só o runtime + a API + as telas em wwwroot
-FROM mcr.microsoft.com/dotnet/aspnet:10.0
+FROM mcr.microsoft.com/dotnet/aspnet:11.0
 WORKDIR /app
 COPY --from=api /out ./
 COPY --from=front /front/dist ./wwwroot
