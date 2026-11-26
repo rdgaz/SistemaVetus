@@ -58,7 +58,7 @@ class Navegador {
   const anon = new Navegador();
   ok((await anon.req('GET', '/api/auth/eu')).status === 401, 'sem login: 401');
   ok((await anon.entrar(ADMIN_EMAIL, 'senha-errada')).status === 401, 'senha errada: 401');
-  ok((await anon.req('POST', '/api/ingestao/exames', {})).status === 503, 'ingestão desativada: 503');
+  ok((await anon.req('POST', '/api/ingestao/v1/exames/verificar', { exames: [] })).status === 401, 'ingestão sem token: 401');
 
   // administrador do sistema
   const adm = new Navegador();

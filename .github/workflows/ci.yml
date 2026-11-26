@@ -191,6 +191,9 @@ jobs:
       - name: Teste do envio por pendrive (pasta sintética)
         run: node tests/pendrive.js
 
+      - name: Teste da API de ingestão (apps e receptor)
+        run: node tests/ingestao.js
+
       - name: Ataque automático leve (OWASP ZAP baseline)
         run: |
           mkdir -p zap && chmod 777 zap

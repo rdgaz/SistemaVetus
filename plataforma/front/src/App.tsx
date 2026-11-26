@@ -24,6 +24,8 @@ import { Mentoria } from './paginas/Mentoria';
 import { AdminMentores } from './paginas/AdminMentores';
 import { PedidosRevisao } from './paginas/PedidosRevisao';
 import { RevisaoMentor } from './paginas/RevisaoMentor';
+import { Aparelhos } from './paginas/Aparelhos';
+import { AdminReceptores } from './paginas/AdminReceptores';
 import { Sino } from './Sino';
 
 /** Extrai até 2 iniciais do nome (ignorando títulos como Dr./Dra.). */
@@ -69,6 +71,7 @@ function AppComLogin() {
         <Route path="usuarios" element={<SoAdminClinica><Usuarios /></SoAdminClinica>} />
         <Route path="clinica" element={<SoAdminClinica><DadosClinica /></SoAdminClinica>} />
         <Route path="clinica/layout" element={<SoAdminClinica><LayoutLaudo /></SoAdminClinica>} />
+        <Route path="clinica/aparelhos" element={<SoAdminClinica><Aparelhos /></SoAdminClinica>} />
         <Route path="clinica/registros" element={<SoAdminClinica><Registros /></SoAdminClinica>} />
         <Route path="conta" element={<MinhaConta />} />
         <Route path="mentoria" element={<Mentoria />} />
@@ -88,6 +91,7 @@ function AppComLogin() {
           element={usuario.administradorSistema ? <AdminCobranca /> : <Navigate to="/" replace />}
         />
         <Route path="admin/ia" element={usuario.administradorSistema ? <AdminIa /> : <Navigate to="/" replace />} />
+        <Route path="admin/receptores" element={usuario.administradorSistema ? <AdminReceptores /> : <Navigate to="/" replace />} />
         <Route path="admin/mentores" element={usuario.administradorSistema ? <AdminMentores /> : <Navigate to="/" replace />} />
         <Route path="admin/registros" element={usuario.administradorSistema ? <Registros sistema /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -175,6 +179,7 @@ function Layout() {
     { para: '/admin/cobranca', texto: 'Cobrança' },
     { para: '/admin/referencias', texto: 'Referências' },
     { para: '/admin/ia', texto: 'IA' },
+    { para: '/admin/receptores', texto: 'Receptores' },
     { para: '/admin/registros', texto: 'Registros' },
   ] : [];
   const emSistema = local.pathname.startsWith('/admin');

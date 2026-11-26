@@ -10,7 +10,7 @@ type Registro = {
 };
 type Resposta = { tipos: Record<string, string>; registros: Registro[] };
 
-const nomePerfil: Record<string, string> = { AdministradorClinica: 'administrador', Veterinario: 'veterinário', Usuario: 'recepção', Sistema: 'administrador do sistema' };
+const nomePerfil: Record<string, string> = { AdministradorClinica: 'administrador', Veterinario: 'veterinário', Usuario: 'recepção', App: 'app de envio', Receptor: 'receptor DICOM', Sistema: 'administrador do sistema' };
 const corTipo: Record<string, string> = {
   exame_excluido: 'bg-red-100 text-red-800', laudo_assinado: 'bg-emerald-100 text-emerald-800', laudo_retificado: 'bg-amber-100 text-amber-900',
   analise_solicitada: 'bg-sky-100 text-sky-900', alerta_discordado: 'bg-amber-100 text-amber-900',

@@ -21,6 +21,7 @@ export function AbasClinica({ titulo = 'Configurações da clínica' }: { titulo
         <NavLink to="/clinica" end className={aba}>Dados e funcionamento</NavLink>
         <NavLink to="/clinica/layout" className={aba}>Aparência do PDF</NavLink>
         <NavLink to="/usuarios" className={aba}>Usuários</NavLink>
+        <NavLink to="/clinica/aparelhos" className={aba}>Aparelhos e apps</NavLink>
         <NavLink to="/clinica/registros" className={aba}>Registros de atividade</NavLink>
       </div>
     </div>

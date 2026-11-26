@@ -51,6 +51,8 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
   Registros de atividade). Tela nova da clínica entra como aba; tela nova do sistema entra no menu Sistema ▾.
 - **Medidas no editor de imagens** (implementado nas versões 0.10.23–0.10.24; calibração vale para a clínica inteira; mover foto pergunta sempre): sugestão de medida sem IA (régua da foto, calibração por toque), posição da caixa das medidas e órgão do
   editor coerente com o laudo — ver [PLANO-MEDIDAS-ANOTACAO.md](PLANO-MEDIDAS-ANOTACAO.md). Mexe no editor do Antigravity.
+- **Recepção pela nuvem** (aprovado em 26/11/2026; receptor em repositório e sessão próprios) — API de ingestão com token por dispositivo, receptor DICOM na nuvem (TLS) e apps
+  Windows/Android em repositórios próprios — ver [PLANO-INGESTAO.md](PLANO-INGESTAO.md).
 - **Prancha**: sem limite de fotos; sugestão = todas as fotos associadas aos órgãos, na ordem dos órgãos, depois as que a IA destacou.
 - **Revisão**: um botão "Salvar" (texto do laudo + dados do exame) e "Aprovar e assinar" na barra; nova análise à IA num link
   com "Atualizar com o que mudou" e "Refazer análise completa".
@@ -64,6 +66,20 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (versão 0.10.32)
+- **API de ingestão v1** (etapa 1 do `PLANO-INGESTAO.md`; contrato em `docs/API-INGESTAO.md`): `/api/ingestao/v1` com `parear`,
+  `eu`, `exames/verificar`, `PUT .../arquivos/{nome}` (X-SHA1 conferido), `concluir` e situação. Token por dispositivo
+  (tabelas `dispositivos_ingestao` e `codigos_pareamento`, migração `*_Ingestao`); receptor do sistema com `X-AE-Chamado`.
+- O recebimento do pendrive virou o serviço `Servicos/RecebimentoExames.cs`, usado pelo pendrive e pela ingestão (mesma
+  junção de exames). `INGESTAO_HABILITADA` agora vem `true` (interruptor de emergência).
+- Telas: aba "Aparelhos e apps" da clínica (`paginas/Aparelhos.tsx`: código de pareamento, apps, revogar) e "Receptores"
+  no menu Sistema (`paginas/AdminReceptores.tsx`). Teste `tests/ingestao.js` (40 itens) no CI e no `.bat`.
+- **Para o Antigravity (manual)**: falta um tópico "Aparelhos e apps" (parear o app de envio).
+
+### 26/11/2026 — Claude (sem deploy)
+- Criado `docs/PLANO-INGESTAO.md`: API de ingestão (token por dispositivo, pareamento, envio retomável), receptor DICOM na
+  nuvem com TLS enviando pela API (sem volume compartilhado), apps Windows/Android e três repositórios. Só documento.
 
 ### 26/11/2026 — Antigravity (sem deploy — aguardando OK do usuário)
 - **Revisão completa do Manual na tela Ajuda** (`plataforma/front/src/paginas/Ajuda.tsx`) alinhando todos os 18 tópicos às últimas telas e versões:

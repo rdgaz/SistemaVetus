@@ -126,6 +126,10 @@ builder.Services.AddRateLimiter(o =>
     o.AddPolicy(LaudoEndpoints.LimitePublico, http => RateLimitPartition.GetFixedWindowLimiter(
         http.Connection.RemoteIpAddress?.ToString() ?? "?",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) }));
+    // API de ingestão: por token (ou por IP, sem token); um exame tem dezenas de arquivos, então o limite é folgado
+    o.AddPolicy(IngestaoEndpoints.LimiteIngestao, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Request.Headers.Authorization.ToString() is { Length: > 0 } a ? Seguranca.HashToken(a) : http.Connection.RemoteIpAddress?.ToString() ?? "?",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 1200, Window = TimeSpan.FromMinutes(1) }));
 });
 
 var app = builder.Build();

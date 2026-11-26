@@ -34,3 +34,4 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.29** — 26/11/2026, 17:05:05 — Usabilidade: Pronto vira Assinado; selo Com o mentor na lista; nova analise explicada com custo estimado; aviso de que a correcao ensina a IA; saldo em vez de creditos; prancha explicada
 - **0.10.30** — 26/11/2026, 17:35:44 — atstes pontuasi de tela
 - **0.10.31** — 26/11/2026, 18:36:21 — testes dajustes pontuais
+- **0.10.32** — 26/11/2026, 19:44:56 — API de ingestao v1: apps e receptor enviam exames por token (pareamento por codigo, envio retomavel, SHA-1, juncao com pendrive), tela Aparelhos e apps e Receptores (sistema)

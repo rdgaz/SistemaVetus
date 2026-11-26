@@ -34,6 +34,11 @@ public class RegistroAtividades(VetusDb db)
         ["revisao_mentor_cancelada"] = "Revisão do mentor cancelada",
         ["revisao_mentor_concluida"] = "Revisão do mentor concluída",
         ["escala_calibrada"] = "Escala das fotos calibrada",
+        ["exame_enviado_app"] = "Exame enviado por app ou receptor",
+        ["pareamento_gerado"] = "Código de pareamento gerado",
+        ["dispositivo_pareado"] = "App pareado",
+        ["dispositivo_revogado"] = "App revogado",
+        ["receptor_criado"] = "Token de receptor criado",
         ["imagem_anotada"] = "Imagem anotada",
     };
 

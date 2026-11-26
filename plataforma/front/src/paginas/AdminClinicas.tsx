@@ -109,7 +109,7 @@ export function AdminClinicas() {
               {criada.administrador.senhaProvisoria && (
                 <Segredo rotulo="Senha provisória do administrador" valor={criada.administrador.senhaProvisoria} />
               )}
-              <Segredo rotulo="Token da API de ingestão (uso futuro)" valor={criada.tokenIngestao} />
+              <Segredo rotulo="Token antigo da clínica (não usado: os apps usam Aparelhos e apps)" valor={criada.tokenIngestao} />
               <Botao variante="secundario" onClick={() => setCriada(null)}>Fechar</Botao>
             </div>
           </Cartao>

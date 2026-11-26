@@ -68,7 +68,7 @@ services:
       ConnectionStrings__Vetus: Host=postgres;Database=vetus;Username=vetus;Password=${POSTGRES_PASSWORD}
       VETUS_ADMIN_EMAIL: ${VETUS_ADMIN_EMAIL:-}
       VETUS_ADMIN_SENHA: ${VETUS_ADMIN_SENHA:-}
-      INGESTAO_HABILITADA: ${INGESTAO_HABILITADA:-false}
+      INGESTAO_HABILITADA: ${INGESTAO_HABILITADA:-true}
       VETUS_CHAVE_INTERNA: ${VETUS_CHAVE_INTERNA:?defina VETUS_CHAVE_INTERNA no .env}
       VETUS_DADOS_DIR: /data
       # endereço do sistema para quem está fora (vai no QR code de verificação do laudo)

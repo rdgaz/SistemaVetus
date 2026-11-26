@@ -624,3 +624,45 @@ public class CalibracaoImagem
     public string UsuarioNome { get; set; } = "";
     public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
 }
+
+/// <summary>
+/// App ou receptor autorizado a enviar exames pela API de ingestão. O token só aparece uma vez (no pareamento ou na criação);
+/// guardamos o hash. Apps (windows/android) pertencem a uma clínica; o receptor DICOM da nuvem (tipo "receptor") é do
+/// sistema e informa a clínica pelo AE Title chamado.
+/// </summary>
+public class DispositivoIngestao
+{
+    public const string Windows = "windows", Android = "android", Receptor = "receptor";
+
+    public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>Clínica dona do app; null para o receptor do sistema.</summary>
+    public Guid? ClinicaId { get; set; }
+    public string Nome { get; set; } = "";
+    public string Tipo { get; set; } = Windows;
+    public string TokenHash { get; set; } = "";
+    public Guid? CriadoPorId { get; set; }
+    public string CriadoPorNome { get; set; } = "";
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+    public DateTime? UltimoUsoEm { get; set; }
+    public string? UltimoIp { get; set; }
+    public string? VersaoApp { get; set; }
+    public bool Ativo { get; set; } = true;
+    public DateTime? RevogadoEm { get; set; }
+    public string? RevogadoPor { get; set; }
+}
+
+/// <summary>Código curto (8 caracteres, vale 10 minutos, uso único) para o app trocar pelo token sem digitar o token.</summary>
+public class CodigoPareamento
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ClinicaId { get; set; }
+    public string CodigoHash { get; set; } = "";
+    public string NomeDispositivo { get; set; } = "";
+    public string Tipo { get; set; } = DispositivoIngestao.Windows;
+    public Guid CriadoPorId { get; set; }
+    public string CriadoPorNome { get; set; } = "";
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+    public DateTime ExpiraEm { get; set; }
+    public DateTime? UsadoEm { get; set; }
+    public Guid? DispositivoId { get; set; }
+}

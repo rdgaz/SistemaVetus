@@ -29,6 +29,8 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
     public DbSet<RevisaoMentor> RevisoesMentor => Set<RevisaoMentor>();
     public DbSet<AnotacaoImagem> AnotacoesImagem => Set<AnotacaoImagem>();
     public DbSet<CalibracaoImagem> CalibracoesImagem => Set<CalibracaoImagem>();
+    public DbSet<DispositivoIngestao> DispositivosIngestao => Set<DispositivoIngestao>();
+    public DbSet<CodigoPareamento> CodigosPareamento => Set<CodigoPareamento>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -329,6 +331,30 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.Property(x => x.MotivoRetificacao).HasMaxLength(1000);
             e.Property(x => x.DadosEntrada).HasColumnType("jsonb");
             e.Property(x => x.HashesFotos).HasColumnType("jsonb");
+        });
+
+        b.Entity<DispositivoIngestao>(e =>
+        {
+            e.ToTable("dispositivos_ingestao");
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasIndex(x => x.ClinicaId);
+            e.Property(x => x.Nome).HasMaxLength(120);
+            e.Property(x => x.Tipo).HasMaxLength(20);
+            e.Property(x => x.TokenHash).HasMaxLength(100);
+            e.Property(x => x.CriadoPorNome).HasMaxLength(200);
+            e.Property(x => x.UltimoIp).HasMaxLength(60);
+            e.Property(x => x.VersaoApp).HasMaxLength(40);
+            e.Property(x => x.RevogadoPor).HasMaxLength(200);
+        });
+
+        b.Entity<CodigoPareamento>(e =>
+        {
+            e.ToTable("codigos_pareamento");
+            e.HasIndex(x => x.CodigoHash);
+            e.Property(x => x.CodigoHash).HasMaxLength(100);
+            e.Property(x => x.NomeDispositivo).HasMaxLength(120);
+            e.Property(x => x.Tipo).HasMaxLength(20);
+            e.Property(x => x.CriadoPorNome).HasMaxLength(200);
         });
 
         b.Entity<CalibracaoImagem>(e =>

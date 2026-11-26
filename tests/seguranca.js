@@ -58,7 +58,7 @@ class Navegador {
 
   // ---- rotas protegidas sem login
   const protegidas = ['/api/auth/eu', '/api/exames', '/api/clinica', '/api/clinica/usuarios', '/api/clinica/registros', '/api/admin/clinicas',
-    '/api/admin/registros', '/api/admin/mentores', '/api/mentorias', '/api/mentores', '/api/revisoes-mentor', '/api/notificacoes', '/api/mentoria/perfil'];
+    '/api/admin/registros', '/api/admin/mentores', '/api/mentorias', '/api/mentores', '/api/revisoes-mentor', '/api/notificacoes', '/api/mentoria/perfil', '/api/ingestao/v1/eu', '/api/clinica/dispositivos', '/api/admin/receptores'];
   const abertas = [];
   for (const p of protegidas) if ((await anon.req('GET', p)).status !== 401) abertas.push(p);
   ok(abertas.length === 0, `sem login, nenhuma rota protegida responde (${abertas.join(', ') || 'todas 401'})`);
