@@ -99,6 +99,8 @@ public static class ExameEndpoints
                     e.Id, e.Status, e.Urgente, e.Tipo, e.Data, e.TotalFotos, e.TotalPdfs, e.TotalVideos, e.RecebidoEm, e.Origem,
                     arquivos = new Exame { Pasta = e.Pasta, PastaPendrive = e.PastaPendrive, FotosPendrive = e.FotosPendrive },
                     paciente = e.Paciente.Nome, especie = e.Paciente.Especie, tutor = e.Paciente.Tutor!.Nome,
+                    // laudo parado esperando o mentor (selo na lista)
+                    comMentor = db.RevisoesMentor.Any(r => r.ExameId == e.Id && r.Situacao == RevisaoMentor.Pendente && !r.ParaEnsino),
                 })
                 .ToListAsync();
 
@@ -108,7 +110,7 @@ public static class ExameEndpoints
                 exames = lista.Select(e => new
                 {
                     e.Id, e.Status, e.Urgente, e.Tipo, e.Data, e.TotalFotos, e.TotalPdfs, e.TotalVideos, e.RecebidoEm, e.Origem,
-                    e.paciente, e.especie, e.tutor,
+                    e.paciente, e.especie, e.tutor, e.comMentor,
                     miniatura = arq.PrimeiraFoto(e.arquivos) is { } f ? $"/api/exames/{e.Id}/arquivos/jpg/{Uri.EscapeDataString(f)}" : null,
                 }),
             });

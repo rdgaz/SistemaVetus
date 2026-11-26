@@ -65,6 +65,26 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 
 ## Registro (mais novo em cima)
 
+### 26/11/2026 — Antigravity (sem deploy — aguardando OK do usuário)
+- **Manual na tela Ajuda** (`plataforma/front/src/paginas/Ajuda.tsx`):
+  - **Tópico 18 (Anotar texto e medidas nas imagens)**: atualizado com sugestão automática de valor pela régua lateral/medidas da foto, calibração `📐 Calibrar` válida para toda a clínica, posição/arraste da caixa das medidas (`↖ ↗ ↙ ↘` ou livre), vínculo com órgão pelo texto na foto e pergunta para mover a foto de órgão no laudo, além do controle de exibição na Aparência do PDF.
+  - **Alinhamento geral do Manual (0.10.29)**: trocado status "Pronto" por **"Assinado"** e citado o selo **"🎓 Com o mentor"** (tópico 3); custo estimado nas duas opções de nova análise à IA (tópico 6); explicação da prancha ("as fotos que vão no PDF") e exibição de anotações manuais (tópicos 9 e 16); "Créditos" ajustado para **"Saldo"** (tópicos 3, 14 e 16).
+
+### 26/11/2026 — Claude (versão 0.10.29; a 0.10.28 foi publicada por fora)
+- Situação "Pronto" aparece como **"Assinado"** (`exames.tsx`); selo **"🎓 Com o mentor"** na lista de exames (`comMentor` no
+  `GET /api/exames`). Nova análise à IA com explicação simples e custo estimado (`mediaAtualizacao` no `GET /api/clinica/saldo`).
+  "Sua correção ensina a IA nos próximos exames" e agradecimento nas imagens do órgão (`Revisao.tsx`). "Saldo" no lugar de
+  "créditos" e prancha explicada ("as fotos que vão no PDF").
+- **Para o Antigravity (manual)**: o manual ainda fala em "Pronto" e "créditos"; trocar por "Assinado" e "saldo", e citar o
+  selo "Com o mentor" e o custo estimado da nova análise.
+
+### 26/11/2026 — Claude (versão 0.10.27)
+- **Revisão com duas visões** do mesmo laudo (chave no topo): "☰ Por órgão" (cartões) e "📄 Como vai ficar" (documento
+  editável, antes uma janela à parte). Ao tocar num órgão no documento, aparece em cima dele a mesma barrinha de ferramentas
+  (situação, frase pronta, Falar e Fotos → "Mais detalhes"). Uma barra só para salvar e assinar; a visão é lembrada no
+  computador (localStorage `vetus.visaoRevisao`) e começa "Por órgão" no celular. `Revisao.tsx` (`ferramentas`, `aplicarFrase`),
+  `DocumentoEditavel.tsx` (embutido, sem a moldura de tela cheia), manual (Ajuda).
+
 ### 26/11/2026 — Claude (versão 0.10.26; a 0.10.25 foi publicada por fora)
 - Usabilidade: perfil Usuario aparece como **Recepção** (`api.ts`, `Registros.tsx`, textos dos registros em `ClinicaEndpoints.cs`);
   filtro dos Registros só com os tipos que existem; nome da clínica no menu da conta; "📐 Calibrar" só quando a régua não é achada.

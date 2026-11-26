@@ -128,6 +128,11 @@ export function ExameDetalhe() {
   // revisão em andamento: a barra de baixo salva e assina por ela
   const [revisaoCtl, setRevisaoCtl] = useState<ControleRevisao | null>(null);
   const [pedindoAnalise, setPedindoAnalise] = useState(false);
+  // custo médio da clínica, mostrado nas opções de nova análise
+  const [custos, setCustos] = useState<{ mediaPorLaudo: number; mediaAtualizacao: number | null } | null>(null);
+  useEffect(() => {
+    if (pedindoAnalise && !custos) api<{ mediaPorLaudo: number; mediaAtualizacao: number | null }>('GET', '/api/clinica/saldo').then(setCustos).catch(() => undefined);
+  }, [pedindoAnalise, custos]);
   const [fotoAberta, setFotoAberta] = useState<number | null>(null);
   // galeria só com as imagens do alerta de achado urgente
   const [galeria, setGaleria] = useState<{ fotos: Arquivo[]; indice: number } | null>(null);
@@ -529,7 +534,7 @@ export function ExameDetalhe() {
               )}
               <p className="mx-auto mt-2 max-w-6xl text-center text-xs md:text-right">
                 <button type="button" className="font-medium text-[#0E4D64] underline" disabled={salvando} onClick={() => setPedindoAnalise(!pedindoAnalise)}>
-                  Pedir nova análise à IA (usa créditos)
+                  Pedir nova análise à IA (usa o saldo)
                 </button>
               </p>
               {pedindoAnalise && (
@@ -537,12 +542,14 @@ export function ExameDetalhe() {
                   <button type="button" disabled={salvando || faltaParaGerar.length > 0} onClick={() => novaAnalise(false)}
                     className="rounded-lg border border-slate-300 bg-white p-3 text-left hover:bg-slate-50 disabled:opacity-50">
                     <span className="block text-sm font-semibold text-slate-800">Atualizar com o que mudou</span>
-                    <span className="block text-xs text-slate-500">Usa o laudo atual, com as suas edições. Sem foto nova, vai sem imagens. Custo baixo.</span>
+                    <span className="block text-xs text-slate-500">A IA ajusta o texto com os dados que mudaram, sem olhar as fotos de novo (só as fotos novas, se houver). Mantém as suas edições.</span>
+                    <span className="mt-1 block text-xs font-semibold text-emerald-800">Mais barato{custos?.mediaAtualizacao ? ` · ≈ ${reais(custos.mediaAtualizacao)}` : ''}</span>
                   </button>
                   <button type="button" disabled={salvando || faltaParaGerar.length > 0} onClick={() => novaAnalise(true)}
                     className="rounded-lg border border-slate-300 bg-white p-3 text-left hover:bg-slate-50 disabled:opacity-50">
                     <span className="block text-sm font-semibold text-slate-800">Refazer análise completa</span>
-                    <span className="block text-xs text-slate-500">A IA olha todas as imagens de novo. Custo de um pré-laudo inteiro.</span>
+                    <span className="block text-xs text-slate-500">A IA olha todas as fotos de novo e escreve o pré-laudo outra vez.</span>
+                    <span className="mt-1 block text-xs font-semibold text-amber-800">Custo de um pré-laudo{custos?.mediaPorLaudo ? ` · ≈ ${reais(custos.mediaPorLaudo)}` : ''}</span>
                   </button>
                 </div>
               )}

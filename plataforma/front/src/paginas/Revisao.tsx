@@ -104,7 +104,10 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
   const [c, setC] = useState<ConteudoLaudo>(inicial);
   const [escolhendo, setEscolhendo] = useState(false);
   const [detalhe, setDetalhe] = useState<number | null>(null);
-  const [documento, setDocumento] = useState(false);
+  // duas visões do mesmo laudo; no celular começa por órgão (o documento é largo), no computador lembra a última
+  const [visao, setVisaoEstado] = useState<'orgaos' | 'documento'>(() =>
+    window.innerWidth < 768 ? 'orgaos' : localStorage.getItem('vetus.visaoRevisao') === 'documento' ? 'documento' : 'orgaos');
+  const setVisao = (v: 'orgaos' | 'documento') => { setVisaoEstado(v); localStorage.setItem('vetus.visaoRevisao', v); };
   // rótulos de imagem (o que cada foto mostra, segundo o veterinário)
   const [rotulos, setRotulos] = useState<Record<string, RotuloFoto>>({});
   const [opcoesRotulo, setOpcoesRotulo] = useState<string[]>([]);
@@ -136,6 +139,39 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
     const frase = mascaras[c.orgaos[i].orgao];
     mudarOrgao(i, { situacao: 'normal', ...(frase ? { descricao: frase } : {}) });
   };
+  const aplicarFrase = (i: number, f: FraseBanco) => {
+    const normal = /^(normai?s?|ov[aá]rios normais|apenas um ov[aá]rio|castrad|padr[aã]o castrad|n[aã]o caracterizad|pelve renal normal)/i.test(f.titulo);
+    setC((atual) => {
+      const novas = f.impressoes.filter((x) => !atual.impressaoDiagnostica.includes(x));
+      return {
+        ...atual,
+        orgaos: atual.orgaos.map((o, k) => (k === i ? { ...o, situacao: normal ? 'normal' : 'alterado', descricao: f.descricao } : o)),
+        impressaoDiagnostica: novas.length ? [atual.impressaoDiagnostica, ...novas].filter(Boolean).join('\n') : atual.impressaoDiagnostica,
+      };
+    });
+  };
+  /** Situação, frase pronta e "Mais detalhes" (ditado e fotos) do órgão: as mesmas peças nas duas visões. */
+  const ferramentas = (i: number, compacto = false) => {
+    const o = c.orgaos[i];
+    return (
+      <div className={`flex flex-wrap items-center gap-1.5 ${compacto ? 'rounded-lg border border-slate-300 bg-white p-1.5 shadow-sm' : ''}`}>
+        {(['normal', 'alterado', 'nao_visualizado'] as SituacaoOrgao[]).map((s) => (
+          <button key={s} type="button" onClick={() => (s === 'normal' ? aplicarNormal(i) : mudarOrgao(i, { situacao: s }))}
+            aria-pressed={o.situacao === s}
+            className={`min-h-9 rounded-full border-2 px-3 text-xs font-semibold ${o.situacao === s ? corBotaoSelecionado[s] : 'border-slate-200 bg-white text-slate-500'}`}
+            title={s === 'normal' ? 'Marca normal e aplica a frase padrão de normalidade' : undefined}>
+            {o.situacao === s && '✓ '}{nomeSituacao[s]}
+          </button>
+        ))}
+        <FrasesProntas orgao={o.orgao} aoEscolher={(f) => aplicarFrase(i, f)} />
+        <button type="button" onClick={() => setDetalhe(i)} className="min-h-9 rounded-full border border-[#0E4D64]/40 bg-white px-3 text-xs font-semibold text-[#0E4D64] hover:bg-slate-50"
+          title="Descrição, imagens do órgão e ditado por voz">
+          {compacto ? `🎤 Falar · 📷 Fotos (${new Set(o.imagens ?? []).size})` : 'Mais detalhes'}
+        </button>
+      </div>
+    );
+  };
+
   const alternarFoto = (nome: string) => {
     if (prancha.includes(nome)) setC({ ...c, prancha: prancha.filter((x) => x !== nome) });
     else setC({ ...c, prancha: [...prancha, nome] }); // sem limite de fotos
@@ -155,7 +191,6 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
       setOcupado(false);
     }
   };
-  const salvar = () => executar(() => api('PUT', `/api/exames/${exameId}/laudo`, { conteudo: c }), 'Revisão salva.');
   const previa = async () => {
     if (alterado) await api('PUT', `/api/exames/${exameId}/laudo`, { conteudo: c }).catch(() => undefined);
     window.open(`/api/exames/${exameId}/laudo.pdf`, '_blank');
@@ -212,12 +247,14 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
   const deLinhas = (texto: string) => texto.split('\n').map((s) => s.trim()).filter(Boolean);
 
   return (
-    <Cartao titulo="Revisão do laudo">
-      {documento && (
-        <DocumentoEditavel c={c} setC={setC} dados={dados} fotos={fotos} imagensEnviadas={imagensEnviadas} prancha={prancha}
-          alternarFoto={alternarFoto} aoSalvar={salvar} aoPrevia={previa} aoFechar={() => setDocumento(false)}
-          ocupado={ocupado} alterado={alterado} />
-      )}
+    <Cartao titulo="Revisão do laudo" acoes={
+      <fieldset className="m-0 flex min-w-0 overflow-hidden rounded-lg border border-slate-300 p-0 text-xs font-semibold" aria-label="Como ver o laudo">
+        {([['orgaos', '☰ Por órgão'], ['documento', '📄 Como vai ficar']] as const).map(([v, t]) => (
+          <button key={v} type="button" onClick={() => setVisao(v)} aria-pressed={visao === v}
+            className={`min-h-9 px-3 ${visao === v ? 'bg-[#0E4D64] text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}>{t}</button>
+        ))}
+      </fieldset>
+    }>
       {detalhe !== null && c.orgaos[detalhe] && (
         <DetalhesOrgao orgao={c.orgaos[detalhe]} exameId={exameId} imagensEnviadas={imagensEnviadas} fotos={fotos} rotulos={rotulos} opcoes={opcoesRotulo}
           anotacoes={anotacoes} aoAnotarFoto={aoAnotarFoto}
@@ -230,6 +267,10 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
         {aviso && <Aviso tipo="ok">{aviso}</Aviso>}
         <AlertaUrgente conteudo={c} imagensEnviadas={imagensEnviadas} fotos={fotos} aoAbrirGaleria={aoAbrirGaleria} exameId={exameId} aoMudar={aoMudar} />
 
+        {visao === 'documento' ? (
+          <DocumentoEditavel c={c} setC={setC} dados={dados} fotos={fotos} imagensEnviadas={imagensEnviadas} prancha={prancha}
+            alternarFoto={alternarFoto} ferramentasOrgao={(i) => ferramentas(i, true)} />
+        ) : (<>
         <label className="block">
           <span className="mb-1 block text-sm font-semibold text-slate-700">Condições técnicas</span>
           <textarea rows={2} className={area} value={c.condicoesTecnicas}
@@ -242,21 +283,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
             <div key={o.orgao} className={`rounded-lg border p-3 transition-colors ${o.situacao === 'alterado' ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200 bg-white'}`}>
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="mr-auto font-medium">{o.orgao}</span>
-                <button type="button" onClick={() => setDetalhe(i)} className="min-h-9 rounded-full border border-[#0E4D64]/40 bg-white px-3 text-xs font-semibold text-[#0E4D64] hover:bg-slate-50" title="Descrição, imagens do órgão e ditado por voz">Mais detalhes</button>
-                <FrasesProntas orgao={o.orgao} aoEscolher={(f) => {
-                  const normal = /^(normai?s?|ov[aá]rios normais|apenas um ov[aá]rio|castrad|padr[aã]o castrad|n[aã]o caracterizad|pelve renal normal)/i.test(f.titulo);
-                  mudarOrgao(i, { situacao: normal ? 'normal' : 'alterado', descricao: f.descricao });
-                  const novas = f.impressoes.filter((x) => !c.impressaoDiagnostica.includes(x));
-                  if (novas.length) setC((atual) => ({ ...atual, impressaoDiagnostica: [atual.impressaoDiagnostica, ...novas].filter(Boolean).join('\n') }));
-                }} />
-                {(['normal', 'alterado', 'nao_visualizado'] as SituacaoOrgao[]).map((s) => (
-                  <button key={s} type="button" onClick={() => (s === 'normal' ? aplicarNormal(i) : mudarOrgao(i, { situacao: s }))}
-                    aria-pressed={o.situacao === s}
-                    className={`min-h-9 rounded-full border-2 px-3 text-xs font-semibold ${o.situacao === s ? corBotaoSelecionado[s] : 'border-slate-200 bg-white text-slate-500'}`}
-                    title={s === 'normal' ? 'Marca normal e aplica a frase padrão de normalidade' : undefined}>
-                    {o.situacao === s && '✓ '}{nomeSituacao[s]}
-                  </button>
-                ))}
+                {ferramentas(i)}
               </div>
               <ImagensDoOrgao orgao={o} exameId={exameId} imagensEnviadas={imagensEnviadas} fotos={fotos} rotulos={rotulos} opcoes={opcoesRotulo}
                 anotacoes={anotacoes} aoAnotarFoto={aoAnotarFoto}
@@ -295,7 +322,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
         {/* prancha */}
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">Prancha do laudo ({prancha.length} foto(s))</span>
+            <span className="text-sm font-semibold text-slate-700">Prancha do laudo ({prancha.length} foto(s)) <span className="font-normal text-slate-500">· as fotos que vão no PDF</span></span>
             <button type="button" className="text-sm font-medium text-[#0E4D64] underline" onClick={() => setEscolhendo(!escolhendo)}>
               {escolhendo ? 'Concluir escolha' : 'Escolher fotos'}
             </button>
@@ -333,10 +360,12 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
           )}
         </div>
 
-        {/* salvar e assinar ficam na barra de baixo da tela do exame; aqui, só as formas de ver o laudo */}
+        </>)}
+
+        {/* Salvar e Aprovar e assinar ficam na barra de baixo da tela do exame (iguais nas duas visões) */}
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-          <Botao variante="secundario" disabled={ocupado} onClick={() => setDocumento(true)}>Editar como documento</Botao>
           <Botao variante="secundario" disabled={ocupado} onClick={previa}>Prévia do PDF</Botao>
+          {alterado && <span className="text-xs font-medium text-amber-800">● Alterações não salvas: use Salvar, na barra de baixo</span>}
         </div>
         {erro && <div className="mt-3"><Aviso>{erro}</Aviso></div>}
       </div>
@@ -495,6 +524,7 @@ export function ImagensDoOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos
 }) {
   const [corrigindo, setCorrigindo] = useState<string | null>(null);
   const [erro, setErro] = useState('');
+  const [obrigado, setObrigado] = useState(false);
   const itens = [...new Set(orgao.imagens ?? [])].slice(0, 4)
     .map((n) => ({ n, foto: fotos.find((f) => f.nome === imagensEnviadas[n - 1]) }))
     .filter((x): x is { n: number; foto: Foto } => !!x.foto);
@@ -507,12 +537,14 @@ export function ImagensDoOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos
       const r = await api<RotuloFoto>('PUT', `/api/exames/${exameId}/rotulos`, { foto, orgaoIa: orgao.orgao, orgaoCorreto });
       aoRotular(r);
       setCorrigindo(null);
+      setObrigado(true);
     } catch (x) { setErro((x as Error).message); }
   };
 
   return (
     <div className="mb-2">
-      <p className="mb-1 text-xs text-slate-500">Imagens que a IA usou para {orgao.orgao}: confirme (✓) ou indique o que cada uma mostra (✗).</p>
+      <p className="mb-1 text-xs text-slate-500">Imagens que a IA usou para {orgao.orgao}: confirme (✓) ou indique o que cada uma mostra (✗). <span className="text-[#0E4D64]">Sua correção ensina a IA nos próximos exames.</span></p>
+      {obrigado && <p className="mb-1 text-xs font-medium text-emerald-700">✓ Obrigado: a IA vai levar isso em conta.</p>}
       <div className="flex flex-wrap gap-2">
         {itens.map(({ n, foto }, i) => {
           const r = rotulos[foto.nome];

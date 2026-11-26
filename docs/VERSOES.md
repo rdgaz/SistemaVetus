@@ -29,3 +29,7 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.24** — 26/11/2026, 15:36:38 — Editor de imagens: orgao comeca vazio quando aberto pela foto ampliada e vem do texto escrito na foto (BACO, RIM E, VB...)
 - **0.10.25** — 26/11/2026, 15:49:48 — ajuste na tela de edição de imagens
 - **0.10.26** — 26/11/2026, 15:57:04 — Usabilidade: perfil Usuario aparece como Recepcao; filtro dos registros so com tipos que existem; clinica no menu da conta; Calibrar so quando a regua nao e achada
+- **0.10.27** — 26/11/2026, 16:26:53 — Revisao com duas visoes: Por orgao e Como vai ficar (documento editavel com as ferramentas do orgao em cima); fim do Editar como documento separado
+- **0.10.28** — 26/11/2026, 16:32:13 — ajuste na tela de edicao
+- **0.10.29** — 26/11/2026, 17:05:05 — Usabilidade: Pronto vira Assinado; selo Com o mentor na lista; nova analise explicada com custo estimado; aviso de que a correcao ensina a IA; saldo em vez de creditos; prancha explicada
+- **0.10.30** — 26/11/2026, 17:35:44 — atstes pontuasi de tela

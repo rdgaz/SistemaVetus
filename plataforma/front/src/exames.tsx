@@ -7,7 +7,8 @@ export const nomeStatus: Record<StatusExame, string> = {
   NaFila: 'Na fila',
   Gerando: 'Gerando',
   AguardandoRevisao: 'Aguardando revisão',
-  Pronto: 'Pronto',
+  // "Pronto" parecia "pronto para revisar": o laudo já está assinado
+  Pronto: 'Assinado',
   Erro: 'Erro',
 };
 

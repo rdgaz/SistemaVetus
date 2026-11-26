@@ -92,7 +92,7 @@ function Editavel({ valor, aoMudar, bloco = false, vazio = 'clique para escrever
  * veterinário clica no texto e edita como num editor comum; também escolhe as fotos da prancha. O PDF continua sendo
  * gerado pelo sistema a partir deste conteúdo (a paginação final pode diferir um pouco).
  */
-export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, prancha, alternarFoto, aoSalvar, aoPrevia, aoFechar, ocupado, alterado }: {
+export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, prancha, alternarFoto, ferramentasOrgao }: {
   c: ConteudoLaudo;
   setC: (c: ConteudoLaudo) => void;
   dados: DadosDocumento;
@@ -100,12 +100,10 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
   imagensEnviadas: string[];
   prancha: string[];
   alternarFoto: (nome: string) => void;
-  aoSalvar: () => void;
-  aoPrevia: () => void;
-  aoFechar: () => void;
-  ocupado: boolean;
-  alterado: boolean;
+  /** barrinha com as ferramentas do órgão (situação, frase pronta, ditado e fotos), mostrada em cima do órgão selecionado */
+  ferramentasOrgao: (i: number) => ReactNode;
 }) {
+  const [orgaoSelecionado, setOrgaoSelecionado] = useState<number | null>(null);
   const [lay, setLay] = useState<Layout | null>(null);
   const [clinica, setClinica] = useState<DadosClinica | null>(null);
   const [logo, setLogo] = useState<{ usar: boolean; posicao: string } | null>(null);
@@ -117,13 +115,7 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
     api<{ usar: boolean; posicao?: string; existe?: boolean }>('GET', '/api/clinica/logo/uso')
       .then((r) => setLogo({ usar: r.usar && r.existe !== false, posicao: r.posicao ?? 'centro' })).catch(() => setLogo({ usar: false, posicao: 'centro' }));
   }, []);
-  useEffect(() => {
-    const tecla = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && !(document.activeElement as HTMLElement | null)?.isContentEditable) aoFechar(); };
-    window.addEventListener('keydown', tecla);
-    return () => window.removeEventListener('keydown', tecla);
-  }, [aoFechar]);
-
-  if (!lay || !clinica || !logo) return <Moldura aoFechar={aoFechar}><p className="p-8 text-slate-500">Carregando o documento…</p></Moldura>;
+  if (!lay || !clinica || !logo) return <p className="p-8 text-slate-500">Carregando o documento…</p>;
 
   const cor = lay.corPrincipal;
   const caixa = lay.estiloTitulos === 'caixa';
@@ -170,8 +162,11 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
             <div className="mt-2 flex flex-col" style={{ gap: pt(8) }}>
               {c.orgaos.filter((o) => !o.orgao.toLowerCase().startsWith('cavidade abdominal')).map((o) => {
                 const i = c.orgaos.indexOf(o);
+                const sel = orgaoSelecionado === i;
                 return (
-                  <div key={o.orgao} className={justif}>
+                  <div key={o.orgao} onFocusCapture={() => setOrgaoSelecionado(i)} onClick={() => setOrgaoSelecionado(i)}
+                    className={`${justif} rounded-sm ${sel ? 'outline outline-2 outline-offset-4 outline-[#0E4D64]/50' : ''}`}>
+                    {sel && <div className="mb-2 print:hidden" style={{ fontSize: 13, lineHeight: 1.4 }}>{ferramentasOrgao(i)}</div>}
                     <b>{o.orgao}: </b>
                     <Editavel valor={o.descricao} vazio="descreva o órgão"
                       aoMudar={(v) => setC({ ...c, orgaos: c.orgaos.map((x, k) => (k === i ? { ...x, descricao: v } : x)) })} />
@@ -241,15 +236,8 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
   };
 
   return (
-    <Moldura aoFechar={aoFechar} barra={
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-auto text-sm text-slate-600">Clique em qualquer texto da página para editar, como num documento.
-          {alterado && <b className="ml-2 text-amber-800">● Alterações não salvas</b>}</span>
-        <button type="button" disabled={ocupado || !alterado} onClick={aoSalvar} className="min-h-10 rounded-lg bg-[#0E4D64] px-4 text-sm font-semibold text-white disabled:bg-slate-400">Salvar revisão</button>
-        <button type="button" disabled={ocupado} onClick={aoPrevia} className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium">Prévia do PDF</button>
-        <button type="button" onClick={aoFechar} className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm">Fechar ✕</button>
-      </div>
-    }>
+    <div className="overflow-x-auto rounded-xl bg-slate-200 p-2 sm:p-5">
+      <p className="mb-2 text-center text-xs text-slate-600">Toque em qualquer texto para editar. Toque num órgão para ver as ferramentas dele.</p>
       <div className="mx-auto bg-white shadow-lg" style={{ maxWidth: 794, padding: `${lay.margemCm * 37.8}px`, fontSize: pt(lay.tamanhoFonte), lineHeight: 1.3 }}>
         {/* cabeçalho (só na primeira página do PDF) */}
         <div className="pb-2" style={lay.linhaCabecalho ? { borderBottom: `2px solid ${cor}` } : undefined}>
@@ -280,17 +268,6 @@ export function DocumentoEditavel({ c, setC, dados, fotos, imagensEnviadas, pran
 
         {lay.secoes.filter((s) => s.mostrar).map(secao)}
       </div>
-    </Moldura>
-  );
-}
-
-function Moldura({ children, barra, aoFechar }: { children: ReactNode; barra?: ReactNode; aoFechar: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-200" role="dialog" aria-modal="true" aria-label="Editar o laudo como documento">
-      <div className="border-b border-slate-300 bg-white px-3 py-2 shadow-sm">
-        {barra ?? <button type="button" onClick={aoFechar} className="min-h-10 rounded-lg border border-slate-300 px-3 text-sm">Fechar ✕</button>}
-      </div>
-      <div className="flex-1 overflow-y-auto p-2 sm:p-6">{children}</div>
     </div>
   );
 }

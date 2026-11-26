@@ -38,7 +38,7 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'exames', titulo: '3. Lista de exames e status', palavras: 'lista status fila pendente gerando revisão pronto erro urgente buscar abd rep smp abdominal',
+    id: 'exames', titulo: '3. Lista de exames e status', palavras: 'lista status fila pendente gerando revisão assinado pronto mentor erro urgente buscar abd rep smp abdominal saldo',
     conteudo: (
       <>
         <p>Os exames aparecem por ordem de chegada, com abas por status (o número ao lado mostra quantos há em cada uma):</p>
@@ -47,10 +47,10 @@ const TOPICOS: Topico[] = [
           <li><b>Na fila:</b> esperando a vez da IA (urgentes passam na frente).</li>
           <li><b>Gerando:</b> a IA está analisando as imagens.</li>
           <li><b>Aguardando revisão:</b> o pré-laudo está pronto para o veterinário revisar.</li>
-          <li><b>Pronto:</b> laudo aprovado e assinado, pode ser enviado.</li>
+          <li><b>Assinado:</b> laudo aprovado e assinado, pode ser enviado.</li>
           <li><b>Erro:</b> a geração falhou (o motivo aparece no exame); toque em "Gerar de novo".</li>
         </ul>
-        <p>Use a <b>busca</b> para achar por paciente, responsável, espécie, tipo ou data. O tipo aparece abreviado: <b>ABD</b> (abdominal), <b>REP</b> (reprodução) e <b>SMP</b> (partes pequenas). A lista se atualiza sozinha e mostra o <b>saldo de créditos</b> no topo.</p>
+        <p>Quando o laudo está em revisão com o mentor, o exame exibe o selo <b>🎓 Com o mentor</b>. Use a <b>busca</b> para achar por paciente, responsável, espécie, tipo ou data. O tipo aparece abreviado: <b>ABD</b> (abdominal), <b>REP</b> (reprodução) e <b>SMP</b> (partes pequenas). A lista se atualiza sozinha e mostra o <b>saldo para pré-laudos</b> no topo.</p>
       </>
     ),
   },
@@ -93,10 +93,10 @@ const TOPICOS: Topico[] = [
       <>
         <p>A IA analisa as fotos do exame (sem repetir fotos iguais, priorizando as que têm medidas ou anotações do operador), os dados do paciente, as medidas do aparelho e os <b>valores de referência</b> da espécie e do peso. Ela escreve o pré-laudo no padrão brasileiro: condições técnicas, cada órgão (normal, alterado ou não visibilizado), impressão diagnóstica, diferenciais, recomendações e as fotos de cada órgão.</p>
         <ul>
-          <li><b>Pedir nova análise à IA</b> (link na tela do exame), com duas opções:
+          <li><b>Pedir nova análise à IA</b> (link na tela do exame, mostrando o <b>custo estimado</b> de cada opção):
             <ul className="list-disc pl-5">
-              <li><b>Atualizar com o que mudou:</b> depois de mudar dados ou as informações adicionais, a IA ajusta o pré-laudo <b>sem reanalisar as fotos</b> (mais rápido e mais barato). Se chegaram fotos novas, só elas são analisadas.</li>
-              <li><b>Refazer análise completa:</b> a IA olha todas as fotos de novo (custo de um pré-laudo novo).</li>
+              <li><b>Atualizar com o que mudou:</b> depois de mudar dados ou as informações adicionais, a IA ajusta o texto <b>sem olhar as fotos de novo</b> e mantendo as suas edições (mais rápido e mais barato). Se chegaram fotos novas, só elas são analisadas.</li>
+              <li><b>Refazer análise completa:</b> a IA olha todas as fotos de novo e escreve o pré-laudo outra vez (custo médio de um pré-laudo novo).</li>
             </ul>
           </li>
           <li>Se nada mudou, o sistema avisa e não cobra.</li>
@@ -125,7 +125,7 @@ const TOPICOS: Topico[] = [
           <li><b>Frase pronta…:</b> escolha uma frase do banco de frases para o órgão; ela preenche a descrição e a impressão diagnóstica.</li>
           <li><b>Mais detalhes</b> (em cada órgão): a descrição, as imagens que a IA usou para o órgão e o <b>ditado por voz</b>. Toque em <b>🎤 Falar</b>, diga do seu jeito o que quer registrar e toque em <b>Padronizar texto</b>: a IA reescreve no padrão do laudo, sem acrescentar nada. Confira e toque em <b>Usar no laudo</b>. Cada padronização usa uma pequena parte do saldo; o áudio não é guardado.</li>
           <li>Edite condições técnicas, impressão, diferenciais e recomendações (um por linha). Os <b>diagnósticos diferenciais</b> podem ser ocultados do laudo com a chave "Exibir no laudo".</li>
-          <li><b>Editar como documento:</b> mostra o laudo como vai sair, para editar direto no texto.</li>
+          <li><b>Duas visões do mesmo laudo</b>, na chave do topo da revisão: <b>☰ Por órgão</b> (cartões com as ferramentas de cada órgão) e <b>📄 Como vai ficar</b> (o laudo com a cara do PDF, editável direto no texto; ao tocar num órgão aparecem as mesmas ferramentas em cima dele). Trocar de visão não perde nada; o Salvar e o Aprovar e assinar são os mesmos.</li>
           <li><b>Salvar:</b> um botão só guarda o texto do laudo e os dados do exame.</li>
           <li><b>Prévia do PDF</b> mostra como vai ficar (marcado "RASCUNHO").</li>
         </ul>
@@ -133,14 +133,14 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'prancha', titulo: '9. Prancha de fotos', palavras: 'prancha fotos escolher imagens laudo ordem órgãos',
+    id: 'prancha', titulo: '9. Prancha de fotos (as fotos que vão no PDF)', palavras: 'prancha fotos escolher imagens laudo pdf ordem órgãos anotações',
     conteudo: (
       <>
         <ul>
-          <li>Toque em <b>Escolher fotos</b> para montar a prancha do laudo: não há limite de fotos.</li>
+          <li>A prancha reúne <b>as fotos que saem no PDF</b> do laudo. Toque em <b>Escolher fotos</b> para montar: não há limite de fotos.</li>
           <li>O sistema já sugere <b>todas as fotos associadas aos órgãos</b>, na ordem dos órgãos do laudo, e depois as que a IA destacou.</li>
           <li>Toque em uma foto para incluir ou tirar; <b>Concluir escolha</b> guarda a seleção. No modo documento, use "Tirar da prancha".</li>
-          <li>O número de fotos por linha e o fundo da prancha são escolhidos na Aparência do PDF.</li>
+          <li>O número de fotos por linha, o fundo da prancha e a exibição das anotações manuais são escolhidos na <b>Aparência do PDF</b>.</li>
         </ul>
       </>
     ),
@@ -202,13 +202,13 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'creditos', titulo: '14. Créditos para pré-laudos', palavras: 'saldo créditos recarga extrato cobrança custo',
+    id: 'creditos', titulo: '14. Saldo para pré-laudos', palavras: 'saldo créditos recarga extrato cobrança custo estimado',
     conteudo: (
       <>
-        <p>Cada pré-laudo gerado pela IA usa créditos da clínica, de acordo com o tamanho do exame. Atualizações sem fotos e padronizações de ditado custam menos; <b>erro e "nada mudou" não cobram</b>.</p>
+        <p>Cada pré-laudo gerado pela IA usa o <b>saldo</b> da clínica, de acordo com o tamanho do exame. Atualizações sem fotos e padronizações de ditado custam menos; <b>erro e "nada mudou" não descontam do saldo</b>.</p>
         <ul>
-          <li>O saldo e a estimativa de quantos pré-laudos ele rende aparecem na tela <b>Exames</b>; com saldo baixo, aparece um aviso.</li>
-          <li>O administrador da clínica vê o <b>extrato</b> nas configurações da clínica, e cada pré-laudo mostra o valor cobrado.</li>
+          <li>O saldo, a média por pré-laudo e a estimativa de quantos pré-laudos ele rende aparecem na tela <b>Exames</b>; com saldo baixo, aparece um aviso.</li>
+          <li>O administrador da clínica vê o <b>extrato</b> nas configurações da clínica, e cada pré-laudo mostra o valor usado.</li>
           <li>Sem saldo, o pré-laudo não é gerado. Para recarregar, fale com o suporte.</li>
         </ul>
       </>
@@ -234,9 +234,9 @@ const TOPICOS: Topico[] = [
         <p>Para o <b>administrador da clínica</b>, em <b>Clínica</b> (no topo), nas abas:</p>
         <ul>
           <li><b>Dados e Funcionamento:</b> dados do cabeçalho do laudo e <b>logo</b>; se o pré-laudo é gerado <b>automaticamente</b> ao receber o exame; se as <b>informações adicionais</b> são obrigatórias; e se o laudo mostra o <b>QR code</b> de verificação.</li>
-          <li><b>Aparência do PDF:</b> cores, estilo dos títulos (faixa com fundo, caixa com borda ou texto colorido), cabeçalho, ordem e visibilidade das seções, fotos por linha na prancha, posição da assinatura e do QR, texto justificado, rodapé e aviso final. "Voltar ao padrão" desfaz as personalizações.</li>
+          <li><b>Aparência do PDF:</b> cores, estilo dos títulos (faixa com fundo, caixa com borda ou texto colorido), cabeçalho, ordem e visibilidade das seções, fotos por linha e exibição de anotações na prancha, posição da assinatura e do QR, texto justificado, rodapé e aviso final. "Voltar ao padrão" desfaz as personalizações.</li>
           <li><b>Usuários:</b> adicione pessoas (com senha provisória), escolha o perfil (<b>Recepção</b>: cadastra e envia exames; <b>Veterinário</b>: revisa e assina; <b>Administrador</b>: tudo, inclusive as configurações) e desative quem saiu. Ultrassonografistas que atendem outras clínicas usam o mesmo e-mail e senha.</li>
-          <li><b>Registros de atividade:</b> quem fez o quê e quando (exame enviado, análise pedida à IA, laudo assinado e retificado, alerta discordado, exame excluído, usuários, configurações, créditos), com filtro por tipo, data e busca.</li>
+          <li><b>Registros de atividade:</b> quem fez o quê e quando (exame enviado, análise pedida à IA, laudo assinado e retificado, alerta discordado, exame excluído, usuários, configurações, saldo), com filtro por tipo, data e busca.</li>
         </ul>
       </>
     ),
@@ -260,15 +260,17 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'anotacoes', titulo: '18. Anotar texto e medidas nas imagens', palavras: 'anotar imagem foto medida régua texto órgão cursor amarelo prancha manual',
+    id: 'anotacoes', titulo: '18. Anotar texto e medidas nas imagens', palavras: 'anotar imagem foto medida régua calibrar escala caixa canto arrastar texto órgão mover cursor amarelo prancha manual',
     conteudo: (
       <>
-        <p>Esqueceu de identificar um órgão ou de registrar uma medida no aparelho? Antes de assinar o laudo, você pode anotar qualquer foto no mesmo padrão visual do ultrassom (sem alterar o arquivo original):</p>
+        <p>Esqueceu de identificar um órgão ou de registrar uma medida no aparelho? Antes de assinar o laudo (ou ao retificá-lo), você pode anotar qualquer foto no mesmo padrão visual do ultrassom, sem alterar o arquivo original:</p>
         <ul>
           <li>Abra a foto em tela cheia e toque em <b>✎ Anotar</b> (ou no botão <b>✎</b> da miniatura do órgão na revisão).</li>
-          <li><b>Texto:</b> escolha uma sugestão (ex.: <i>BAÇO</i>, <i>RIM E</i>, <i>VB</i>) ou digite e toque na imagem para posicionar em letras brancas maiúsculas.</li>
-          <li><b>Medida (2 pontos):</b> toque no 1º e no 2º ponto da estrutura (cursores amarelos <b>+</b> e <b>×</b> com linha pontilhada) e informe o valor em <b>cm</b>. Você pode marcar para já inserir o valor na descrição do órgão.</li>
-          <li>As anotações aparecem na tela (com botão para mostrar/ocultar), saem na <b>prancha do PDF</b>, entram na comparação com os <b>valores de referência</b> e são enviadas à IA em novas análises.</li>
+          <li><b>Medida (2 pontos) com sugestão pela régua:</b> toque no 1º e no 2º ponto da estrutura (cursores amarelos <b>+</b> e <b>×</b> com linha pontilhada). Quando o sistema reconhece a <b>régua lateral</b> da foto — ou quando já há outra medida na imagem ou calibração salva —, o valor em <b>cm</b> já vem <b>sugerido</b>; confira com o aparelho, ajuste o rótulo/órgão e marque se quiser inserir a medida direto na descrição do órgão.</li>
+          <li><b>📐 Calibrar (quando não há régua automática):</b> se o sistema não encontrar a régua sozinho, toque em <b>📐 Calibrar</b>, marque duas divisões da régua da imagem (ex.: 0 e 1 cm) e informe a distância. A escala fica salva para aquele aparelho e tamanho de foto em <b>toda a clínica</b>.</li>
+          <li><b>Posição da caixa das medidas:</b> escolha um dos <b>4 cantos</b> (<b>↖ ↗ ↙ ↘</b>) em <b>Caixa</b> ou <b>arraste</b> o quadro ciano para onde não cubra a imagem (por padrão ele já desvia dos pontos medidos). Textos e pontos também podem ser arrastados, desfeitos (<b>↶ Desfazer</b>) ou limpos (<b>🗑 Limpar</b>).</li>
+          <li><b>Texto e órgão coerente com o laudo:</b> em <b>Texto</b>, escolha uma sugestão (ex.: <i>BAÇO</i>, <i>RIM E</i>, <i>VB</i>) ou digite e toque na foto para posicionar em letras brancas maiúsculas. Ao escrever o nome de um órgão na foto ou escolhê-lo na medida, o sistema pergunta ao salvar se deseja <b>mover a foto para esse órgão</b> no laudo (atualizando também o aprendizado da IA).</li>
+          <li>As anotações aparecem na tela (com botão <b>Anotações</b> para mostrar/ocultar), saem na <b>prancha do PDF</b> (configurável em <b>Aparência do PDF</b>), entram em <b>Medidas do aparelho × referência</b> e vão para a IA em novas análises.</li>
         </ul>
       </>
     ),

@@ -21,7 +21,7 @@ export function SaldoClinica({ comExtrato = false }: { comExtrato?: boolean }) {
   return (
     <div className={`rounded-xl border p-4 ${baixo ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'}`}>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <span className="text-sm text-slate-500">Créditos para pré-laudos com IA</span>
+        <span className="text-sm text-slate-500">Saldo para pré-laudos com IA</span>
         <span className={`text-2xl font-semibold ${s.saldo <= 0 ? 'text-red-700' : 'text-slate-800'}`}>{reais(s.saldo)}</span>
         {s.laudosEstimados !== null && (
           <span className="text-sm text-slate-600">

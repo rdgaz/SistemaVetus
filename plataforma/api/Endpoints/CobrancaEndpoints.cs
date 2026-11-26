@@ -153,6 +153,10 @@ public static class CobrancaEndpoints
             var v = http.VinculoAtual();
             var saldo = await cobranca.Saldo(v.ClinicaId);
             var media = await cobranca.MediaPorLaudo(v.ClinicaId, laudos.Disponiveis().FirstOrDefault()?.Modelo);
+            // custo médio de uma atualização sem fotos (só os dados que mudaram), para mostrar antes de pedir
+            var mediaAtualizacao = await db.Laudos.Where(l => l.Exame.ClinicaId == v.ClinicaId && l.Modo == "dados" && l.CobradoBrl > 0)
+                .AverageAsync(l => (decimal?)l.CobradoBrl)
+                ?? await db.Laudos.Where(l => l.Modo == "dados" && l.CobradoBrl > 0 && !l.Exame.Clinica.Teste).AverageAsync(l => (decimal?)l.CobradoBrl);
             var extrato = v.Perfil == Perfil.AdministradorClinica
                 ? await db.MovimentosSaldo.Where(m => m.ClinicaId == v.ClinicaId).OrderByDescending(m => m.Em).Take(50)
                     .Select(m => new { m.Tipo, m.Valor, m.SaldoApos, m.Descricao, m.Em }).ToListAsync()
@@ -161,6 +165,7 @@ public static class CobrancaEndpoints
             {
                 saldo = Math.Round(saldo, 2),
                 mediaPorLaudo = media,
+                mediaAtualizacao = mediaAtualizacao is null ? (decimal?)null : Math.Round(mediaAtualizacao.Value, 2),
                 laudosEstimados = media > 0 ? (int)Math.Floor(Math.Max(saldo, 0) / media) : (int?)null,
                 extrato,
             });

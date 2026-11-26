@@ -10,6 +10,7 @@ type ItemExame = {
   id: string;
   status: StatusExame;
   urgente: boolean;
+  comMentor?: boolean;
   tipo: string | null;
   data: string | null;
   totalFotos: number;
@@ -123,6 +124,7 @@ export function Exames() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">{e.paciente}</span>
                   {e.urgente && <span className="rounded-full bg-red-600 px-2 text-xs font-bold text-white">Urgente</span>}
+                  {e.comMentor && <span className="rounded-full bg-violet-100 px-2 text-xs font-semibold text-violet-900" title="O laudo está com o mentor para revisão">🎓 Com o mentor</span>}
                 </div>
                 <div className="truncate text-sm text-slate-500">
                   {[e.especie, e.tutor && `Responsável: ${e.tutor}`].filter(Boolean).join(' · ')}
