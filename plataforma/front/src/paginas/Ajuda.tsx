@@ -13,7 +13,8 @@ const TOPICOS: Topico[] = [
       <>
         <p>Você recebe do administrador da clínica um <b>e-mail</b> e uma <b>senha provisória</b>. No primeiro acesso, o sistema pede para criar a sua senha (mínimo de 8 caracteres).</p>
         <ul>
-          <li>No canto superior, o círculo com as <b>suas iniciais</b> abre o menu rápido: Minha conta, Ajuda e, para o administrador, Configurações da clínica, Usuários e Registros de atividade.</li>
+          <li>No topo ficam os lugares de trabalho: <b>Exames</b>, <b>Mentoria</b> e, para o administrador, <b>Clínica</b>. No celular, eles ficam no botão ☰.</li>
+          <li>O círculo com as <b>suas iniciais</b> abre o menu da conta: <b>Minha conta</b>, <b>Ajuda</b> e <b>Sair</b>.</li>
           <li>Para trocar a senha depois: <b>Minha conta → Senha</b>.</li>
           <li>No celular, atenção à primeira letra maiúscula automática do teclado: a senha diferencia maiúsculas de minúsculas.</li>
           <li>O sistema funciona no navegador do computador e do celular; no celular, use "Adicionar à tela inicial" para abrir como um app.</li>
@@ -230,7 +231,7 @@ const TOPICOS: Topico[] = [
     id: 'admin-clinica', titulo: '16. Administração da clínica', palavras: 'usuários perfis veterinário administrador logo dados clínica automático manual aparência pdf cores registros atividade obrigatório qr',
     conteudo: (
       <>
-        <p>Para o <b>administrador da clínica</b>, em <b>Configurações da clínica</b>:</p>
+        <p>Para o <b>administrador da clínica</b>, em <b>Clínica</b> (no topo), nas abas:</p>
         <ul>
           <li><b>Dados e Funcionamento:</b> dados do cabeçalho do laudo e <b>logo</b>; se o pré-laudo é gerado <b>automaticamente</b> ao receber o exame; se as <b>informações adicionais</b> são obrigatórias; e se o laudo mostra o <b>QR code</b> de verificação.</li>
           <li><b>Aparência do PDF:</b> cores, estilo dos títulos (faixa com fundo, caixa com borda ou texto colorido), cabeçalho, ordem e visibilidade das seções, fotos por linha na prancha, posição da assinatura e do QR, texto justificado, rodapé e aviso final. "Voltar ao padrão" desfaz as personalizações.</li>
@@ -244,7 +245,7 @@ const TOPICOS: Topico[] = [
     id: 'mentoria', titulo: '17. Mentoria e avisos', palavras: 'mentor mentoria mentorado professor revisão orientação avisos sino notificação',
     conteudo: (
       <>
-        <p>Na <b>Mentoria</b> (menu da conta), você encontra veterinários experientes, escolhidos pela equipe do {PRODUTO.nome}, para orientar o seu trabalho.</p>
+        <p>Na <b>Mentoria</b> (no topo da tela), você encontra veterinários experientes, escolhidos pela equipe do {PRODUTO.nome}, para orientar o seu trabalho.</p>
         <ul>
           <li><b>Encontrar um mentor:</b> busque por nome, área (ex.: abdominal, felinos) ou instituição, toque em <b>Pedir mentoria</b> e conte um pouco sobre você.</li>
           <li>O mentor <b>aceita ou recusa</b>; você recebe o aviso no sino. Enquanto ele não responde, dá para <b>cancelar o pedido</b>.</li>
@@ -252,7 +253,7 @@ const TOPICOS: Topico[] = [
           <li><b>Enviar ao mentor:</b> na tela do exame, toque em <b>Enviar ao mentor para revisão</b> e escreva uma mensagem (ex.: "Fiquei em dúvida no baço"). Até o mentor responder, o laudo fica parado (sem editar nem assinar); dá para cancelar a qualquer momento (se o mentor já começou, o que ele fez é descartado e ele é avisado).</li>
           <li>Quando o mentor termina, você recebe o aviso e o exame mostra <b>"Laudo confirmado pelo mentor"</b> ou <b>"Revisado pelo mentor, com sugestões"</b>, com o parecer, os comentários por órgão e o link para ver o que ele mudou.</li>
           <li>Laudo já assinado também pode ir ao mentor, <b>para ensino</b>: o laudo assinado não muda.</li>
-          <li><b>Se você é mentor:</b> em <b>Pedidos de revisão</b> (menu da conta) estão os laudos enviados a você. Confira o texto, a situação de cada órgão e o órgão de cada foto, comente, escreva o parecer e toque em <b>Confirmar sem alterações</b> ou <b>Concluir revisão</b>. Na tela Mentoria, responda os pedidos de mentoria, veja seus mentorados e preencha o seu perfil (áreas, instituição, mini currículo, se aceita novos mentorados e se permite "Revisado por" no laudo).</li>
+          <li><b>Se você é mentor:</b> em <b>Mentoria → Pedidos de revisão</b> estão (o número ao lado de Mentoria, no topo, mostra quantos esperam você) os laudos enviados a você. Confira o texto, a situação de cada órgão e o órgão de cada foto, comente, escreva o parecer e toque em <b>Confirmar sem alterações</b> ou <b>Concluir revisão</b>. Na tela Mentoria, responda os pedidos de mentoria, veja seus mentorados e preencha o seu perfil (áreas, instituição, mini currículo, se aceita novos mentorados e se permite "Revisado por" no laudo).</li>
           <li><b>Sino (avisos):</b> no topo da tela, mostra os avisos novos; tocar em um aviso leva à tela certa.</li>
         </ul>
       </>

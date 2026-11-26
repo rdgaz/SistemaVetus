@@ -24,3 +24,4 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.19** — 26/11/2026, 05:55:05 — Revisao do mentor: mentorado cancela a qualquer momento (descarta o trabalho do mentor) e o mentor ve um aviso e volta a lista
 - **0.10.20** — 26/11/2026, 06:18:33 — ajustes na tela de mentoria
 - **0.10.21** — 26/11/2026, 06:38:55 — Seguranca: cabecalhos de protecao (CSP, X-Frame-Options, nosniff), lint (Biome e .NET) e validacoes de seguranca no CI
+- **0.10.22** — 26/11/2026, 07:06:35 — Menus sem repeticao: topo com Exames, Mentoria (com contador) e Clinica; menu Sistema; menu da conta so com Minha conta, Ajuda e Sair; Registros como aba da clinica

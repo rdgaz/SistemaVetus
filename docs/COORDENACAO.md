@@ -44,6 +44,9 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
   regras que o código antigo ainda descumpre estão como aviso, o resto é erro) e `tsc`; API: `dotnet build -warnaserror` e
   `dotnet format analyzers`. Código novo não deve criar avisos novos. Testes de segurança em `tests/seguranca.js` (sempre por
   último: esgota o limite de logins). Deploy local com as mesmas validações: `C:Gitdeploy-autolaudovet.bat`.
+- **Menus (cada coisa num lugar só)**: topo = lugares de trabalho (Exames, Mentoria com contador de revisões, Clínica, Sistema ▾);
+  menu da conta = Minha conta, Ajuda, Sair; configurações da clínica em abas (Dados e funcionamento, Aparência do PDF, Usuários,
+  Registros de atividade). Tela nova da clínica entra como aba; tela nova do sistema entra no menu Sistema ▾.
 - **Prancha**: sem limite de fotos; sugestão = todas as fotos associadas aos órgãos, na ordem dos órgãos, depois as que a IA destacou.
 - **Revisão**: um botão "Salvar" (texto do laudo + dados do exame) e "Aprovar e assinar" na barra; nova análise à IA num link
   com "Atualizar com o que mudou" e "Refazer análise completa".
@@ -57,6 +60,15 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (versão 0.10.22)
+- **Menus sem repetição** (`App.tsx`): topo Exames · Mentoria (contador de revisões pendentes do mentor) · Clínica · Sistema ▾
+  (Clínicas, Mentores, Cobrança, Referências, IA, Registros); menu da conta só Minha conta, Ajuda, Sair (sem subtítulos); menu ☰ do
+  celular só com os destinos do topo. Abas da clínica (`DadosClinica.tsx` → `AbasClinica`) com "Registros de atividade";
+  `Registros.tsx` usa as abas na visão da clínica. Manual (tópicos 1, 16 e 17) atualizado.
+- **CI**: `tests/anotacoes.js` falhava no GitHub porque o `exames.js` (só roda lá) grava "Fígado → Vesícula biliar" numa clínica
+  real, a mesma frase que o teste usava para provar o isolamento da clínica de teste. Passou a usar "Pâncreas → Adrenal esquerda".
+  Reproduzido e corrigido localmente.
 
 ### 26/11/2026 — Claude (versão 0.10.21)
 - **Lint antes do Docker** (pedido do usuário): job `lint` no `.github/workflows/ci.yml`; o job dos containers só roda se ele

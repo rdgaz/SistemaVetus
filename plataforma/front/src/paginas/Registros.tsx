@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../api';
 import { Aviso, Cartao, Titulo } from '../ui';
+import { AbasClinica } from './DadosClinica';
 
 type Registro = {
   id: string; em: string; tipo: string; descricao: string; clinicaNome: string | null; exameId: string | null;
@@ -44,7 +45,7 @@ export function Registros({ sistema = false }: { sistema?: boolean }) {
 
   return (
     <>
-      <Titulo>{sistema ? 'Registros (sistema)' : 'Registros de atividade'}</Titulo>
+      {sistema ? <Titulo>Registros (sistema)</Titulo> : <AbasClinica />}
       <p className="mb-4 text-sm text-slate-600">Quem fez o quê e quando: exames excluídos, laudos assinados e retificados, análises pedidas à IA, usuários e configurações.</p>
       {erro && <Aviso>{erro}</Aviso>}
       <Cartao>

@@ -153,11 +153,12 @@ const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP/////////////////////
   }
 
   // 7) Isolamento da clínica de teste (aprendizados da IA, financeiro e registros)
-  await clinTeste.nav.req('PUT', `/api/exames/${exameId}/rotulos`, { foto: fotoNome, orgaoIa: 'Fígado', orgaoCorreto: 'Vesícula biliar' });
+  // par de órgãos que nenhum outro teste usa: no CI, o exames.js grava "Fígado → Vesícula biliar" numa clínica real
+  await clinTeste.nav.req('PUT', `/api/exames/${exameId}/rotulos`, { foto: fotoNome, orgaoIa: 'Pâncreas', orgaoCorreto: 'Adrenal esquerda' });
   const aprTeste = (await clinTeste.nav.req('GET', '/api/clinica/aprendizados')).dados;
   const aprReal = (await clinReal.nav.req('GET', '/api/clinica/aprendizados')).dados;
-  ok(aprTeste.texto.includes('Vesícula biliar'), 'clínica de teste enxerga suas próprias correções para validação');
-  ok(!aprReal.texto.includes('Fígado" eram "Vesícula biliar') || clinReal.id === clinTeste.id,
+  ok(aprTeste.texto.includes('"Pâncreas" eram "Adrenal esquerda"'), 'clínica de teste enxerga suas próprias correções para validação');
+  ok(!aprReal.texto.includes('"Pâncreas" eram "Adrenal esquerda"'),
     'clínica real NÃO recebe correções feitas em clínica de teste');
 
   const finReais = (await adm.req('GET', '/api/admin/financeiro?escopo=reais')).dados;

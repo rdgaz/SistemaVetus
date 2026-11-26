@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router';
 import { Logo, Rodape } from './marca';
 import { Ajuda } from './paginas/Ajuda';
-import { nomePerfil } from './api';
+import { api, nomePerfil } from './api';
 import { useSessao } from './sessao';
 import { Entrar } from './paginas/Entrar';
 import { TrocarSenha } from './paginas/TrocarSenha';
@@ -101,19 +101,52 @@ function SoAdminClinica({ children }: { children: ReactNode }) {
   return clinica?.perfil === 'AdministradorClinica' ? <>{children}</> : <Navigate to="/" replace />;
 }
 
+/** Revisões esperando o mentor (contador no item Mentoria do topo); atualiza a cada minuto e ao voltar para a aba. */
+function useRevisoesPendentes(mentor: boolean) {
+  const [n, setN] = useState(0);
+  const local = useLocation();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: recarrega também ao trocar de tela (ex.: depois de concluir uma revisão)
+  useEffect(() => {
+    if (!mentor) { setN(0); return; }
+    const carregar = () => api<{ contagens: Record<string, number> }>('GET', '/api/revisoes-mentor?situacao=pendente')
+      .then((r) => setN(r.contagens.pendente ?? 0)).catch(() => undefined);
+    carregar();
+    const t = setInterval(carregar, 60000);
+    const visivel = () => { if (document.visibilityState === 'visible') carregar(); };
+    document.addEventListener('visibilitychange', visivel);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', visivel); };
+  }, [mentor, local.pathname]);
+  return n;
+}
+
 /** Cabeçalho com a clínica atual, navegação principal e avatar do usuário com menu rápido. */
 function Layout() {
   const { usuario, clinica, escolherClinica, sair } = useSessao();
   const [menuAberto, setMenuAberto] = useState(false);
   const [contaAberta, setContaAberta] = useState(false);
+  const [sistemaAberto, setSistemaAberto] = useState(false);
   const menuContaRef = useRef<HTMLDivElement>(null);
+  const menuSistemaRef = useRef<HTMLDivElement>(null);
+  const revisoesPendentes = useRevisoesPendentes(!!usuario?.mentor);
   const local = useLocation();
   const adminClinica = clinica?.perfil === 'AdministradorClinica';
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fecha os menus a cada troca de tela
   useEffect(() => {
     setContaAberta(false);
+    setSistemaAberto(false);
     setMenuAberto(false);
   }, [local.pathname]);
+
+  // menu Sistema: fecha ao clicar fora ou com Esc
+  useEffect(() => {
+    if (!sistemaAberto) return;
+    const fechar = (e: MouseEvent) => { if (menuSistemaRef.current && !menuSistemaRef.current.contains(e.target as Node)) setSistemaAberto(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setSistemaAberto(false); };
+    document.addEventListener('mousedown', fechar);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', fechar); document.removeEventListener('keydown', esc); };
+  }, [sistemaAberto]);
 
   useEffect(() => {
     if (!contaAberta) return;
@@ -132,14 +165,23 @@ function Layout() {
   const emClinica = local.pathname.startsWith('/clinica') || local.pathname.startsWith('/usuarios');
   const itens = [
     { para: '/', texto: 'Exames', mostrar: true, end: true },
+    { para: '/mentoria', texto: 'Mentoria', mostrar: !!clinica, end: false, contador: revisoesPendentes },
     { para: '/clinica', texto: 'Clínica', mostrar: adminClinica, end: false, ativoExtra: emClinica },
-    { para: '/admin/clinicas', texto: 'Clínicas (sistema)', mostrar: usuario!.administradorSistema, end: true },
-    { para: '/admin/cobranca', texto: 'Cobrança (sistema)', mostrar: usuario!.administradorSistema, end: true },
-    { para: '/admin/referencias', texto: 'Referências (sistema)', mostrar: usuario!.administradorSistema, end: true },
-    { para: '/admin/ia', texto: 'IA (sistema)', mostrar: usuario!.administradorSistema, end: true },
-    { para: '/admin/mentores', texto: 'Mentores (sistema)', mostrar: usuario!.administradorSistema, end: true },
-    { para: '/admin/registros', texto: 'Registros (sistema)', mostrar: usuario!.administradorSistema, end: true },
   ].filter((i) => i.mostrar);
+  // administração do sistema: um menu só ("Sistema ▾") em vez de seis itens no topo
+  const itensSistema = usuario!.administradorSistema ? [
+    { para: '/admin/clinicas', texto: 'Clínicas' },
+    { para: '/admin/mentores', texto: 'Mentores' },
+    { para: '/admin/cobranca', texto: 'Cobrança' },
+    { para: '/admin/referencias', texto: 'Referências' },
+    { para: '/admin/ia', texto: 'IA' },
+    { para: '/admin/registros', texto: 'Registros' },
+  ] : [];
+  const emSistema = local.pathname.startsWith('/admin');
+  const contador = (n?: number) => (n ? (
+    <span className="ml-1.5 inline-flex min-w-5 justify-center rounded-full bg-amber-400 px-1.5 text-[11px] font-bold leading-5 text-slate-900"
+      title={`${n} revisão(ões) esperando você`}>{n > 9 ? '9+' : n}</span>
+  ) : null);
 
   const link = (ativoExtra?: boolean) => ({ isActive }: { isActive: boolean }) =>
     `block rounded-lg px-3 py-2 text-sm font-medium ${isActive || ativoExtra ? 'bg-white/15 text-white' : 'text-white/80 hover:text-white'}`;
@@ -175,9 +217,27 @@ function Layout() {
           <nav className="ml-auto hidden items-center gap-1 md:flex">
             {itens.map((i) => (
               <NavLink key={i.para} to={i.para} end={i.end} className={link(i.ativoExtra)}>
-                {i.texto}
+                {i.texto}{contador(i.contador)}
               </NavLink>
             ))}
+            {itensSistema.length > 0 && (
+              <div ref={menuSistemaRef} className="relative">
+                <button type="button" onClick={() => setSistemaAberto((v) => !v)} aria-expanded={sistemaAberto}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium ${emSistema ? 'bg-white/15 text-white' : 'text-white/80 hover:text-white'}`}>
+                  Sistema <span className="text-xs">▾</span>
+                </button>
+                {sistemaAberto && (
+                  <div className="absolute right-0 top-full z-30 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1.5 text-slate-800 shadow-xl">
+                    {itensSistema.map((i) => (
+                      <NavLink key={i.para} to={i.para}
+                        className={({ isActive }) => `block rounded-lg px-3 py-2 text-sm font-medium ${isActive ? 'bg-slate-100 text-[#0E4D64]' : 'text-slate-700 hover:bg-slate-100'}`}>
+                        {i.texto}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           <div className="ml-auto shrink-0 md:ml-2"><Sino /></div>
@@ -227,44 +287,11 @@ function Layout() {
                 </div>
 
                 <div className="py-1">
-                  <Link to="/conta" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                    <span>Minha conta</span>
-                    <span className="text-xs text-slate-400">CRMV, assinatura e senha</span>
-                  </Link>
-                  <Link to="/mentoria" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                    <span>Mentoria</span>
-                    <span className="text-xs text-slate-400">{usuario!.mentor ? 'Mentorados e pedidos' : 'Encontrar um mentor'}</span>
-                  </Link>
-                  {usuario!.mentor && (
-                    <Link to="/mentoria/revisoes" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                      <span>Pedidos de revisão</span>
-                      <span className="text-xs text-slate-400">Laudos dos mentorados</span>
-                    </Link>
-                  )}
-                  {adminClinica && (
-                    <>
-                      <Link to="/clinica" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                        <span>Configurações da clínica</span>
-                        <span className="text-xs text-slate-400">Dados e envio</span>
-                      </Link>
-                      <Link to="/usuarios" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                        <span>Usuários da clínica</span>
-                        <span className="text-xs text-slate-400">Equipe</span>
-                      </Link>
-                      <Link to="/clinica/registros" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                        <span>Registros de atividade</span>
-                        <span className="text-xs text-slate-400">Quem fez o quê e quando</span>
-                      </Link>
-                    </>
-                  )}
+                  <Link to="/conta" className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Minha conta</Link>
                   {!!clinica && (
-                    <Link to="/ajuda" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                      <span>Ajuda</span>
-                      <span className="text-xs text-slate-400">Guia rápido</span>
-                    </Link>
+                    <Link to="/ajuda" className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Ajuda</Link>
                   )}
                 </div>
-
                 <div className="border-t border-slate-100 pt-1">
                   <button
                     type="button"
@@ -291,16 +318,15 @@ function Layout() {
           <nav className="border-t border-white/10 px-4 pb-3 md:hidden" onClick={() => setMenuAberto(false)}>
             {itens.map((i) => (
               <NavLink key={i.para} to={i.para} end={i.end} className={link(i.ativoExtra)}>
-                {i.texto}
+                {i.texto}{contador(i.contador)}
               </NavLink>
             ))}
-            <NavLink to="/conta" className={link()}>Minha conta</NavLink>
-            <NavLink to="/mentoria" className={link()}>Mentoria</NavLink>
-            {usuario!.mentor && <NavLink to="/mentoria/revisoes" className={link()}>Pedidos de revisão</NavLink>}
-            {!!clinica && <NavLink to="/ajuda" className={link()}>Ajuda</NavLink>}
-            <button onClick={sair} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-white/80">
-              Sair
-            </button>
+            {itensSistema.length > 0 && (
+              <>
+                <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-white/50">Sistema</div>
+                {itensSistema.map((i) => <NavLink key={i.para} to={i.para} className={link()}>{i.texto}</NavLink>)}
+              </>
+            )}
           </nav>
         )}
       </header>

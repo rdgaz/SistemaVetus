@@ -18,9 +18,10 @@ export function AbasClinica({ titulo = 'Configurações da clínica' }: { titulo
     <div className="mb-5 space-y-3">
       <Titulo>{titulo}</Titulo>
       <div className="flex flex-wrap gap-2">
-        <NavLink to="/clinica" end className={aba}>Dados e Funcionamento</NavLink>
+        <NavLink to="/clinica" end className={aba}>Dados e funcionamento</NavLink>
         <NavLink to="/clinica/layout" className={aba}>Aparência do PDF</NavLink>
-        <NavLink to="/usuarios" className={aba}>Usuários da clínica</NavLink>
+        <NavLink to="/usuarios" className={aba}>Usuários</NavLink>
+        <NavLink to="/clinica/registros" className={aba}>Registros de atividade</NavLink>
       </div>
     </div>
   );
