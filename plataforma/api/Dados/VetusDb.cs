@@ -23,6 +23,11 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
     public DbSet<PrecoModelo> PrecosModelos => Set<PrecoModelo>();
     public DbSet<MovimentoSaldo> MovimentosSaldo => Set<MovimentoSaldo>();
     public DbSet<Referencia> Referencias => Set<Referencia>();
+    public DbSet<PerfilMentor> PerfisMentor => Set<PerfilMentor>();
+    public DbSet<Mentoria> Mentorias => Set<Mentoria>();
+    public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
+    public DbSet<RevisaoMentor> RevisoesMentor => Set<RevisaoMentor>();
+    public DbSet<AnotacaoImagem> AnotacoesImagem => Set<AnotacaoImagem>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -143,6 +148,54 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.Property(x => x.Ia).HasMaxLength(20);
             e.Property(x => x.Modelo).HasMaxLength(100);
             e.Property(x => x.UsuarioNome).HasMaxLength(200);
+        });
+
+        b.Entity<PerfilMentor>(e =>
+        {
+            e.ToTable("perfis_mentor");
+            e.HasIndex(x => x.UsuarioId).IsUnique();
+            e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.DefinidoPorNome).HasMaxLength(200);
+            e.Property(x => x.Areas).HasMaxLength(300);
+            e.Property(x => x.Curriculo).HasMaxLength(2000);
+            e.Property(x => x.Instituicao).HasMaxLength(200);
+        });
+
+        b.Entity<Mentoria>(e =>
+        {
+            e.ToTable("mentorias");
+            e.HasIndex(x => new { x.MentorId, x.Situacao });
+            e.HasIndex(x => new { x.MentoradoId, x.Situacao });
+            e.HasOne(x => x.Mentor).WithMany().HasForeignKey(x => x.MentorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Mentorado).WithMany().HasForeignKey(x => x.MentoradoId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.Situacao).HasMaxLength(20);
+            e.Property(x => x.Mensagem).HasMaxLength(1000);
+            e.Property(x => x.Resposta).HasMaxLength(1000);
+            e.Property(x => x.EncerradaPor).HasMaxLength(200);
+        });
+
+        b.Entity<RevisaoMentor>(e =>
+        {
+            e.ToTable("revisoes_mentor");
+            e.HasIndex(x => new { x.MentorId, x.Situacao });
+            e.HasIndex(x => new { x.ExameId, x.Situacao });
+            e.HasOne(x => x.Exame).WithMany().HasForeignKey(x => x.ExameId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Mentor).WithMany().HasForeignKey(x => x.MentorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Mentorado).WithMany().HasForeignKey(x => x.MentoradoId).OnDelete(DeleteBehavior.Cascade);
+            e.Property(x => x.Situacao).HasMaxLength(20);
+            e.Property(x => x.Resultado).HasMaxLength(20);
+            e.Property(x => x.Mensagem).HasMaxLength(1000);
+            e.Property(x => x.Parecer).HasMaxLength(4000);
+        });
+
+        b.Entity<Notificacao>(e =>
+        {
+            e.ToTable("notificacoes");
+            e.HasIndex(x => new { x.UsuarioId, x.Lida, x.CriadaEm });
+            e.Property(x => x.Tipo).HasMaxLength(40);
+            e.Property(x => x.Titulo).HasMaxLength(200);
+            e.Property(x => x.Texto).HasMaxLength(1000);
+            e.Property(x => x.Link).HasMaxLength(300);
         });
 
         b.Entity<RotuloImagem>(e =>
@@ -275,6 +328,18 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.Property(x => x.MotivoRetificacao).HasMaxLength(1000);
             e.Property(x => x.DadosEntrada).HasColumnType("jsonb");
             e.Property(x => x.HashesFotos).HasColumnType("jsonb");
+        });
+
+        b.Entity<AnotacaoImagem>(e =>
+        {
+            e.ToTable("anotacoes_imagem");
+            e.HasIndex(x => new { x.ExameId, x.Foto }).IsUnique();
+            e.HasIndex(x => x.HashFoto);
+            e.HasOne<Exame>().WithMany().HasForeignKey(x => x.ExameId);
+            e.Property(x => x.Foto).HasMaxLength(200);
+            e.Property(x => x.HashFoto).HasMaxLength(40);
+            e.Property(x => x.Itens).HasColumnType("jsonb");
+            e.Property(x => x.UsuarioNome).HasMaxLength(200);
         });
     }
 }

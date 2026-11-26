@@ -75,6 +75,13 @@ services:
       VETUS_URL_PUBLICA: ${VETUS_URL_PUBLICA:-http://localhost:5080}
       # só para testes: permite SMTP na rede interna (servidor de e-mail de teste)
       VETUS_SMTP_PERMITIR_REDE_INTERNA: ${VETUS_SMTP_PERMITIR_REDE_INTERNA:-false}
+      # e-mail do sistema (avisos de mentoria); vazio = só o aviso no sistema
+      VETUS_SMTP_HOST: ${VETUS_SMTP_HOST:-}
+      VETUS_SMTP_PORTA: ${VETUS_SMTP_PORTA:-587}
+      VETUS_SMTP_SEGURANCA: ${VETUS_SMTP_SEGURANCA:-starttls}
+      VETUS_SMTP_USUARIO: ${VETUS_SMTP_USUARIO:-}
+      VETUS_SMTP_SENHA: ${VETUS_SMTP_SENHA:-}
+      VETUS_SMTP_REMETENTE: ${VETUS_SMTP_REMETENTE:-}
       # IA do pré-laudo (chaves só no .env, nunca no Git)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_MODELO: ${CLAUDE_MODELO:-claude-opus-5-5}

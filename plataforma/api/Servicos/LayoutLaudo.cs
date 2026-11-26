@@ -62,6 +62,8 @@ public record LayoutLaudo
     /// <summary>Título da seção de achados (ex.: "Relatório Ultrassonográfico"); vazio = "Achados".</summary>
     public string? TextoTituloAchados { get; init; }
     public bool MostrarTituloPrancha { get; init; } = true;
+    /// <summary>Mostra nas fotos da prancha do PDF os textos e medidas anotados manualmente pelo médico.</summary>
+    public bool MostrarAnotacoes { get; init; } = true;
     /// <summary>preto (padrão) ou nenhum (foto sem moldura, na proporção do aparelho).</summary>
     public string FundoPrancha { get; init; } = "preto";
     public int ColunasPrancha { get; init; } = 2;

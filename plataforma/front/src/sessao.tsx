@@ -11,6 +11,8 @@ export type Usuario = {
   crmvUf: string | null;
   administradorSistema: boolean;
   trocarSenha: boolean;
+  /** definido como mentor pelo administrador do sistema */
+  mentor: boolean;
   clinicas: ClinicaDoUsuario[];
 };
 

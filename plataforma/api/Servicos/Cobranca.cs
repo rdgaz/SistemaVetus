@@ -42,7 +42,8 @@ public class Cobranca(VetusDb db, ILogger<Cobranca> log)
         var daClinica = await db.MovimentosSaldo.Where(m => m.ClinicaId == clinicaId && m.Tipo == "debito")
             .OrderByDescending(m => m.Em).Take(20).Select(m => -m.Valor).ToListAsync();
         if (daClinica.Count > 0) return Math.Round(daClinica.Average(), 2);
-        var geral = await db.MovimentosSaldo.Where(m => m.Tipo == "debito")
+        var clinicasReais = db.Clinicas.Where(c => !c.Teste).Select(c => c.Id);
+        var geral = await db.MovimentosSaldo.Where(m => m.Tipo == "debito" && clinicasReais.Contains(m.ClinicaId))
             .OrderByDescending(m => m.Em).Take(50).Select(m => -m.Valor).ToListAsync();
         if (geral.Count > 0) return Math.Round(geral.Average(), 2);
         return modeloPrincipal is null ? 0 : (await Calcular(modeloPrincipal, TokensEntradaTipico, TokensSaidaTipico)).CobradoBrl;

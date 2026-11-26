@@ -170,6 +170,11 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
     private Dictionary<string, string> InfoCompleta(Exame e, IEnumerable<string> nomes)
     {
         var info = arq.InfoImagens(e);
+        var manuais = db.AnotacoesImagem.AsNoTracking().Where(a => a.ExameId == e.Id)
+            .ToDictionary(a => a.Foto, a => DesenhoAnotacao.DescricaoParaIa(a.Itens));
+        foreach (var (foto, descManual) in manuais)
+            if (!string.IsNullOrWhiteSpace(descManual))
+                info[foto] = info.TryGetValue(foto, out var atual) ? $"{atual} | {descManual}" : descManual;
         foreach (var n in nomes)
             if (!info.ContainsKey(n) && arq.Arquivo(e, Arquivos.Jpg, n) is { } caminho && DetectorAnotacoes.TemAnotacao(caminho))
                 info[n] = "anotação do operador escrita na própria imagem (rótulo do órgão e/ou medida): leia o texto da imagem";
@@ -208,14 +213,10 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
 
     private List<string> MedidasTexto(Exame e)
     {
-        if (arq.LerJson(e, "medidas.json") is not { } json) return [];
-        try
-        {
-            return JsonSerializer.Deserialize<JsonElement>(json).EnumerateArray().Select(m =>
-                $"- {Txt(m, "grupo")} > {Txt(m, "nome")}: {(m.TryGetProperty("valor", out var v) ? v.ToString() : "")} {Txt(m, "unidade")} {Txt(m, "complemento")}".TrimEnd()).ToList();
-        }
-        catch (JsonException) { return []; }
+        if (MedidasJson(e) is not { ValueKind: JsonValueKind.Array } arr) return [];
         static string Txt(JsonElement m, string k) => m.TryGetProperty(k, out var v) ? v.ToString() : "";
+        return arr.EnumerateArray().Select(m =>
+            $"- {Txt(m, "grupo")} > {Txt(m, "nome")}: {(m.TryGetProperty("valor", out var v) ? v.ToString() : "")} {Txt(m, "unidade")} {Txt(m, "complemento")}".TrimEnd()).ToList();
     }
 
     // ------------------------------------------------------------ geração
@@ -307,8 +308,17 @@ public class ServicoLaudo(VetusDb db, Arquivos arq, ConfiguracaoIa cfg, IEnumera
         await db.SaveChangesAsync(ct);
     }
 
-    private JsonElement? MedidasJson(Exame e) =>
-        arq.LerJson(e, "medidas.json") is { } json ? JsonSerializer.Deserialize<JsonElement>(json) : null;
+    private JsonElement? MedidasJson(Exame e)
+    {
+        JsonElement? aparelho = null;
+        if (arq.LerJson(e, "medidas.json") is { } json)
+        {
+            try { aparelho = JsonSerializer.Deserialize<JsonElement>(json); }
+            catch (JsonException) { /* medidas.json inválido */ }
+        }
+        var manuais = db.AnotacoesImagem.AsNoTracking().Where(a => a.ExameId == e.Id).ToList();
+        return DesenhoAnotacao.MesclarMedidas(aparelho, manuais);
+    }
 
     private EntradaLaudo MontarEntrada(Exame e, PlanoLaudo plano, string textoRefs, List<string> comparadas, string aprendizado)
     {

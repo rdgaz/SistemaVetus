@@ -24,6 +24,16 @@ public class RegistroAtividades(VetusDb db)
         ["clinica_alterada"] = "Dados da clínica alterados",
         ["layout_alterado"] = "Aparência do laudo alterada",
         ["creditos_lancados"] = "Créditos lançados",
+        ["mentor_definido"] = "Mentor definido",
+        ["mentor_removido"] = "Mentor removido",
+        ["mentoria_pedida"] = "Mentoria pedida",
+        ["mentoria_aceita"] = "Mentoria aceita",
+        ["mentoria_recusada"] = "Mentoria recusada",
+        ["mentoria_encerrada"] = "Mentoria encerrada",
+        ["revisao_mentor_enviada"] = "Laudo enviado ao mentor",
+        ["revisao_mentor_cancelada"] = "Revisão do mentor cancelada",
+        ["revisao_mentor_concluida"] = "Revisão do mentor concluída",
+        ["imagem_anotada"] = "Imagem anotada",
     };
 
     public async Task<RegistroAtividade> Adicionar(HttpContext http, string tipo, string descricao, Guid? exameId = null,

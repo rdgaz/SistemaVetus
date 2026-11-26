@@ -3,7 +3,7 @@ import { api } from '../api';
 import { Aviso, Cartao, Titulo } from '../ui';
 import { VerPrompt } from './VerPrompt';
 
-type ExameAdmin = { id: string; clinica: string; paciente: string; especie: string | null; status: string; data: string | null; totalFotos: number };
+type ExameAdmin = { id: string; clinica: string; clinicaTeste?: boolean; paciente: string; especie: string | null; status: string; data: string | null; totalFotos: number };
 
 const dataBr = (d: string | null) => (d && d.length === 8 ? `${d.slice(6)}/${d.slice(4, 6)}/${d.slice(0, 4)}` : '—');
 
@@ -38,7 +38,11 @@ export function AdminIa() {
             <div key={e.id} className="flex flex-wrap items-center gap-2 py-2">
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{e.paciente} <span className="text-sm font-normal text-slate-500">· {e.especie ?? '—'}</span></div>
-                <div className="text-xs text-slate-500">{e.clinica} · {dataBr(e.data)} · {e.totalFotos} foto(s) · {e.status}</div>
+                <div className="text-xs text-slate-500">
+                  {e.clinica}
+                  {e.clinicaTeste && <span className="ml-1.5 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800">TESTE</span>}
+                  {' '}· {dataBr(e.data)} · {e.totalFotos} foto(s) · {e.status}
+                </div>
               </div>
               <button type="button" onClick={() => setAberto(e.id)}
                 className="min-h-10 rounded-lg border border-[#0E4D64]/40 px-3 text-sm font-medium text-[#0E4D64] hover:bg-slate-50">

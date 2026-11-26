@@ -225,6 +225,9 @@ public static class LaudoEndpoints
         if (e is null) return (null, null, Erros.NaoEncontrado("Exame não encontrado."));
         if (e.Status == StatusExame.Pronto) return (e, null, Erros.Conflito("Laudo já assinado: use a retificação."));
         if (e.Status != StatusExame.AguardandoRevisao) return (e, null, Erros.Conflito("O exame não está aguardando revisão."));
+        // com o mentor, o laudo fica parado: a comparação no fim é com o que foi enviado
+        if (await db.RevisoesMentor.AnyAsync(r => r.ExameId == id && r.Situacao == RevisaoMentor.Pendente && !r.ParaEnsino))
+            return (e, null, Erros.Conflito("O laudo está com o mentor para revisão: aguarde a resposta ou cancele o pedido."));
         var l = await db.Laudos.Where(x => x.ExameId == id).OrderByDescending(x => x.Versao).FirstOrDefaultAsync();
         return l is null ? (e, null, Erros.Conflito("Ainda não há pré-laudo para revisar.")) : (e, l, null);
     }

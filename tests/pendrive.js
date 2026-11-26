@@ -184,6 +184,9 @@ const relatorio = (idAnimal, nome) => pdfRelatorio([
   navUsr.clinica = A.id;
   ok((await navUsr.req('DELETE', `/api/exames/${exameId}`)).status === 403, 'perfil Usuario não pode excluir exame');
 
+  // a clínica gera o pré-laudo sozinha: com a fila cheia (outros testes antes), espera a IA terminar para poder excluir
+  for (let i = 0; i < 60 && ['NaFila', 'Gerando'].includes((await A.nav.req('GET', `/api/exames/${exameId}`)).dados?.status); i++)
+    await new Promise((f) => setTimeout(f, 500));
   const del = await A.nav.req('DELETE', `/api/exames/${exameId}`);
   ok(del.status === 204, `exclui o exame com sucesso (${del.status} ${JSON.stringify(del.dados).slice(0, 200)})`);
   ok((await A.nav.req('GET', `/api/exames/${exameId}`)).status === 404, 'exame excluído não existe mais');

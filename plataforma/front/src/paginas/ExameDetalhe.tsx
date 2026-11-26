@@ -5,7 +5,9 @@ import { dataBR, nomeSexo, SeloStatus, type StatusExame } from '../exames';
 import { useSessao } from '../sessao';
 import { Aviso, AvisoIa, Botao, Campo, Cartao, Selecao } from '../ui';
 import { AlertaUrgente, corSituacao, nomeSituacao, pranchaInicial, Revisao, type ConteudoLaudo, type ControleRevisao } from './Revisao';
+import { CamadaAnotacao, EditorAnotacao, SeloAnotacao, type ItemAnotacao, type MapaAnotacoes } from './EditorAnotacao';
 import { Compartilhar } from './Compartilhar';
+import { EnviarMentor } from './EnviarMentor';
 import { reais } from '../dinheiro';
 
 type Arquivo = { nome: string; url: string };
@@ -49,9 +51,12 @@ type Detalhe = {
     grupo: string; nome: string; valor: number; unidade: string;
     referencia: string | null; faixaTexto: string | null; situacao: 'dentro' | 'acima' | 'abaixo' | 'sem_referencia';
   }[];
+  anotacoes?: MapaAnotacoes;
   erroGeracao: string | null;
   iaAtiva: boolean;
   laudo: Laudo | null;
+  /** revisão do mentor pendente: o laudo fica parado (a não ser que seja só para ensino) */
+  revisaoMentor: { id: string; mentor: string; enviadaEm: string; iniciadaEm: string | null; paraEnsino: boolean } | null;
   mascaras: Record<string, string>;
 };
 
@@ -126,6 +131,7 @@ export function ExameDetalhe() {
   const [fotoAberta, setFotoAberta] = useState<number | null>(null);
   // galeria só com as imagens do alerta de achado urgente
   const [galeria, setGaleria] = useState<{ fotos: Arquivo[]; indice: number } | null>(null);
+  const [anotando, setAnotando] = useState<{ foto: Arquivo; orgao?: string } | null>(null);
   const navegar = useNavigate();
   const [excluindo, setExcluindo] = useState(false);
   const excluir = async () => {
@@ -191,7 +197,8 @@ export function ExameDetalhe() {
   };
   // fotos que a IA analisou no pré-laudo atual (ícone ✦ nas miniaturas)
   const analisadas = new Set<string>(d.laudo?.imagensEnviadas ?? []);
-  const somenteLeitura = d.status === 'Pronto' || d.status === 'Gerando';
+  const comMentor = !!d.revisaoMentor && !d.revisaoMentor.paraEnsino;
+  const somenteLeitura = d.status === 'Pronto' || d.status === 'Gerando' || comMentor;
   const mudar = (k: keyof Form) => (ev: { target: { value: string } }) => setF({ ...f, [k]: ev.target.value });
 
   const faltaParaGerar = [!f.especie && 'espécie', !f.tipoExame && 'tipo de exame',
@@ -233,7 +240,7 @@ export function ExameDetalhe() {
 
   const textoGerar = d.laudo ? 'Atualizar pré-laudo' : d.status === 'Erro' ? 'Gerar de novo' : 'Gerar pré-laudo';
   // em revisão: um "Salvar" para tudo (dados do exame + texto do laudo) e "Aprovar e assinar" na barra
-  const emRevisao = d.status === 'AguardandoRevisao' && !!d.laudo && !!revisaoCtl;
+  const emRevisao = d.status === 'AguardandoRevisao' && !!d.laudo && !!revisaoCtl && !comMentor;
   const algoAlterado = alterado || !!revisaoCtl?.alterado;
   const salvarTudo = () => executar(async () => {
     if (alterado) await api('PUT', `/api/exames/${d.id}`, paraApi(f));
@@ -255,6 +262,21 @@ export function ExameDetalhe() {
   };
   const podeGerar = d.status !== 'NaFila' && !somenteLeitura;
   const perfilExclui = clinica?.perfil === 'Veterinario' || clinica?.perfil === 'AdministradorClinica';
+  const podeAnotar = !somenteLeitura && perfilExclui;
+  const anotacoes = d.anotacoes ?? {};
+  const abrirEditorAnotacao = (nomeFoto: string, orgao?: string) => {
+    const arqFoto = d.fotos.find((x) => x.nome === nomeFoto);
+    if (arqFoto) setAnotando({ foto: arqFoto, orgao });
+  };
+  const aoSalvarAnotacao = async (nomeFoto: string, itens: ItemAnotacao[], inserirNoOrgao?: { orgao: string; trecho: string }) => {
+    setD((atual) => (atual ? { ...atual, anotacoes: { ...(atual.anotacoes ?? {}), [nomeFoto]: itens } } : atual));
+    if (inserirNoOrgao && revisaoCtl) revisaoCtl.inserirTrechoOrgao(inserirNoOrgao.orgao, inserirNoOrgao.trecho);
+    // atualiza medidasComparadas em segundo plano sem apagar textos em edição na Revisao
+    try {
+      const novo = await api<Detalhe>('GET', `/api/exames/${d.id}`);
+      setD((atual) => (atual ? { ...atual, anotacoes: novo.anotacoes, medidas: novo.medidas, medidasComparadas: novo.medidasComparadas } : novo));
+    } catch { /* mantém a atualização local */ }
+  };
   const podeExcluir = d.status !== 'Gerando' && (clinica?.perfil === 'AdministradorClinica' || (clinica?.perfil === 'Veterinario' && !d.laudo?.assinadoEm));
 
   return (
@@ -321,16 +343,20 @@ export function ExameDetalhe() {
           ))}
         </div>
       )}
-      {d.laudo && (d.status === 'AguardandoRevisao' ? (
+      {d.laudo && (d.status === 'AguardandoRevisao' || d.status === 'Pronto') && perfilExclui && (
+        <EnviarMentor exameId={d.id} assinado={d.status === 'Pronto'} podeEnviar={!d.laudo.retificado} aoMudar={() => carregar()} />
+      )}
+      {d.laudo && (d.status === 'AguardandoRevisao' && !comMentor ? (
         <Revisao exameId={d.id} conteudoInicial={d.laudo.conteudo} imagensEnviadas={d.laudo.imagensEnviadas}
-          fotos={d.fotos} mascaras={d.mascaras} aoMudar={() => carregar()} registrar={setRevisaoCtl}
+          fotos={d.fotos} mascaras={d.mascaras} anotacoes={anotacoes} aoMudar={() => carregar()} registrar={setRevisaoCtl}
           aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))}
           aoAbrirGaleria={(lista, indice) => setGaleria({ fotos: lista, indice })}
+          aoAnotarFoto={podeAnotar ? abrirEditorAnotacao : undefined}
           dados={{ clinicaId: d.clinicaId, paciente: d.paciente, tutor: d.tutor?.nome ?? null, idade: d.idade, peso: d.peso, data: d.data, hora: d.hora,
             solicitanteNome: d.solicitanteNome, solicitanteCrmv: d.solicitanteCrmv, solicitanteClinica: d.solicitanteClinica,
             suspeitaClinica: d.suspeitaClinica, equipamento: d.equipamento, idAnimal: d.idAnimal }} />
       ) : (
-        <PreLaudo laudo={d.laudo} fotos={d.fotos} aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))}
+        <PreLaudo laudo={d.laudo} fotos={d.fotos} anotacoes={anotacoes} aoAbrirFoto={(nome) => setFotoAberta(d.fotos.findIndex((x) => x.nome === nome))}
           aoAbrirGaleria={(lista, indice) => setGaleria({ fotos: lista, indice })} />
       ))}
 
@@ -349,12 +375,12 @@ export function ExameDetalhe() {
         )}
         {d.fotos.length === 0 ? <p className="text-slate-500">Nenhuma foto.</p> : grade ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-            {d.fotos.map((foto, i) => <Miniatura key={foto.nome} foto={foto} analisada={analisadas.has(foto.nome)} onClick={() => setFotoAberta(i)} />)}
+            {d.fotos.map((foto, i) => <Miniatura key={foto.nome} foto={foto} analisada={analisadas.has(foto.nome)} anotada={anotacoes[foto.nome]} onClick={() => setFotoAberta(i)} />)}
           </div>
         ) : (
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
             {d.fotos.map((foto, i) => (
-              <div key={foto.nome} className="w-32 shrink-0 sm:w-40"><Miniatura foto={foto} analisada={analisadas.has(foto.nome)} onClick={() => setFotoAberta(i)} /></div>
+              <div key={foto.nome} className="w-32 shrink-0 sm:w-40"><Miniatura foto={foto} analisada={analisadas.has(foto.nome)} anotada={anotacoes[foto.nome]} onClick={() => setFotoAberta(i)} /></div>
             ))}
           </div>
         )}
@@ -550,10 +576,25 @@ export function ExameDetalhe() {
       )}
 
       {galeria && (
-        <Visualizador fotos={galeria.fotos} indice={galeria.indice} aoMudar={(i) => setGaleria({ ...galeria, indice: i })} aoFechar={() => setGaleria(null)} />
+        <Visualizador fotos={galeria.fotos} indice={galeria.indice} anotacoes={anotacoes}
+          aoAnotar={podeAnotar ? (nome) => abrirEditorAnotacao(nome) : undefined}
+          aoMudar={(i) => setGaleria({ ...galeria, indice: i })} aoFechar={() => setGaleria(null)} />
       )}
-      {fotoAberta !== null && (
-        <Visualizador fotos={d.fotos} indice={fotoAberta} aoMudar={setFotoAberta} aoFechar={() => setFotoAberta(null)} />
+      {fotoAberta !== null && d.fotos[fotoAberta] && (
+        <Visualizador fotos={d.fotos} indice={fotoAberta} anotacoes={anotacoes}
+          aoAnotar={podeAnotar ? (nome) => abrirEditorAnotacao(nome) : undefined}
+          aoMudar={setFotoAberta} aoFechar={() => setFotoAberta(null)} />
+      )}
+      {anotando && (
+        <EditorAnotacao
+          exameId={d.id}
+          foto={anotando.foto}
+          itensIniciais={anotacoes[anotando.foto.nome] ?? []}
+          orgaoSugerido={anotando.orgao}
+          orgaosDisponiveis={revisaoCtl?.orgaosNomes ?? d.laudo?.conteudo.orgaos.map((o) => o.orgao) ?? []}
+          aoSalvar={aoSalvarAnotacao}
+          aoFechar={() => setAnotando(null)}
+        />
       )}
     </div>
   );
@@ -611,7 +652,7 @@ function LaudoAssinado({ exameId, laudo, verificacao, aoMudar, compartilhar }: {
 }
 
 /** Pré-laudo / laudo em modo leitura. */
-function PreLaudo({ laudo, fotos, aoAbrirFoto, aoAbrirGaleria }: { laudo: Laudo; fotos: Arquivo[]; aoAbrirFoto: (nome: string) => void; aoAbrirGaleria: (lista: Arquivo[], indice: number) => void }) {
+function PreLaudo({ laudo, fotos, anotacoes, aoAbrirFoto, aoAbrirGaleria }: { laudo: Laudo; fotos: Arquivo[]; anotacoes?: MapaAnotacoes; aoAbrirFoto: (nome: string) => void; aoAbrirGaleria: (lista: Arquivo[], indice: number) => void }) {
   const c = laudo.conteudo;
   const prancha = pranchaInicial(c, laudo.imagensEnviadas)
     .map((nome) => fotos.find((f) => f.nome === nome))
@@ -673,7 +714,7 @@ function PreLaudo({ laudo, fotos, aoAbrirFoto, aoAbrirGaleria }: { laudo: Laudo;
           <div>
             <h3 className="mb-2 text-sm font-semibold text-slate-700">Prancha sugerida ({prancha.length} fotos)</h3>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-              {prancha.map((f) => <Miniatura key={f.nome} foto={f} onClick={() => aoAbrirFoto(f.nome)} />)}
+              {prancha.map((f) => <Miniatura key={f.nome} foto={f} anotada={anotacoes?.[f.nome]} onClick={() => aoAbrirFoto(f.nome)} />)}
             </div>
           </div>
         )}
@@ -692,10 +733,11 @@ function SeloReferencia({ situacao }: { situacao: 'dentro' | 'acima' | 'abaixo' 
   return <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${s[0]}`}>{s[1]}</span>;
 }
 
-function Miniatura({ foto, onClick, analisada }: { foto: Arquivo; onClick: () => void; analisada?: boolean }) {
+function Miniatura({ foto, onClick, analisada, anotada }: { foto: Arquivo; onClick: () => void; analisada?: boolean; anotada?: ItemAnotacao[] }) {
   return (
     <button onClick={onClick} className="relative block w-full overflow-hidden rounded-lg bg-black">
       <img src={foto.url} alt={foto.nome} loading="lazy" className="aspect-[4/3] w-full object-contain" />
+      <SeloAnotacao itens={anotada} />
       {analisada && (
         <span title="Imagem analisada pela IA" aria-label="Imagem analisada pela IA"
           className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-[#0E4D64] text-xs text-white shadow ring-2 ring-white">
@@ -792,10 +834,16 @@ function Resumo({ f, d }: { f: Form; d: Detalhe }) {
   );
 }
 
-/** Foto em tela cheia, com anterior/próxima (setas do teclado também funcionam). */
-function Visualizador({ fotos, indice, aoMudar, aoFechar }: {
-  fotos: Arquivo[]; indice: number; aoMudar: (i: number) => void; aoFechar: () => void;
+/** Foto em tela cheia, com anterior/próxima, camada de anotações e botão para anotar. */
+function Visualizador({ fotos, indice, anotacoes, aoAnotar, aoMudar, aoFechar }: {
+  fotos: Arquivo[];
+  indice: number;
+  anotacoes?: MapaAnotacoes;
+  aoAnotar?: (nomeFoto: string) => void;
+  aoMudar: (i: number) => void;
+  aoFechar: () => void;
 }) {
+  const [verAnotacoes, setVerAnotacoes] = useState(true);
   useEffect(() => {
     const tecla = (ev: KeyboardEvent) => {
       if (ev.key === 'Escape') aoFechar();
@@ -806,15 +854,41 @@ function Visualizador({ fotos, indice, aoMudar, aoFechar }: {
     return () => window.removeEventListener('keydown', tecla);
   }, [indice, fotos.length, aoMudar, aoFechar]);
 
+  const atual = fotos[indice];
+  const itensFoto = anotacoes?.[atual.nome] ?? [];
   const botao = 'min-h-12 min-w-12 rounded-full bg-white/15 text-2xl text-white disabled:opacity-30';
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/95" onClick={aoFechar}>
-      <div className="flex items-center justify-between p-3 text-sm text-white/80">
-        <span>{indice + 1} / {fotos.length} · {fotos[indice].nome}</span>
-        <button className={botao} aria-label="Fechar">×</button>
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm text-white/80" onClick={(ev) => ev.stopPropagation()}>
+        <span className="truncate">{indice + 1} / {fotos.length} · {atual.nome}</span>
+        <div className="flex items-center gap-2">
+          {itensFoto.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setVerAnotacoes((v) => !v)}
+              className="min-h-10 rounded-full border border-white/25 bg-white/10 px-3 text-xs font-semibold text-white hover:bg-white/20"
+            >
+              {verAnotacoes ? '👁 Ocultar anotações' : '👁 Mostrar anotações'}
+            </button>
+          )}
+          {aoAnotar && (
+            <button
+              type="button"
+              onClick={() => aoAnotar(atual.nome)}
+              className="min-h-10 rounded-full bg-[#FFE600] px-4 text-xs font-bold text-slate-950 shadow hover:bg-yellow-300"
+              title="Adicionar texto ou medida nesta imagem no padrão do ultrassom"
+            >
+              ✎ Anotar
+            </button>
+          )}
+          <button className={botao} onClick={aoFechar} aria-label="Fechar">×</button>
+        </div>
       </div>
       <div className="flex min-h-0 flex-1 items-center justify-center px-2" onClick={(ev) => ev.stopPropagation()}>
-        <img src={fotos[indice].url} alt={fotos[indice].nome} className="max-h-full max-w-full object-contain" />
+        <div className="relative inline-flex max-h-full max-w-full items-center justify-center">
+          <img src={atual.url} alt={atual.nome} className="block max-h-[calc(100dvh-10rem)] max-w-full object-contain" />
+          {verAnotacoes && <CamadaAnotacao itens={itensFoto} />}
+        </div>
       </div>
       <div className="flex justify-center gap-6 p-4" onClick={(ev) => ev.stopPropagation()}>
         <button className={botao} disabled={indice === 0} onClick={() => aoMudar(indice - 1)} aria-label="Anterior">‹</button>

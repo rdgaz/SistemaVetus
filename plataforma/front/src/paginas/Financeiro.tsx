@@ -4,12 +4,14 @@ import { reais } from '../dinheiro';
 import { Aviso, Cartao } from '../ui';
 
 type Linha = {
-  clinicaId: string; clinica: string; saldoAtual: number; recebido: number; creditosGratis: number; ajustes: number;
+  clinicaId: string; clinica: string; teste?: boolean; saldoAtual: number; recebido: number; creditosGratis: number; ajustes: number;
   consumo: number; custo: number; lucro: number; usos: number; semCusto: number;
 };
+type Escopo = 'reais' | 'testes' | 'todas';
 type Relatorio = {
+  escopo?: Escopo;
   clinicas: Linha[];
-  total: Omit<Linha, 'clinicaId' | 'clinica' | 'saldoAtual'> & { saldoClinicas: number };
+  total: Omit<Linha, 'clinicaId' | 'clinica' | 'teste' | 'saldoAtual'> & { saldoClinicas: number };
   custoPorIa: { ia: string; custo: number; usos: number }[];
 };
 
@@ -30,6 +32,7 @@ function periodo(p: string): { de?: string; ate?: string } {
  */
 export function Financeiro() {
   const [p, setP] = useState('mes');
+  const [escopo, setEscopo] = useState<Escopo>('reais');
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
   const [r, setR] = useState<Relatorio | null>(null);
@@ -37,27 +40,39 @@ export function Financeiro() {
 
   useEffect(() => {
     const f = p === 'personalizado' ? { de: de || undefined, ate: ate || undefined } : periodo(p);
-    const q = new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]).toString();
+    const params = { ...f, escopo };
+    const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString();
     api<Relatorio>('GET', `/api/admin/financeiro${q ? `?${q}` : ''}`).then((x) => { setR(x); setErro(''); }).catch((e) => setErro(e.message));
-  }, [p, de, ate]);
+  }, [p, de, ate, escopo]);
 
   const opcoes: [string, string][] = [['mes', 'Este mês'], ['anterior', 'Mês passado'], ['30', 'Últimos 30 dias'], ['tudo', 'Tudo'], ['personalizado', 'Escolher datas']];
+  const escopos: [Escopo, string][] = [['reais', 'Clínicas reais'], ['testes', 'Somente testes'], ['todas', 'Todas']];
   const td = 'px-2 py-1.5 text-right tabular-nums';
 
   return (
     <Cartao titulo="Financeiro por clínica">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        {opcoes.map(([v, t]) => (
-          <button key={v} type="button" onClick={() => setP(v)}
-            className={`min-h-9 rounded-full border px-3 text-sm font-medium ${p === v ? 'border-[#0E4D64] bg-[#0E4D64] text-white' : 'border-slate-300 bg-white text-slate-700'}`}>{t}</button>
-        ))}
-        {p === 'personalizado' && (
-          <span className="flex items-center gap-1 text-sm">
-            <input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="min-h-9 rounded border border-slate-300 px-2" />
-            até
-            <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="min-h-9 rounded border border-slate-300 px-2" />
-          </span>
-        )}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {opcoes.map(([v, t]) => (
+            <button key={v} type="button" onClick={() => setP(v)}
+              className={`min-h-9 rounded-full border px-3 text-sm font-medium ${p === v ? 'border-[#0E4D64] bg-[#0E4D64] text-white' : 'border-slate-300 bg-white text-slate-700'}`}>{t}</button>
+          ))}
+          {p === 'personalizado' && (
+            <span className="flex items-center gap-1 text-sm">
+              <input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="min-h-9 rounded border border-slate-300 px-2" />
+              até
+              <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="min-h-9 rounded border border-slate-300 px-2" />
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
+          {escopos.map(([v, t]) => (
+            <button key={v} type="button" onClick={() => setEscopo(v)}
+              className={`min-h-8 rounded-full px-3 text-xs font-semibold ${escopo === v ? (v === 'testes' ? 'bg-violet-700 text-white' : 'bg-[#0E4D64] text-white') : 'text-slate-600 hover:text-slate-900'}`}>
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
       {erro && <Aviso>{erro}</Aviso>}
       {r && (
@@ -85,7 +100,10 @@ export function Financeiro() {
               <tbody>
                 {r.clinicas.map((c) => (
                   <tr key={c.clinicaId} className="border-b border-slate-100">
-                    <td className="px-2 py-1.5">{c.clinica}</td>
+                    <td className="px-2 py-1.5">
+                      {c.clinica}
+                      {c.teste && <span className="ml-1.5 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800">TESTE</span>}
+                    </td>
                     <td className={td}>{reais(c.recebido)}</td>
                     <td className={td}>{reais(c.creditosGratis)}</td>
                     <td className={td}>{reais(c.consumo)}</td>

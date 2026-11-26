@@ -17,7 +17,7 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 
 | Agente | Desde | Tarefa | Arquivos |
 |---|---|---|---|
-| Antigravity | 26/11 | Clínicas de teste (`Clinica.Teste`): isolamento de correções da IA, financeiro/cobrança com filtro e registros | `Dados/Entidades.cs`, nova migração `20261126034000_ClinicaTeste.cs`, `VetusDbModelSnapshot.cs`, `Servicos/Ia/Aprendizados.cs`, `Servicos/Cobranca.cs`, `Endpoints/AdminEndpoints.cs`, `Endpoints/CobrancaEndpoints.cs`, `Endpoints/ExameEndpoints.cs`, `Endpoints/RegistrosEndpoints.cs`, `paginas/AdminClinicas.tsx`, `paginas/AdminCobranca.tsx`, `paginas/Financeiro.tsx`, `paginas/Registros.tsx` |
+| — | — | (nenhuma tarefa em andamento) | — |
 
 ---
 
@@ -28,6 +28,15 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 - **Prompt da IA**: visível só ao administrador do sistema (tela "IA (sistema)"); clínicas não veem.
 - **Aprendizados da IA**: discordâncias de alertas e órgãos confundidos valem para todas as clínicas (priorizando a própria);
   o estilo de escrita (ditados) é por clínica.
+- **Clínicas de teste (`Clinica.Teste`)**: funcionam normalmente para validar laudos, correções e relatórios, mas ficam isoladas
+  (clínicas reais nunca leem correções de clínicas de teste nem copiam fotos delas para `_treino`; financeiro/cobrança e
+  registros de sistema mostram só clínicas reais por padrão, com filtro para conferir `Somente testes` / `Todas`; custo real de
+  IA em testes continua descontado do saldo dos provedores e aparece separado como custo interno).
+- **Anotação manual de imagens**: camada separada em `anotacoes_imagem` (coordenadas 0..1, foto original intacta), no estilo
+  visual do aparelho Mindray (texto branco maiúsculo, cursores amarelos `+` e `×`, linha pontilhada e quadro inferior direito
+  com borda ciano); aparece na tela (com mostrar/ocultar), na prancha do PDF (`LayoutLaudo.MostrarAnotacoes = true` por padrão,
+  desenhado em memória com SkiaSharp), entra nas medidas/referências (`origem: "manual"`), no prompt da IA e gera rótulo de
+  treino automático. Bloqueada após assinar (libera ao retificar).
 - **Padrão do laudo (Gabriela Peil)**: órgãos na ordem Fígado, Vesícula Biliar, Estômago, Alças Intestinais, Pâncreas, Baço,
   Rins (uma linha), Adrenais, Vesícula Urinária, reprodutor, Linfonodos; descrição sem repetir o nome do órgão; medidas em cm
   com vírgula; "Peristaltismo presente e evolutivo"; sem "(castrado/castrada)" no sexo.
@@ -38,10 +47,57 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
   com padrão neutro e importação de .docx).
 - **Pendente de decisão**: aprendizado de imagens e marcações vermelhas nas alterações — ver
   [PLANO-TREINAMENTO-IMAGENS.md](PLANO-TREINAMENTO-IMAGENS.md).
+- **Revisão por mentor** (decidido, não implementado): Mentor/mentorado; **o administrador do sistema define quem é mentor**; edição bloqueada durante a revisão; "Revisado por" no PDF com permissão; peso 3×; revisão de laudo assinado só para ensino; gratuita. Detalhes: (tutores parceiros revisam laudos de iniciantes) — ver
+  [PLANO-MENTORIA.md](PLANO-MENTORIA.md). Nome decidido: **Mentor** / mentorado (`Tutor` no código é o dono do animal).
 
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (mentoria etapa 2, versão 0.10.16; logo depois saiu a 0.10.17 com os mesmos arquivos)
+- Publicado com o OK do usuário pelo `C:Gitdeploy-autolaudovet.bat`, levando junto a anotação de imagens do Antigravity.
+- Tabela `revisoes_mentor` (migração `20261126*_RevisaoMentor`, gerada pelo `dotnet ef`): laudo como foi enviado, conteúdo do
+  mentor, comentários por órgão, órgão de cada foto, parecer, resultado (confirmado/sugestoes), "para ensino" (laudo assinado).
+- API `Endpoints/RevisaoMentorEndpoints.cs`: `GET/POST /api/exames/{id}/revisao-mentor` (mentorado), `/api/revisoes-mentor`
+  (lista do mentor, detalhe sem dados do responsável, fotos pela revisão, rascunho, concluir, cancelar).
+- Laudo parado com revisão pendente (não ensino): `LaudoEmRevisao` em `LaudoEndpoints.cs` e `PUT/gerar` em `ExameEndpoints.cs`
+  (`ComMentor`); GET do exame traz `revisaoMentor`. Fim da mentoria cancela as revisões pendentes (`MentoriaEndpoints.cs`).
+- Telas: `paginas/EnviarMentor.tsx` (na tela do exame), `paginas/PedidosRevisao.tsx` (/mentoria/revisoes),
+  `paginas/RevisaoMentor.tsx` (/mentoria/revisoes/:id, também só leitura para o mentorado); `ExameDetalhe.tsx` mostra o pré-laudo
+  só para leitura enquanto está com o mentor. Manual (tópico 17) atualizado.
+- Testes: `tests/revisao-mentor.js` (41 verificações) no CI; `tests/pendrive.js` espera a IA terminar antes de excluir (falhava
+  por tempo com a fila cheia).
+- Script `C:Gitdeploy-autolaudovet.bat` (fora do repositório, a pedido do usuário): compila, confere o front, roda os testes na
+  cópia isolada, faz o deploy e confere a saúde (`--sem-testes`, `--so-validar`).
+
+### 26/11/2026 — Antigravity (sem deploy — aguardando OK do usuário)
+- **Anotação manual de imagens (texto + medida no estilo do ultrassom)**: tabela `anotacoes_imagem` (migração `20261126071500_AnotacoesImagem`, `Entidades.cs`, `VetusDb.cs`, `VetusDbModelSnapshot.cs`) e endpoints `GET/PUT/DELETE /api/exames/{id}/anotacoes` em `Endpoints/AnotacaoEndpoints.cs` (Veterinário e Administrador antes de assinar; registra `imagem_anotada` em `RegistroAtividades.cs` e gera rótulo automático em `RotulosImagem` quando a foto ainda não tinha rótulo).
+- **Desenho estilo Mindray e integrações**: `Servicos/DesenhoAnotacao.cs` desenha em memória com SkiaSharp (texto branco maiúsculo contornado, cursores amarelos `+`/`×`, linha pontilhada e quadro com borda ciano) para a prancha do PDF em `PdfLaudo.cs` (`LayoutLaudo.MostrarAnotacoes = true` por padrão, configurável em `LayoutLaudo.tsx`), sem tocar no JPG original. Medidas manuais entram na comparação de referências (`ExameEndpoints.cs`) e no prompt da IA (`ServicoLaudo.cs`).
+- **Editor visual e manual**: `paginas/EditorAnotacao.tsx` (toque/arraste em celular e PC, opção de inserir medida na descrição do órgão), botão `✎ Anotar` e `👁 Ocultar/Mostrar anotações` no visualizador (`ExameDetalhe.tsx`) e nas fotos de cada órgão (`Revisao.tsx`), selos `✎` nas miniaturas/prancha, e tópico 18 em `paginas/Ajuda.tsx`.
+- **Testes ponta a ponta**: `tests/anotacoes.js` (29 verificações cobrindo anotações, PDF SkiaSharp, referências, IA, bloqueio pós-assinatura e isolamento de `Clinica.Teste`) adicionado ao CI (`.github/workflows/ci.yml`), validado em stack isolada `vetusteste` junto com `layout.js`, `pendrive.js`, `mentoria.js` e `plataforma.js`.
+
+### 26/11/2026 — Claude (versão 0.10.15)
+- **Mentoria, etapa 1** (plano em `docs/PLANO-MENTORIA.md`): tabelas `perfis_mentor`, `mentorias`, `notificacoes`
+  (migração `20261126065739_Mentoria`, gerada pelo `dotnet ef`, que desta vez não foi bloqueado).
+- API em `Endpoints/MentoriaEndpoints.cs`: `/api/admin/mentores` (administrador do sistema define/tira mentores; só com CRMV;
+  tirar encerra as mentorias abertas), `/api/mentoria/perfil`, `/api/mentores` (diretório), `/api/mentorias` (pedir, aceitar,
+  recusar, cancelar, encerrar) e `/api/notificacoes` (sino). `/api/auth/eu` devolve `mentor`.
+- Serviço `Servicos/Notificacoes.cs`: aviso no sino e e-mail opcional pelo SMTP do sistema (`VETUS_SMTP_*` novos no
+  `docker-compose.yml` e `.env.example`; vazio = só o sino). Novos tipos no registro de atividades (mentoria_*, mentor_*).
+- Telas: `paginas/Mentoria.tsx` (/mentoria), `paginas/AdminMentores.tsx` (/admin/mentores, "Mentores (sistema)"),
+  `Sino.tsx` no topo; manual (Ajuda) com o tópico 17. No celular, o nome da clínica (uma só) some do topo para caber o sino;
+  o nome ao lado das iniciais pula "Dr./Dra.".
+- Teste `tests/mentoria.js` (41 verificações) e passo no CI (`.github/workflows/ci.yml`).
+
+### 26/11/2026 — Claude (sem deploy)
+- Criado `docs/PLANO-MENTORIA.md`: mentoria entre veterinários (diretório, pedido/aceite, notificações, tela "Pedidos de
+  revisão", comparação lado a lado, peso do mentor no aprendizado). Só documento.
+
+### 26/11/2026 — Antigravity (versão 0.10.14)
+- **Clínicas de teste (`Clinica.Teste`)**: coluna `Teste` em `clinicas` (migração `20261126034000_ClinicaTeste` + `Entidades.cs` + `VetusDbModelSnapshot.cs`).
+- **Isolamento de correções da IA**: `Aprendizados.cs` restringe clínicas reais a aprendizados apenas de clínicas reais; clínicas de teste leem os aprendizados reais + os próprios (para validar via "IA (sistema) → Ver prompt"); `ExameEndpoints.cs` não copia fotos de clínicas de teste para `/pendrive/_treino/`.
+- **Isolamento financeiro com filtro de validação**: `Cobranca.cs` exclui testes da média geral; `CobrancaEndpoints.cs` agrega `GET /api/admin/cobranca` só para clínicas reais (mostrando custo interno de testes separado) e adiciona `?escopo=reais|testes|todas` em `GET /api/admin/financeiro`; `AdminEndpoints.cs` e `RegistrosEndpoints.cs` permitem marcar/desmarcar clínica de teste e filtrar testes por padrão (`?incluirTestes=true`).
+- **Telas admin**: `AdminClinicas.tsx` (checkbox na criação, botão "Marcar teste / Tornar real" e selo `TESTE`), `Financeiro.tsx` (seletor `Clínicas reais | Somente testes | Todas`), `AdminCobranca.tsx` (linha de custo interno em testes), `Registros.tsx` (checkbox "Incluir testes") e `AdminIa.tsx` (selo `TESTE`).
 
 ### 26/11/2026 — Claude (versão 0.10.13)
 - CI: `tests/layout.js` falhava em "veterinário não altera / pode ver o layout" porque o login do veterinário batia no

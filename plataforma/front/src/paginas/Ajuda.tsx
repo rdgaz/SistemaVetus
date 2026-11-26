@@ -240,6 +240,38 @@ const TOPICOS: Topico[] = [
       </>
     ),
   },
+  {
+    id: 'mentoria', titulo: '17. Mentoria e avisos', palavras: 'mentor mentoria mentorado professor revisão orientação avisos sino notificação',
+    conteudo: (
+      <>
+        <p>Na <b>Mentoria</b> (menu da conta), você encontra veterinários experientes, escolhidos pela equipe do {PRODUTO.nome}, para orientar o seu trabalho.</p>
+        <ul>
+          <li><b>Encontrar um mentor:</b> busque por nome, área (ex.: abdominal, felinos) ou instituição, toque em <b>Pedir mentoria</b> e conte um pouco sobre você.</li>
+          <li>O mentor <b>aceita ou recusa</b>; você recebe o aviso no sino. Enquanto ele não responde, dá para <b>cancelar o pedido</b>.</li>
+          <li>Qualquer um dos dois pode <b>encerrar a mentoria</b> quando quiser.</li>
+          <li><b>Enviar ao mentor:</b> na tela do exame, toque em <b>Enviar ao mentor para revisão</b> e escreva uma mensagem (ex.: "Fiquei em dúvida no baço"). Até o mentor responder, o laudo fica parado (sem editar nem assinar); dá para cancelar enquanto ele não começou.</li>
+          <li>Quando o mentor termina, você recebe o aviso e o exame mostra <b>"Laudo confirmado pelo mentor"</b> ou <b>"Revisado pelo mentor, com sugestões"</b>, com o parecer, os comentários por órgão e o link para ver o que ele mudou.</li>
+          <li>Laudo já assinado também pode ir ao mentor, <b>para ensino</b>: o laudo assinado não muda.</li>
+          <li><b>Se você é mentor:</b> em <b>Pedidos de revisão</b> (menu da conta) estão os laudos enviados a você. Confira o texto, a situação de cada órgão e o órgão de cada foto, comente, escreva o parecer e toque em <b>Confirmar sem alterações</b> ou <b>Concluir revisão</b>. Na tela Mentoria, responda os pedidos de mentoria, veja seus mentorados e preencha o seu perfil (áreas, instituição, mini currículo, se aceita novos mentorados e se permite "Revisado por" no laudo).</li>
+          <li><b>Sino (avisos):</b> no topo da tela, mostra os avisos novos; tocar em um aviso leva à tela certa.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'anotacoes', titulo: '18. Anotar texto e medidas nas imagens', palavras: 'anotar imagem foto medida régua texto órgão cursor amarelo prancha manual',
+    conteudo: (
+      <>
+        <p>Esqueceu de identificar um órgão ou de registrar uma medida no aparelho? Antes de assinar o laudo, você pode anotar qualquer foto no mesmo padrão visual do ultrassom (sem alterar o arquivo original):</p>
+        <ul>
+          <li>Abra a foto em tela cheia e toque em <b>✎ Anotar</b> (ou no botão <b>✎</b> da miniatura do órgão na revisão).</li>
+          <li><b>Texto:</b> escolha uma sugestão (ex.: <i>BAÇO</i>, <i>RIM E</i>, <i>VB</i>) ou digite e toque na imagem para posicionar em letras brancas maiúsculas.</li>
+          <li><b>Medida (2 pontos):</b> toque no 1º e no 2º ponto da estrutura (cursores amarelos <b>+</b> e <b>×</b> com linha pontilhada) e informe o valor em <b>cm</b>. Você pode marcar para já inserir o valor na descrição do órgão.</li>
+          <li>As anotações aparecem na tela (com botão para mostrar/ocultar), saem na <b>prancha do PDF</b>, entram na comparação com os <b>valores de referência</b> e são enviadas à IA em novas análises.</li>
+        </ul>
+      </>
+    ),
+  },
 ];
 
 /** Ajuda (só para quem acessa uma clínica): suporte pelo WhatsApp, manual e versão. */

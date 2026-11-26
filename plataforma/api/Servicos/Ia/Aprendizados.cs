@@ -28,11 +28,16 @@ public class Aprendizados(VetusDb db)
     /// <summary>Texto dos aprendizados (vazio se ainda não há nenhum).</summary>
     public async Task<string> TextoParaIa(Guid clinicaId, CancellationToken ct = default)
     {
-        // aprendizados de imagem e diagnóstico (alertas e órgãos confundidos) valem para todas as clínicas,
-        // priorizando primeiro os casos da própria clínica
+        // clínicas reais só usam aprendizados de clínicas reais; clínicas de teste usam os reais + os próprios
+        // (assim dá para testar correções sem contaminar o banco global das clínicas reais)
+        var ehTeste = await db.Clinicas.Where(c => c.Id == clinicaId).Select(c => c.Teste).FirstOrDefaultAsync(ct);
+        var clinicasPermitidas = db.Clinicas.Where(c => !c.Teste || (ehTeste && c.Id == clinicaId)).Select(c => c.Id);
+
         var discordancias = await db.DiscordanciasAlerta
+            .Where(d => clinicasPermitidas.Contains(d.ClinicaId))
             .OrderByDescending(d => d.ClinicaId == clinicaId).ThenByDescending(d => d.CriadaEm).Take(8).ToListAsync(ct);
-        var confusoes = (await db.RotulosImagem.Where(r => r.Tipo == "correcao" && r.OrgaoIa != null)
+        var confusoes = (await db.RotulosImagem
+                .Where(r => r.Tipo == "correcao" && r.OrgaoIa != null && clinicasPermitidas.Contains(r.ClinicaId))
                 .Select(r => new { r.OrgaoIa, r.OrgaoCorreto }).ToListAsync(ct))
             .GroupBy(r => (r.OrgaoIa, r.OrgaoCorreto)).Select(g => new { g.Key.OrgaoIa, g.Key.OrgaoCorreto, N = g.Count() })
             .OrderByDescending(x => x.N).Take(8).ToList();

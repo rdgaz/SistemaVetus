@@ -19,6 +19,7 @@ type Config = {
   resumo: {
     geracoes: number; custoBrl: number; cobradoBrl: number;
     geracoesMes: number; custoMesBrl: number; cobradoMesBrl: number; saldoClinicasBrl: number;
+    geracoesTestes?: number; custoTestesBrl?: number; custoTestesMesBrl?: number;
   };
 };
 
@@ -63,10 +64,10 @@ export function AdminCobranca() {
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ['Pré-laudos gerados', String(r.geracoes), `${r.geracoesMes} neste mês`],
+            ['Pré-laudos gerados', String(r.geracoes), `${r.geracoesMes} neste mês (clínicas reais)`],
             ['Custo real (provedor)', reais(r.custoBrl), `${reais(r.custoMesBrl)} neste mês`],
             ['Cobrado das clínicas', reais(r.cobradoBrl), `${reais(r.cobradoMesBrl)} neste mês`],
-            ['Margem', reais(r.cobradoBrl - r.custoBrl), `saldo das clínicas: ${reais(r.saldoClinicasBrl)}`],
+            ['Margem', reais(r.cobradoBrl - r.custoBrl), `saldo das clínicas reais: ${reais(r.saldoClinicasBrl)}`],
           ].map(([t, v, s]) => (
             <div key={t} className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="text-sm text-slate-500">{t}</div>
@@ -75,6 +76,11 @@ export function AdminCobranca() {
             </div>
           ))}
         </div>
+        {(r.geracoesTestes ?? 0) > 0 && (
+          <p className="text-xs text-violet-800">
+            <b>Custo interno em clínicas de teste:</b> {reais(r.custoTestesBrl ?? 0)} ({reais(r.custoTestesMesBrl ?? 0)} neste mês · {r.geracoesTestes} geração(ões)) — descontado do saldo dos provedores, mas fora do faturamento das clínicas reais.
+          </p>
+        )}
 
         <Financeiro />
 

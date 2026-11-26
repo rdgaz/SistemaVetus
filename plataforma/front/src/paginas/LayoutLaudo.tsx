@@ -22,6 +22,7 @@ type Layout = {
   tituloIdentificacao: string | null;
   textoTituloAchados: string | null;
   mostrarTituloPrancha: boolean;
+  mostrarAnotacoes?: boolean;
   fundoPrancha: string;
   linhaCabecalho: boolean;
   mostrarNomeClinica: boolean;
@@ -281,6 +282,7 @@ export function LayoutLaudo() {
               <Opcoes valor={l.fundoPrancha} opcoes={[['preto', 'Preto (moldura)'], ['nenhum', 'Sem moldura']]} aoMudar={(v) => mudar({ fundoPrancha: v })} />
             </Linha>
             <Interruptor rotulo={'Mostrar o título "Prancha de imagens"'} valor={l.mostrarTituloPrancha} aoMudar={(v) => mudar({ mostrarTituloPrancha: v })} />
+            <Interruptor rotulo="Mostrar textos e medidas anotados manualmente nas fotos" valor={l.mostrarAnotacoes !== false} aoMudar={(v) => mudar({ mostrarAnotacoes: v })} />
             <Linha rotulo="Fotos por linha na prancha">
               <Opcoes valor={l.colunasPrancha} opcoes={[[1, '1'], [2, '2'], [3, '3']]} aoMudar={(v) => mudar({ colunasPrancha: Number(v) })} />
             </Linha>

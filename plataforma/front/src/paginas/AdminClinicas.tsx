@@ -14,6 +14,7 @@ type Clinica = {
   email: string | null;
   aeTitle: string;
   ativa: boolean;
+  teste: boolean;
   saldoBrl: number;
   usuarios: number;
   administradores: { nome: string; email: string }[];
@@ -46,6 +47,20 @@ export function AdminClinicas() {
       await api('PUT', `/api/admin/clinicas/${c.id}`, { ...c, ativa: !c.ativa });
       carregar();
       await recarregar();
+    } catch (e) {
+      setErro((e as Error).message);
+    }
+  };
+
+  const alternarTeste = async (c: Clinica) => {
+    const msg = c.teste
+      ? `Tornar "${c.nome}" uma clínica REAL?\n\nEla passará a entrar nos totais financeiros reais e suas correções entrarão no banco global da IA.`
+      : `Marcar "${c.nome}" como CLÍNICA DE TESTE?\n\nEla sai dos totais financeiros reais (pode ser vista pelo filtro "Somente testes") e suas correções não entram no banco global das clínicas reais.`;
+    if (!confirm(msg)) return;
+    setErro('');
+    try {
+      await api('PUT', `/api/admin/clinicas/${c.id}`, { ...c, teste: !c.teste });
+      carregar();
     } catch (e) {
       setErro((e as Error).message);
     }
@@ -124,10 +139,17 @@ export function AdminClinicas() {
         <div className="space-y-2">
           {lista.map((c) => (
             <div key={c.id}
-              className={`flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center ${c.ativa ? '' : 'opacity-60'}`}>
+              className={`flex flex-col gap-3 rounded-xl border bg-white p-4 sm:flex-row sm:items-center ${c.teste ? 'border-violet-200 bg-violet-50/20' : 'border-slate-200'} ${c.ativa ? '' : 'opacity-60'}`}>
               <div className="min-w-0 flex-1">
-                <div className="font-medium">
-                  {c.nome} {!c.ativa && <span className="text-sm text-red-700">(bloqueada)</span>}
+                <div className="flex flex-wrap items-center gap-2 font-medium">
+                  <span>{c.nome}</span>
+                  {c.teste && (
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800"
+                      title="Clínica de teste: fora dos totais financeiros reais e do banco global de correções da IA">
+                      TESTE
+                    </span>
+                  )}
+                  {!c.ativa && <span className="text-sm text-red-700">(bloqueada)</span>}
                 </div>
                 <div className="text-sm text-slate-500">
                   <span className="font-mono">{c.aeTitle}</span> · {c.usuarios} usuário(s)
@@ -139,6 +161,10 @@ export function AdminClinicas() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Botao variante="secundario" onClick={() => movimentarSaldo(c)}>+ Crédito</Botao>
+                <Botao variante="secundario" onClick={() => alternarTeste(c)}
+                  title={c.teste ? 'Passar esta clínica para produção (real)' : 'Isolar esta clínica como clínica de teste'}>
+                  {c.teste ? 'Tornar real' : 'Marcar teste'}
+                </Botao>
                 <Botao variante="secundario" onClick={() => novoToken(c)}>Novo token</Botao>
                 <Botao variante={c.ativa ? 'perigo' : 'secundario'} onClick={() => alternarAtiva(c)}>
                   {c.ativa ? 'Bloquear' : 'Ativar'}
@@ -154,9 +180,9 @@ export function AdminClinicas() {
 }
 
 function NovaClinica({ aoCancelar, aoCriar }: { aoCancelar: () => void; aoCriar: (c: Criada) => void }) {
-  const [f, setF] = useState({ nome: '', documento: '', telefone: '', email: '', endereco: '', admNome: '', admEmail: '' });
+  const [f, setF] = useState({ nome: '', documento: '', telefone: '', email: '', endereco: '', admNome: '', admEmail: '', teste: false });
   const [erro, setErro] = useState('');
-  const mudar = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
+  const mudar = (k: Exclude<keyof typeof f, 'teste'>) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
@@ -185,6 +211,15 @@ function NovaClinica({ aoCancelar, aoCriar }: { aoCancelar: () => void; aoCriar:
             <Campo rotulo="Endereço" value={f.endereco} onChange={mudar('endereco')} />
           </div>
         </div>
+        <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+          <input type="checkbox" className="mt-0.5 size-5" checked={f.teste} onChange={(e) => setF({ ...f, teste: e.target.checked })} />
+          <span>
+            <span className="font-medium text-slate-800">Clínica de teste</span>
+            <span className="block text-xs text-slate-500">
+              Funciona normalmente para validar laudos, correções e relatórios, mas não entra nos totais financeiros reais nem no banco global de correções da IA.
+            </span>
+          </span>
+        </label>
         <h3 className="pt-2 font-semibold text-slate-700">Administrador da clínica</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <Campo rotulo="Nome" value={f.admNome} onChange={mudar('admNome')}

@@ -21,9 +21,13 @@ public static class CobrancaEndpoints
         {
             var cfg = await cobranca.Config();
             var precos = await db.PrecosModelos.OrderBy(p => p.Modelo).ToListAsync();
-            var laudos = db.Laudos.Where(l => l.CobradoBrl > 0 || l.CustoBrl > 0);
+            var laudosTodos = db.Laudos.Where(l => l.CobradoBrl > 0 || l.CustoBrl > 0);
+            // resumo financeiro considera apenas clínicas reais; gastos em clínicas de teste aparecem separados
+            var laudos = laudosTodos.Where(l => !l.Exame.Clinica.Teste);
+            var laudosTestes = laudosTodos.Where(l => l.Exame.Clinica.Teste);
             var inicioMes = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var mes = laudos.Where(l => l.GeradoEm >= inicioMes);
+            var mesTestes = laudosTestes.Where(l => l.GeradoEm >= inicioMes);
             return Results.Ok(new
             {
                 cfg.Fator, cfg.CambioUsdBrl, cfg.CreditoInicialClinica, cfg.SaldoProvedorBrl, cfg.AlertaSaldoProvedorBrl, cfg.AtualizadoEm,
@@ -38,20 +42,30 @@ public static class CobrancaEndpoints
                     geracoesMes = await mes.CountAsync(),
                     custoMesBrl = await mes.SumAsync(l => l.CustoBrl),
                     cobradoMesBrl = await mes.SumAsync(l => l.CobradoBrl),
-                    saldoClinicasBrl = await db.Clinicas.SumAsync(c => c.SaldoBrl),
+                    saldoClinicasBrl = await db.Clinicas.Where(c => !c.Teste).SumAsync(c => c.SaldoBrl),
+                    geracoesTestes = await laudosTestes.CountAsync(),
+                    custoTestesBrl = await laudosTestes.SumAsync(l => l.CustoBrl),
+                    custoTestesMesBrl = await mesTestes.SumAsync(l => l.CustoBrl),
                 },
             });
         });
 
 
-        // Financeiro por clínica no período: quanto cada uma pagou (recargas), quanto consumiu, quanto custou de verdade e o lucro
-        adm.MapGet("/financeiro", async (DateOnly? de, DateOnly? ate, VetusDb db) =>
+        // Financeiro por clínica no período: escopo = reais (padrão) | testes | todas
+        adm.MapGet("/financeiro", async (DateOnly? de, DateOnly? ate, string? escopo, VetusDb db) =>
         {
+            var modo = (escopo ?? "reais").Trim().ToLowerInvariant();
+            if (modo is not ("reais" or "testes" or "todas")) modo = "reais";
             var inicio = (de ?? DateOnly.MinValue).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             var fim = (ate ?? DateOnly.FromDateTime(DateTime.UtcNow)).AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            var movs = await db.MovimentosSaldo.Where(m => m.Em >= inicio && m.Em < fim)
-                .Select(m => new { m.ClinicaId, m.Tipo, m.Valor, m.CustoBrl, m.Ia }).ToListAsync();
-            var clinicas = await db.Clinicas.OrderBy(c => c.Numero).Select(c => new { c.Id, c.Nome, c.SaldoBrl }).ToListAsync();
+            var qClinicas = db.Clinicas.AsQueryable();
+            if (modo == "reais") qClinicas = qClinicas.Where(c => !c.Teste);
+            else if (modo == "testes") qClinicas = qClinicas.Where(c => c.Teste);
+            var clinicas = await qClinicas.OrderBy(c => c.Numero).Select(c => new { c.Id, c.Nome, c.SaldoBrl, c.Teste }).ToListAsync();
+            var idsClinicas = clinicas.Select(c => c.Id).ToHashSet();
+            var movs = (await db.MovimentosSaldo.Where(m => m.Em >= inicio && m.Em < fim)
+                .Select(m => new { m.ClinicaId, m.Tipo, m.Valor, m.CustoBrl, m.Ia }).ToListAsync())
+                .Where(m => idsClinicas.Contains(m.ClinicaId)).ToList();
             var linhas = clinicas.Select(c =>
             {
                 var m = movs.Where(x => x.ClinicaId == c.Id).ToList();
@@ -59,7 +73,7 @@ public static class CobrancaEndpoints
                 var custo = m.Where(x => x.Tipo == "debito").Sum(x => x.CustoBrl);
                 return new
                 {
-                    clinicaId = c.Id, clinica = c.Nome, saldoAtual = c.SaldoBrl,
+                    clinicaId = c.Id, clinica = c.Nome, teste = c.Teste, saldoAtual = c.SaldoBrl,
                     recebido = m.Where(x => x.Tipo == "recarga").Sum(x => x.Valor),
                     creditosGratis = m.Where(x => x.Tipo == "credito_inicial").Sum(x => x.Valor),
                     ajustes = m.Where(x => x.Tipo == "ajuste").Sum(x => x.Valor),
@@ -70,7 +84,7 @@ public static class CobrancaEndpoints
             }).ToList();
             return Results.Ok(new
             {
-                de, ate,
+                de, ate, escopo = modo,
                 clinicas = linhas,
                 total = new
                 {

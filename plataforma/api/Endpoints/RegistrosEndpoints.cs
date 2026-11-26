@@ -16,9 +16,17 @@ public static class RegistrosEndpoints
             return Results.Ok(new { tipos = RegistroAtividades.Tipos, registros = await Filtrar(db.RegistrosAtividade.Where(x => x.ClinicaId == clinicaId), tipo, de, ate) });
         }).ExigirClinica(Perfil.AdministradorClinica);
 
-        // administrador do sistema: atividades de todas as clínicas
-        app.MapGroup("/api/admin").ExigirAdministradorSistema().MapGet("/registros", async (string? tipo, DateOnly? de, DateOnly? ate, VetusDb db) =>
-            Results.Ok(new { tipos = RegistroAtividades.Tipos, registros = await Filtrar(db.RegistrosAtividade, tipo, de, ate) }));
+        // administrador do sistema: atividades de clínicas reais (ou de todas com incluirTestes=true)
+        app.MapGroup("/api/admin").ExigirAdministradorSistema().MapGet("/registros", async (string? tipo, DateOnly? de, DateOnly? ate, bool? incluirTestes, VetusDb db) =>
+        {
+            var q = db.RegistrosAtividade.AsQueryable();
+            if (incluirTestes != true)
+            {
+                var testes = db.Clinicas.Where(c => c.Teste).Select(c => c.Id);
+                q = q.Where(x => x.ClinicaId == null || !testes.Contains(x.ClinicaId.Value));
+            }
+            return Results.Ok(new { tipos = RegistroAtividades.Tipos, registros = await Filtrar(q, tipo, de, ate) });
+        });
     }
 
     private static Task<List<RegistroAtividade>> Filtrar(IQueryable<RegistroAtividade> q, string? tipo, DateOnly? de, DateOnly? ate)

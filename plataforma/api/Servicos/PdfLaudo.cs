@@ -59,7 +59,10 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
         var logo = cfgClinica.UsarLogo ? (await db.ImagensCadastro.FindAsync(ImagemCadastro.Logo(e.ClinicaId)))?.Conteudo : null;
         var usarAssinatura = l.AssinadoPorId is { } uid0 && await db.Usuarios.Where(x => x.Id == uid0).Select(x => x.UsarAssinatura).FirstOrDefaultAsync();
         var assinatura = usarAssinatura && l.AssinadoPorId is { } uid ? (await db.ImagensCadastro.FindAsync(ImagemCadastro.Assinatura(uid)))?.Conteudo : null;
-        var prancha = FotosDaPrancha(e, l, c);
+        var anotacoes = lay.MostrarAnotacoes
+            ? await db.AnotacoesImagem.Where(a => a.ExameId == e.Id).ToDictionaryAsync(a => a.Foto, a => a.Itens)
+            : [];
+        var prancha = FotosDaPrancha(e, l, c, anotacoes);
         var assinado = l.AssinadoEm is not null;
         // código, link e QR de verificação só saem se a clínica ativou a verificação online
         var urlVerificacao = cfgClinica.VerificacaoOnline && l.CodigoVerificacao is { } cod ? $"{_urlPublica}/verificar/{cod}" : null;
@@ -337,7 +340,7 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
     /// Fotos da prancha: as escolhidas na revisão (sem limite); sem escolha, a sugestão: todas as fotos que o sistema associou
     /// aos órgãos, na ordem dos órgãos do laudo, e depois as outras que a IA destacou como principais.
     /// </summary>
-    private List<byte[]> FotosDaPrancha(Exame e, Laudo l, JsonElement c)
+    private List<byte[]> FotosDaPrancha(Exame e, Laudo l, JsonElement c, IReadOnlyDictionary<string, string> anotacoes)
     {
         var enviadas = JsonSerializer.Deserialize<List<string>>(l.ImagensEnviadas) ?? [];
         string? Nome(int numero) => numero >= 1 && numero <= enviadas.Count ? enviadas[numero - 1] : null;
@@ -359,9 +362,15 @@ public class PdfLaudo(VetusDb db, Arquivos arq, IConfiguration cfg)
                     if (o.TryGetProperty("imagens", out var im)) Incluir(im);
             if (c.TryGetProperty("imagensSugeridas", out var s)) Incluir(s);
         }
-        return nomes
-            .Select(nm => arq.Arquivo(e, Arquivos.Jpg, nm)).OfType<string>()
-            .Select(File.ReadAllBytes).ToList();
+        var resultado = new List<byte[]>();
+        foreach (var nm in nomes)
+        {
+            if (arq.Arquivo(e, Arquivos.Jpg, nm) is not { } caminho) continue;
+            var bytes = File.ReadAllBytes(caminho);
+            if (anotacoes.TryGetValue(nm, out var itensJson)) bytes = DesenhoAnotacao.Aplicar(bytes, itensJson);
+            resultado.Add(bytes);
+        }
+        return resultado;
     }
 
     private static void Secao(ColumnDescriptor col, string titulo, string texto, string cor)

@@ -16,3 +16,7 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.11** — 25/11/2026, 16:17:40 — Registro geral de atividades (exclusão, assinatura, retificação, análise pedida, pendrive, usuários, configurações, créditos) com tela e filtro por tipo
 - **0.10.12** — 26/11/2026, 03:10:34 — Manual do cliente (Ajuda) atualizado com as funções novas
 - **0.10.13** — 26/11/2026, 03:35:06 — Teste do layout no CI: login com espera quando atinge o limite por minuto
+- **0.10.14** — 26/11/2026, 03:41:19 — Clínicas de teste (Clinica.Teste): isolamento do banco global de correções da IA, relatórios financeiros com filtro reais/testes/todas, custo interno de testes separado e filtro nos registros
+- **0.10.15** — 26/11/2026, 04:09:20 — Mentoria (etapa 1): mentores definidos pelo administrador do sistema, perfil do mentor, diretório, pedido/aceite/encerramento e sino de avisos
+- **0.10.16** — 26/11/2026, 05:22:12 — Mentoria (etapa 2): enviar laudo ao mentor, pedidos de revisao e revisao do mentor; anotacao manual de imagens (Antigravity)
+- **0.10.17** — 26/11/2026, 05:22:47 — sistema de mentoria e edicao de imagens

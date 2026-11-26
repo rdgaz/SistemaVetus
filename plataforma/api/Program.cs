@@ -86,6 +86,7 @@ builder.Services.AddScoped<PdfLaudo>();
 builder.Services.AddScoped<Padronizador>();
 builder.Services.AddScoped<Aprendizados>();
 builder.Services.AddScoped<RegistroAtividades>();
+builder.Services.AddScoped<Notificacoes>();
 builder.Services.AddScoped<Cobranca>();
 builder.Services.AddScoped<Referencias>();
 builder.Services.AddSingleton<EnvioEmail>();
@@ -186,7 +187,10 @@ PendriveEndpoints.Mapear(app);
 LayoutEndpoints.Mapear(app);
 FrasesEndpoints.Mapear(app);
 RotulosEndpoints.Mapear(app);
+AnotacaoEndpoints.Mapear(app);
 RegistrosEndpoints.Mapear(app);
+MentoriaEndpoints.Mapear(app);
+RevisaoMentorEndpoints.Mapear(app);
 InternoEndpoints.Mapear(app);
 
 app.MapFallback("/api/{**resto}", () => Erros.NaoEncontrado("Rota não encontrada."));

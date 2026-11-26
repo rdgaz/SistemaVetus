@@ -131,8 +131,10 @@ public static class ExameEndpoints
                 imagensEnviadas = JsonSerializer.Deserialize<string[]>(l.ImagensEnviadas),
             };
 
-            var medidas = arq.LerJson(e, "medidas.json") is { } json
+            var medidasAparelho = arq.LerJson(e, "medidas.json") is { } json
                 ? JsonSerializer.Deserialize<JsonElement>(json) : (JsonElement?)null;
+            var anotacoesExame = await db.AnotacoesImagem.Where(a => a.ExameId == e.Id).ToListAsync();
+            var medidas = DesenhoAnotacao.MesclarMedidas(medidasAparelho, anotacoesExame);
             var url = (string sub, string nome) => $"/api/exames/{e.Id}/arquivos/{sub}/{Uri.EscapeDataString(nome)}";
             var pesoKg = Referencias.PesoKg(e.Peso);
             var refs = await referencias.Aplicaveis(e.Paciente.Especie, pesoKg);
@@ -142,11 +144,15 @@ public static class ExameEndpoints
                 pesoKg,
                 referencias = refs.Select(r => new { r.Id, r.Orgao, r.Medida, faixa = Referencias.Faixa(r), r.Observacao, r.Fonte }),
                 medidasComparadas = Referencias.Comparar(medidas, refs),
+                anotacoes = anotacoesExame.ToDictionary(a => a.Foto, a => DesenhoAnotacao.Ler(a.Itens)),
                 e.Id, e.Status, e.Urgente, e.Origem, e.Tipo, e.Data, e.Hora, e.EspecieAparelho, e.Idade, e.Peso,
                 e.MedicoSolicitante, e.Operador, e.Equipamento, e.RecebidoEm, e.AtualizadoEm, e.EnfileiradoEm, e.Pasta, e.IdAnimal,
                 e.FotosPendrive, pendrive = e.PastaPendrive is not null,
                 e.TipoExame, e.SuspeitaClinica, e.Historico, e.Jejum, e.SolicitanteNome, e.SolicitanteCrmv,
                 e.SolicitanteClinica, e.InformacoesAdicionais, e.ErroGeracao, laudo,
+                // revisão do mentor pendente (o laudo fica só para leitura, a não ser que seja para ensino)
+                revisaoMentor = await db.RevisoesMentor.Where(r => r.ExameId == e.Id && r.Situacao == RevisaoMentor.Pendente)
+                    .Select(r => new { r.Id, mentor = r.Mentor.Nome, r.EnviadaEm, r.IniciadaEm, r.ParaEnsino }).FirstOrDefaultAsync(),
                 informacoesObrigatorias = http.VinculoAtual().Clinica.InformacoesObrigatorias,
                 verificacaoOnline = http.VinculoAtual().Clinica.VerificacaoOnline,
                 iaAtiva = ia.Ativa,
@@ -179,22 +185,25 @@ public static class ExameEndpoints
                 return Results.Json(new { erro = "Este exame tem laudo assinado: só o administrador da clínica pode excluí-lo." }, statusCode: 403);
 
             // Antes de separar a pasta do exame, preserva na pasta global "_treino" qualquer foto que já tenha sido rotulada
-            // pelo veterinário, para que o dataset de imagens nunca perca amostras quando um exame for excluído.
-            var rotulosExame = await db.RotulosImagem.Where(x => x.ExameId == id).Select(x => new { x.Foto, x.HashFoto }).ToListAsync();
-            if (rotulosExame.Count > 0)
+            // pelo veterinário (somente de clínicas reais, para não contaminar o dataset com exames de teste).
+            if (!v.Clinica.Teste)
             {
-                try
+                var rotulosExame = await db.RotulosImagem.Where(x => x.ExameId == id).Select(x => new { x.Foto, x.HashFoto }).ToListAsync();
+                if (rotulosExame.Count > 0)
                 {
-                    var dirTreino = Path.Combine(arq.RaizPendrive, "_treino");
-                    Directory.CreateDirectory(dirTreino);
-                    foreach (var rot in rotulosExame)
-                        if (!string.IsNullOrWhiteSpace(rot.HashFoto) && arq.Arquivo(e, Arquivos.Jpg, rot.Foto) is { } origemFoto)
-                        {
-                            var destinoTreino = Path.Combine(dirTreino, $"{rot.HashFoto}.jpg");
-                            if (!File.Exists(destinoTreino)) File.Copy(origemFoto, destinoTreino);
-                        }
+                    try
+                    {
+                        var dirTreino = Path.Combine(arq.RaizPendrive, "_treino");
+                        Directory.CreateDirectory(dirTreino);
+                        foreach (var rot in rotulosExame)
+                            if (!string.IsNullOrWhiteSpace(rot.HashFoto) && arq.Arquivo(e, Arquivos.Jpg, rot.Foto) is { } origemFoto)
+                            {
+                                var destinoTreino = Path.Combine(dirTreino, $"{rot.HashFoto}.jpg");
+                                if (!File.Exists(destinoTreino)) File.Copy(origemFoto, destinoTreino);
+                            }
+                    }
+                    catch (Exception x) { logs.CreateLogger("Exames").LogWarning(x, "Exame {Id}: não foi possível copiar fotos rotuladas para _treino", id); }
                 }
-                catch (Exception x) { logs.CreateLogger("Exames").LogWarning(x, "Exame {Id}: não foi possível copiar fotos rotuladas para _treino", id); }
             }
 
             // 1) Arquivos do pendrive: a pasta é separada ANTES de mexer no banco (renomear é atômico). Daqui em diante um novo
@@ -233,6 +242,7 @@ public static class ExameEndpoints
                     });
                 await db.Compartilhamentos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
                 await db.LinksPublicos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
+                await db.AnotacoesImagem.Where(x => x.ExameId == id).ExecuteDeleteAsync();
                 // RotulosImagem, DitadosOrgao e DiscordanciasAlerta são preservados mesmo ao excluir o exame,
                 // para que o aprendizado acumulado pela IA nunca seja perdido.
                 await db.Laudos.Where(x => x.ExameId == id).ExecuteDeleteAsync();
@@ -289,6 +299,7 @@ public static class ExameEndpoints
             var e = await CarregarParaEditar(id, http, db);
             if (e is null) return Erros.NaoEncontrado("Exame não encontrado.");
             if (e.Status == StatusExame.Pronto) return Erros.Conflito("Laudo já assinado: use a retificação.");
+            if (await ComMentor(id, db)) return Erros.Conflito("O laudo está com o mentor para revisão: aguarde a resposta ou cancele o pedido.");
             if (Aplicar(e, r, db) is { } erro) return Erros.Invalido(erro);
             await db.SaveChangesAsync();
             return Results.NoContent();
@@ -304,6 +315,7 @@ public static class ExameEndpoints
                 case StatusExame.Pronto: return Erros.Conflito("Laudo já assinado: use a retificação.");
                 case StatusExame.Gerando: return Erros.Conflito("O pré-laudo já está sendo gerado.");
             }
+            if (await ComMentor(id, db)) return Erros.Conflito("O laudo está com o mentor para revisão: aguarde a resposta ou cancele o pedido.");
             if (r is not null && Aplicar(e, r, db) is { } erro) return Erros.Invalido(erro);
 
             var faltando = new List<string>();
@@ -346,4 +358,8 @@ public static class ExameEndpoints
             return Results.File(f, tipo ?? "application/octet-stream", enableRangeProcessing: true); // vídeos: avançar/voltar
         }).RequireAuthorization();
     }
+
+    /// <summary>Há revisão do mentor pendente (não só para ensino)? Então o laudo e os dados do exame ficam parados.</summary>
+    private static Task<bool> ComMentor(Guid exameId, VetusDb db) =>
+        db.RevisoesMentor.AnyAsync(r => r.ExameId == exameId && r.Situacao == RevisaoMentor.Pendente && !r.ParaEnsino);
 }

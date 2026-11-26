@@ -83,6 +83,15 @@ jobs:
       - name: Teste da personalização do laudo (layout)
         run: node tests/layout.js
 
+      - name: Teste da mentoria
+        run: node tests/mentoria.js
+
+      - name: Teste da revisão do mentor
+        run: node tests/revisao-mentor.js
+
+      - name: Teste de anotações manuais e clínicas de teste
+        run: node tests/anotacoes.js
+
       - name: Teste do envio por pendrive (pasta sintética)
         run: node tests/pendrive.js
 

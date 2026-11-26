@@ -26,12 +26,18 @@ export function Registros({ sistema = false }: { sistema?: boolean }) {
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
   const [busca, setBusca] = useState('');
+  const [incluirTestes, setIncluirTestes] = useState(false);
 
   useEffect(() => {
-    const q = new URLSearchParams(Object.entries({ tipo, de, ate }).filter(([, v]) => v)).toString();
+    const params: Record<string, string> = {};
+    if (tipo) params.tipo = tipo;
+    if (de) params.de = de;
+    if (ate) params.ate = ate;
+    if (sistema && incluirTestes) params.incluirTestes = 'true';
+    const q = new URLSearchParams(params).toString();
     api<Resposta>('GET', `${sistema ? '/api/admin/registros' : '/api/clinica/registros'}${q ? `?${q}` : ''}`)
       .then((x) => { setR(x); setErro(''); }).catch((e) => setErro(e.message));
-  }, [sistema, tipo, de, ate]);
+  }, [sistema, tipo, de, ate, incluirTestes]);
 
   const visiveis = (r?.registros ?? []).filter((x) =>
     !busca || `${x.descricao} ${x.paciente ?? ''} ${x.usuarioNome} ${x.clinicaNome ?? ''}`.toLowerCase().includes(busca.toLowerCase()));
@@ -54,6 +60,12 @@ export function Registros({ sistema = false }: { sistema?: boolean }) {
           <input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="min-h-10 rounded-lg border border-slate-300 px-2" aria-label="De" />
           <span>até</span>
           <input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="min-h-10 rounded-lg border border-slate-300 px-2" aria-label="Até" />
+          {sistema && (
+            <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700">
+              <input type="checkbox" className="size-4" checked={incluirTestes} onChange={(e) => setIncluirTestes(e.target.checked)} />
+              Incluir testes
+            </label>
+          )}
         </div>
         {!r && !erro && <p className="text-slate-500">Carregando…</p>}
         {r && visiveis.length === 0 && <p className="text-slate-500">Nenhum registro.</p>}

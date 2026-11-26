@@ -15,8 +15,8 @@ public static class AdminEndpoints
 
     public record AdministradorReq(string? Nome, string? Email);
     public record NovaClinicaReq(string? Nome, string? Documento, string? Endereco, string? Telefone, string? Email,
-        AdministradorReq? Administrador);
-    public record ClinicaReq(string? Nome, string? Documento, string? Endereco, string? Telefone, string? Email, bool? Ativa);
+        AdministradorReq? Administrador, bool Teste = false);
+    public record ClinicaReq(string? Nome, string? Documento, string? Endereco, string? Telefone, string? Email, bool? Ativa, bool? Teste = null);
 
     public static void Mapear(WebApplication app)
     {
@@ -25,7 +25,7 @@ public static class AdminEndpoints
         // Exames de todas as clínicas (os mais recentes), para o administrador do sistema conferir o que vai para a IA
         g.MapGet("/exames", async (VetusDb db) => Results.Ok(await db.Exames
             .OrderByDescending(e => e.AtualizadoEm).Take(200)
-            .Select(e => new { e.Id, clinica = e.Clinica.Nome, paciente = e.Paciente.Nome, especie = e.Paciente.Especie, e.Status, e.Data, e.TotalFotos })
+            .Select(e => new { e.Id, clinica = e.Clinica.Nome, clinicaTeste = e.Clinica.Teste, paciente = e.Paciente.Nome, especie = e.Paciente.Especie, e.Status, e.Data, e.TotalFotos })
             .ToListAsync()));
 
         // O prompt que a IA receberia numa análise completa do exame (texto, sem as imagens). Só o administrador do sistema:
@@ -37,17 +37,34 @@ public static class AdminEndpoints
             return Results.Ok(new { sistema, texto, fotos, tokensTexto = (sistema.Length + texto.Length) / 4 });
         });
 
-        g.MapGet("/discordancias", async (VetusDb db) => Results.Ok(await db.DiscordanciasAlerta
-            .OrderByDescending(d => d.CriadaEm).Take(500).ToListAsync()));
+        g.MapGet("/discordancias", async (bool? incluirTestes, VetusDb db) =>
+        {
+            var q = db.DiscordanciasAlerta.AsQueryable();
+            if (incluirTestes != true)
+            {
+                var reais = db.Clinicas.Where(c => !c.Teste).Select(c => c.Id);
+                q = q.Where(d => reais.Contains(d.ClinicaId));
+            }
+            return Results.Ok(await q.OrderByDescending(d => d.CriadaEm).Take(500).ToListAsync());
+        });
 
         // Textos ditados e padronizados (pares relato falado -> texto do laudo -> texto final): base para um agente que escreve como o médico
-        g.MapGet("/ditados", async (VetusDb db) => Results.Ok(await db.DitadosOrgao.OrderByDescending(d => d.CriadoEm).Take(1000).ToListAsync()));
+        g.MapGet("/ditados", async (bool? incluirTestes, VetusDb db) =>
+        {
+            var q = db.DitadosOrgao.AsQueryable();
+            if (incluirTestes != true)
+            {
+                var reais = db.Clinicas.Where(c => !c.Teste).Select(c => c.Id);
+                q = q.Where(d => reais.Contains(d.ClinicaId));
+            }
+            return Results.Ok(await q.OrderByDescending(d => d.CriadoEm).Take(1000).ToListAsync());
+        });
 
         g.MapGet("/clinicas", async (VetusDb db) => Results.Ok(await db.Clinicas
             .OrderBy(c => c.Numero)
             .Select(c => new
             {
-                c.Id, c.Numero, c.Nome, c.Documento, c.Endereco, c.Telefone, c.Email, c.AeTitle, c.Ativa, c.CriadaEm, c.SaldoBrl,
+                c.Id, c.Numero, c.Nome, c.Documento, c.Endereco, c.Telefone, c.Email, c.AeTitle, c.Ativa, c.Teste, c.CriadaEm, c.SaldoBrl,
                 usuarios = c.Vinculos.Count(v => v.Ativo),
                 administradores = c.Vinculos
                     .Where(v => v.Ativo && v.Perfil == Perfil.AdministradorClinica)
@@ -75,6 +92,7 @@ public static class AdminEndpoints
                 Email = Texto.Opcional(r.Email),
                 AeTitle = $"{PrefixoAe}{numero:D4}",
                 TokenIngestaoHash = Seguranca.HashToken(token),
+                Teste = r.Teste,
             };
             db.Clinicas.Add(clinica);
 
@@ -98,7 +116,7 @@ public static class AdminEndpoints
 
             return Results.Created($"/api/admin/clinicas/{clinica.Id}", new
             {
-                clinica.Id, clinica.Numero, clinica.Nome, clinica.AeTitle,
+                clinica.Id, clinica.Numero, clinica.Nome, clinica.AeTitle, clinica.Teste,
                 tokenIngestao = token, // mostrado só agora
                 administrador = new { usuario.Nome, usuario.Email, contaNova = senhaProvisoria is not null, senhaProvisoria },
             });
@@ -115,6 +133,7 @@ public static class AdminEndpoints
             c.Telefone = Texto.Opcional(r.Telefone);
             c.Email = Texto.Opcional(r.Email);
             if (r.Ativa is { } ativa) c.Ativa = ativa;
+            if (r.Teste is { } teste) c.Teste = teste;
             await db.SaveChangesAsync();
             return Results.NoContent();
         });

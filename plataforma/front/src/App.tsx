@@ -20,6 +20,11 @@ import { Registros } from './paginas/Registros';
 import { AdminReferencias } from './paginas/AdminReferencias';
 import { Verificar } from './paginas/Verificar';
 import { LaudoPublico } from './paginas/LaudoPublico';
+import { Mentoria } from './paginas/Mentoria';
+import { AdminMentores } from './paginas/AdminMentores';
+import { PedidosRevisao } from './paginas/PedidosRevisao';
+import { RevisaoMentor } from './paginas/RevisaoMentor';
+import { Sino } from './Sino';
 
 /** Extrai até 2 iniciais do nome (ignorando títulos como Dr./Dra.). */
 export function iniciaisNome(nome?: string | null): string {
@@ -66,6 +71,9 @@ function AppComLogin() {
         <Route path="clinica/layout" element={<SoAdminClinica><LayoutLaudo /></SoAdminClinica>} />
         <Route path="clinica/registros" element={<SoAdminClinica><Registros /></SoAdminClinica>} />
         <Route path="conta" element={<MinhaConta />} />
+        <Route path="mentoria" element={<Mentoria />} />
+        <Route path="mentoria/revisoes" element={<PedidosRevisao />} />
+        <Route path="mentoria/revisoes/:id" element={<RevisaoMentor />} />
         <Route path="ajuda" element={usuario.clinicas.length > 0 ? <Ajuda /> : <Navigate to="/" replace />} />
         <Route
           path="admin/clinicas"
@@ -80,6 +88,7 @@ function AppComLogin() {
           element={usuario.administradorSistema ? <AdminCobranca /> : <Navigate to="/" replace />}
         />
         <Route path="admin/ia" element={usuario.administradorSistema ? <AdminIa /> : <Navigate to="/" replace />} />
+        <Route path="admin/mentores" element={usuario.administradorSistema ? <AdminMentores /> : <Navigate to="/" replace />} />
         <Route path="admin/registros" element={usuario.administradorSistema ? <Registros sistema /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
@@ -128,6 +137,7 @@ function Layout() {
     { para: '/admin/cobranca', texto: 'Cobrança (sistema)', mostrar: usuario!.administradorSistema, end: true },
     { para: '/admin/referencias', texto: 'Referências (sistema)', mostrar: usuario!.administradorSistema, end: true },
     { para: '/admin/ia', texto: 'IA (sistema)', mostrar: usuario!.administradorSistema, end: true },
+    { para: '/admin/mentores', texto: 'Mentores (sistema)', mostrar: usuario!.administradorSistema, end: true },
     { para: '/admin/registros', texto: 'Registros (sistema)', mostrar: usuario!.administradorSistema, end: true },
   ].filter((i) => i.mostrar);
 
@@ -135,7 +145,8 @@ function Layout() {
     `block rounded-lg px-3 py-2 text-sm font-medium ${isActive || ativoExtra ? 'bg-white/15 text-white' : 'text-white/80 hover:text-white'}`;
 
   const iniciais = iniciaisNome(usuario!.nome);
-  const primeiroNome = usuario!.nome.trim().split(/\s+/)[0] || usuario!.nome;
+  // primeiro nome sem o título (Dr./Dra.)
+  const primeiroNome = usuario!.nome.trim().split(/\s+/).find((p) => !/^dra?\.?$/i.test(p)) || usuario!.nome;
   const temCrmv = !!(usuario?.crmv && usuario?.crmvUf);
 
   return (
@@ -149,7 +160,7 @@ function Layout() {
               aria-label="Clínica"
               value={clinica?.id}
               onChange={(e) => escolherClinica(e.target.value)}
-              className="min-h-10 max-w-[48vw] truncate rounded-lg bg-white/10 px-2.5 text-sm text-white outline-none [&>option]:text-slate-900"
+              className="min-h-10 min-w-0 max-w-[48vw] truncate rounded-lg bg-white/10 px-2.5 text-sm text-white outline-none [&>option]:text-slate-900"
             >
               {usuario!.clinicas.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -158,7 +169,7 @@ function Layout() {
               ))}
             </select>
           ) : (
-            <span className="truncate text-sm text-white/80">{clinica?.nome}</span>
+            <span className="hidden min-w-0 truncate text-sm text-white/80 sm:inline">{clinica?.nome}</span>
           )}
 
           <nav className="ml-auto hidden items-center gap-1 md:flex">
@@ -169,8 +180,10 @@ function Layout() {
             ))}
           </nav>
 
+          <div className="ml-auto shrink-0 md:ml-2"><Sino /></div>
+
           {/* Bolinha com as iniciais e menu do usuário */}
-          <div ref={menuContaRef} className="relative ml-auto md:ml-2">
+          <div ref={menuContaRef} className="relative">
             <button
               type="button"
               onClick={() => setContaAberta((v) => !v)}
@@ -218,6 +231,16 @@ function Layout() {
                     <span>Minha conta</span>
                     <span className="text-xs text-slate-400">CRMV, assinatura e senha</span>
                   </Link>
+                  <Link to="/mentoria" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                    <span>Mentoria</span>
+                    <span className="text-xs text-slate-400">{usuario!.mentor ? 'Mentorados e pedidos' : 'Encontrar um mentor'}</span>
+                  </Link>
+                  {usuario!.mentor && (
+                    <Link to="/mentoria/revisoes" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                      <span>Pedidos de revisão</span>
+                      <span className="text-xs text-slate-400">Laudos dos mentorados</span>
+                    </Link>
+                  )}
                   {adminClinica && (
                     <>
                       <Link to="/clinica" className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
@@ -272,6 +295,8 @@ function Layout() {
               </NavLink>
             ))}
             <NavLink to="/conta" className={link()}>Minha conta</NavLink>
+            <NavLink to="/mentoria" className={link()}>Mentoria</NavLink>
+            {usuario!.mentor && <NavLink to="/mentoria/revisoes" className={link()}>Pedidos de revisão</NavLink>}
             {!!clinica && <NavLink to="/ajuda" className={link()}>Ajuda</NavLink>}
             <button onClick={sair} className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-white/80">
               Sair

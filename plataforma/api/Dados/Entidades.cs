@@ -37,6 +37,8 @@ public class Clinica
     /// <summary>Onde o logo fica no cabeçalho do laudo: centro (padrão), esquerda ou direita.</summary>
     public string PosicaoLogo { get; set; } = "centro";
     public bool Ativa { get; set; } = true;
+    /// <summary>Clínica de teste: não entra no banco global de correções da IA nem nos totais financeiros reais.</summary>
+    public bool Teste { get; set; }
     public DateTime CriadaEm { get; set; } = DateTime.UtcNow;
 
     public List<Vinculo> Vinculos { get; set; } = [];
@@ -480,4 +482,128 @@ public class RegistroAtividade
     public string UsuarioEmail { get; set; } = "";
     /// <summary>Perfil de quem fez, na clínica (Veterinario, AdministradorClinica) ou "Sistema".</summary>
     public string? Perfil { get; set; }
+}
+
+/// <summary>
+/// Perfil de mentor: veterinário experiente que revisa laudos de mentorados. Quem define quem é mentor é o administrador
+/// do sistema; o próprio mentor preenche áreas, currículo e preferências.
+/// </summary>
+public class PerfilMentor
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UsuarioId { get; set; }
+    public Usuario Usuario { get; set; } = null!;
+    /// <summary>false = o administrador tirou o usuário da lista de mentores (o perfil fica guardado).</summary>
+    public bool Ativo { get; set; } = true;
+    public Guid? DefinidoPorId { get; set; }
+    public string DefinidoPorNome { get; set; } = "";
+    public DateTime DefinidoEm { get; set; } = DateTime.UtcNow;
+    /// <summary>Áreas de atuação, separadas por vírgula (ex.: "Abdominal, Felinos").</summary>
+    public string? Areas { get; set; }
+    public string? Curriculo { get; set; }
+    public string? Instituicao { get; set; }
+    /// <summary>Máximo de revisões em aberto ao mesmo tempo (usado a partir da etapa 2).</summary>
+    public int LimitePedidos { get; set; } = 10;
+    /// <summary>false = não aparece para novos pedidos de mentoria (as mentorias atuais continuam).</summary>
+    public bool AceitaNovos { get; set; } = true;
+    /// <summary>Autoriza o mentorado a mostrar "Revisado por" no PDF.</summary>
+    public bool PermiteRevisadoPor { get; set; }
+    /// <summary>Recebe e-mail a cada pedido (além da notificação no sistema).</summary>
+    public bool NotificarEmail { get; set; } = true;
+    public DateTime? AtualizadoEm { get; set; }
+}
+
+/// <summary>Vínculo entre mentor e mentorado (pessoas, não clínicas): pedido → aceito/recusado → encerrado.</summary>
+public class Mentoria
+{
+    public const string Pedida = "pedida", Aceita = "aceita", Recusada = "recusada", Cancelada = "cancelada", Encerrada = "encerrada";
+
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid MentorId { get; set; }
+    public Usuario Mentor { get; set; } = null!;
+    public Guid MentoradoId { get; set; }
+    public Usuario Mentorado { get; set; } = null!;
+    public string Situacao { get; set; } = Pedida;
+    /// <summary>Mensagem do mentorado ao pedir.</summary>
+    public string? Mensagem { get; set; }
+    /// <summary>Resposta do mentor ao aceitar ou recusar.</summary>
+    public string? Resposta { get; set; }
+    public DateTime PedidaEm { get; set; } = DateTime.UtcNow;
+    public DateTime? RespondidaEm { get; set; }
+    public DateTime? EncerradaEm { get; set; }
+    public string? EncerradaPor { get; set; }
+}
+
+/// <summary>Aviso para um usuário (sino no topo da tela). Link leva à tela certa.</summary>
+public class Notificacao
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UsuarioId { get; set; }
+    public string Tipo { get; set; } = "";
+    public string Titulo { get; set; } = "";
+    public string? Texto { get; set; }
+    public string? Link { get; set; }
+    public bool Lida { get; set; }
+    public DateTime CriadaEm { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Anotação manual do veterinário sobre uma foto do exame (texto do órgão e/ou medidas com cursores, no estilo do aparelho).
+/// Guardada em camada separada (a foto original nunca é alterada): vale na tela, na prancha do PDF, nas medidas e na IA.
+/// </summary>
+public class AnotacaoImagem
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ClinicaId { get; set; }
+    public Guid ExameId { get; set; }
+    public string Foto { get; set; } = "";
+    public string HashFoto { get; set; } = "";
+    /// <summary>Lista JSON de itens de texto e medida com coordenadas normalizadas (0 a 1).</summary>
+    public string Itens { get; set; } = "[]";
+    public Guid UsuarioId { get; set; }
+    public string UsuarioNome { get; set; } = "";
+    public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// Pedido de revisão de um laudo ao mentor. Guarda o laudo como foi enviado (base da comparação), o que o mentor sugeriu
+/// (texto, comentários por órgão, órgão de cada foto) e o parecer. Enquanto pendente, o mentorado não edita o laudo.
+/// </summary>
+public class RevisaoMentor
+{
+    public const string Pendente = "pendente", Concluida = "concluida", Cancelada = "cancelada";
+    public const string Confirmado = "confirmado", Sugestoes = "sugestoes";
+
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ExameId { get; set; }
+    public Exame Exame { get; set; } = null!;
+    public Guid ClinicaId { get; set; }
+    public Guid LaudoId { get; set; }
+    public int LaudoVersao { get; set; }
+    public Guid MentorId { get; set; }
+    public Usuario Mentor { get; set; } = null!;
+    public Guid MentoradoId { get; set; }
+    public Usuario Mentorado { get; set; } = null!;
+    public string Situacao { get; set; } = Pendente;
+    /// <summary>true = o laudo já estava assinado no envio: revisão só para ensino (o laudo assinado não muda).</summary>
+    public bool ParaEnsino { get; set; }
+    /// <summary>Mensagem do mentorado ao enviar ("Fiquei em dúvida no baço").</summary>
+    public string? Mensagem { get; set; }
+    /// <summary>Conteúdo do laudo (JSON) no momento do envio.</summary>
+    public string ConteudoEnviado { get; set; } = "{}";
+    /// <summary>Conteúdo com as alterações do mentor (JSON); null até ele salvar.</summary>
+    public string? ConteudoMentor { get; set; }
+    /// <summary>Comentários do mentor por órgão (JSON: órgão → texto).</summary>
+    public string Comentarios { get; set; } = "{}";
+    /// <summary>O que cada foto mostra, segundo o mentor (JSON: nome da foto → órgão).</summary>
+    public string Rotulos { get; set; } = "{}";
+    /// <summary>Parecer geral do mentor para o mentorado.</summary>
+    public string? Parecer { get; set; }
+    /// <summary>confirmado (sem alterações) ou sugestoes; null até concluir.</summary>
+    public string? Resultado { get; set; }
+    public DateTime EnviadaEm { get; set; } = DateTime.UtcNow;
+    /// <summary>Primeira vez que o mentor salvou: a partir daí o mentorado não cancela mais.</summary>
+    public DateTime? IniciadaEm { get; set; }
+    public DateTime? ConcluidaEm { get; set; }
+    public DateTime? CanceladaEm { get; set; }
 }

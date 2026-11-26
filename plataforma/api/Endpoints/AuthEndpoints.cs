@@ -76,6 +76,7 @@ public static class AuthEndpoints
             .OrderBy(v => v.Clinica.Nome)
             .Select(v => new { id = v.ClinicaId, nome = v.Clinica.Nome, perfil = v.Perfil })
             .ToListAsync();
-        return new { u.Id, u.Nome, u.Email, u.Crmv, u.CrmvUf, u.AdministradorSistema, u.TrocarSenha, clinicas };
+        var mentor = await db.PerfisMentor.AnyAsync(p => p.UsuarioId == u.Id && p.Ativo);
+        return new { u.Id, u.Nome, u.Email, u.Crmv, u.CrmvUf, u.AdministradorSistema, u.TrocarSenha, mentor, clinicas };
     }
 }

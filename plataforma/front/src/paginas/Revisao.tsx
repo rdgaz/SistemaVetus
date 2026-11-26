@@ -3,6 +3,7 @@ import { api } from '../api';
 import { useSessao } from '../sessao';
 import { Aviso, AvisoIa, Botao, Cartao } from '../ui';
 import { DocumentoEditavel, type DadosDocumento } from './DocumentoEditavel';
+import { SeloAnotacao, type MapaAnotacoes } from './EditorAnotacao';
 
 export type SituacaoOrgao = 'normal' | 'alterado' | 'nao_visualizado';
 /** imagens: números (posição + 1 em imagensEnviadas) das fotos que a IA associou ao órgão */
@@ -70,17 +71,21 @@ export type ControleRevisao = {
   assinar: () => Promise<void>;
   podeAssinar: boolean;
   motivoNaoAssina: string | null;
+  orgaosNomes: string[];
+  inserirTrechoOrgao: (orgao: string, trecho: string) => void;
 };
 
-export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, mascaras, aoMudar, aoAbrirFoto, aoAbrirGaleria, dados, registrar }: {
+export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, mascaras, anotacoes, aoMudar, aoAbrirFoto, aoAbrirGaleria, aoAnotarFoto, dados, registrar }: {
   exameId: string;
   conteudoInicial: ConteudoLaudo;
   imagensEnviadas: string[];
   fotos: Foto[];
   mascaras: Record<string, string>;
+  anotacoes?: MapaAnotacoes;
   aoMudar: () => Promise<void>;
   aoAbrirFoto: (nome: string) => void;
   aoAbrirGaleria: (lista: Foto[], indice: number) => void;
+  aoAnotarFoto?: (nome: string, orgao?: string) => void;
   dados: DadosDocumento;
   /** recebe os controles (salvar, assinar, se há alteração) para a barra de baixo da tela do exame */
   registrar?: (c: ControleRevisao | null) => void;
@@ -165,6 +170,19 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
       podeAssinar: perfilAssina && temCrmv,
       motivoNaoAssina: !perfilAssina ? 'Somente veterinário pode assinar.'
         : !temCrmv ? 'Para assinar, cadastre o seu CRMV e a UF em "Minha conta".' : null,
+      orgaosNomes: c.orgaos.map((o) => o.orgao),
+      inserirTrechoOrgao: (orgaoNome: string, trecho: string) => {
+        setC((atual) => ({
+          ...atual,
+          orgaos: atual.orgaos.map((o) => {
+            if (o.orgao !== orgaoNome) return o;
+            const base = o.descricao.trim();
+            const sep = !base ? '' : base.endsWith('.') ? ' ' : ', ';
+            const frase = !base ? trecho : `${base.replace(/\.$/, '')}${sep}${trecho}.`;
+            return { ...o, descricao: frase };
+          }),
+        }));
+      },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alterado, ocupado, c, perfilAssina, temCrmv]);
@@ -182,6 +200,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
       )}
       {detalhe !== null && c.orgaos[detalhe] && (
         <DetalhesOrgao orgao={c.orgaos[detalhe]} exameId={exameId} imagensEnviadas={imagensEnviadas} fotos={fotos} rotulos={rotulos} opcoes={opcoesRotulo}
+          anotacoes={anotacoes} aoAnotarFoto={aoAnotarFoto}
           aoRotular={(r) => setRotulos((atual) => ({ ...atual, [r.foto]: r }))} aoAbrirGaleria={aoAbrirGaleria}
           aoMudarDescricao={(texto) => mudarOrgao(detalhe, { descricao: texto })} aoFechar={() => setDetalhe(null)} />
       )}
@@ -220,6 +239,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
                 ))}
               </div>
               <ImagensDoOrgao orgao={o} exameId={exameId} imagensEnviadas={imagensEnviadas} fotos={fotos} rotulos={rotulos} opcoes={opcoesRotulo}
+                anotacoes={anotacoes} aoAnotarFoto={aoAnotarFoto}
                 aoRotular={(r) => setRotulos((atual) => ({ ...atual, [r.foto]: r }))} aoAbrirGaleria={aoAbrirGaleria} />
               <textarea rows={o.situacao === 'alterado' ? 3 : 2} className={area} value={o.descricao} onChange={(e) => mudarOrgao(i, { descricao: e.target.value })} />
             </div>
@@ -268,6 +288,7 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
                   <button key={f.nome} type="button" onClick={() => alternarFoto(f.nome)}
                     className={`relative overflow-hidden rounded-lg bg-black ring-offset-2 ${marcada ? 'ring-4 ring-[#0E4D64]' : ''}`}>
                     <img src={f.url} alt={f.nome} loading="lazy" className="aspect-[4/3] w-full object-contain" />
+                    <SeloAnotacao itens={anotacoes?.[f.nome]} />
                     <span className={`absolute right-1 top-1 rounded-full px-1.5 text-xs font-bold ${marcada ? 'bg-[#0E4D64] text-white' : 'bg-white/80 text-slate-700'}`}>
                       {marcada ? `✓ ${prancha.indexOf(f.nome) + 1}` : '+'}
                     </span>
@@ -282,8 +303,9 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
               {prancha.map((nome) => {
                 const f = fotos.find((x) => x.nome === nome);
                 return f && (
-                  <button key={nome} type="button" onClick={() => aoAbrirFoto(nome)} className="overflow-hidden rounded-lg bg-black">
+                  <button key={nome} type="button" onClick={() => aoAbrirFoto(nome)} className="relative overflow-hidden rounded-lg bg-black">
                     <img src={f.url} alt={nome} loading="lazy" className="aspect-[4/3] w-full object-contain" />
+                    <SeloAnotacao itens={anotacoes?.[nome]} />
                   </button>
                 );
               })}
@@ -439,13 +461,15 @@ type RotuloFoto = { foto: string; orgaoIa: string | null; orgaoCorreto: string; 
  * Fotos que a IA usou para o órgão. O veterinário confirma (✓) ou diz que não é este órgão (✗) e o que a imagem mostra:
  * cada resposta vira um rótulo guardado como base de treino de um futuro agente de imagens.
  */
-export function ImagensDoOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos, opcoes, aoRotular, aoAbrirGaleria }: {
+export function ImagensDoOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos, opcoes, anotacoes, aoAnotarFoto, aoRotular, aoAbrirGaleria }: {
   orgao: Orgao;
   exameId: string;
   imagensEnviadas: string[];
   fotos: Foto[];
   rotulos: Record<string, RotuloFoto>;
   opcoes: string[];
+  anotacoes?: MapaAnotacoes;
+  aoAnotarFoto?: (nome: string, orgao?: string) => void;
   aoRotular: (r: RotuloFoto) => void;
   aoAbrirGaleria: (lista: Foto[], indice: number) => void;
 }) {
@@ -474,12 +498,18 @@ export function ImagensDoOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos
           const r = rotulos[foto.nome];
           const corrigida = r?.tipo === 'correcao';
           return (
-            <div key={foto.nome} className={`w-36 overflow-hidden rounded-lg border-2 bg-white ${corrigida ? 'border-amber-400' : r ? 'border-emerald-500' : 'border-slate-200'}`}>
-              <button type="button" onClick={() => aoAbrirGaleria(lista, i)} className="block w-full bg-black" title="Ampliar">
+            <div key={foto.nome} className={`w-40 overflow-hidden rounded-lg border-2 bg-white ${corrigida ? 'border-amber-400' : r ? 'border-emerald-500' : 'border-slate-200'}`}>
+              <button type="button" onClick={() => aoAbrirGaleria(lista, i)} className="relative block w-full bg-black" title="Ampliar">
                 <img src={foto.url} alt={`Imagem ${n}`} loading="lazy" className="h-24 w-full object-contain" />
+                <SeloAnotacao itens={anotacoes?.[foto.nome]} />
               </button>
               <div className="flex items-center gap-1 px-1 py-1 text-xs">
-                <span className="mr-auto text-slate-500">Imagem {n}</span>
+                <span className="mr-auto text-slate-500">Img {n}</span>
+                {aoAnotarFoto && (
+                  <button type="button" aria-label="Anotar texto ou medida nesta imagem" title="Anotar texto ou medida nesta imagem"
+                    onClick={() => aoAnotarFoto(foto.nome, orgao.orgao)}
+                    className="size-8 rounded border border-slate-300 text-[#0E4D64] hover:bg-slate-100">✎</button>
+                )}
                 <button type="button" aria-label="Confirmar: é este órgão" title="É este órgão" onClick={() => gravar(foto.nome, orgao.orgao)}
                   className={`size-8 rounded font-bold ${r && !corrigida ? 'bg-emerald-600 text-white' : 'border border-slate-300 text-emerald-700 hover:bg-emerald-50'}`}>✓</button>
                 <button type="button" aria-label="Não é este órgão" title="Não é este órgão" onClick={() => setCorrigindo(foto.nome)}
@@ -521,13 +551,15 @@ const ReconhecimentoFala: (new () => Reconhecimento) | undefined =
  * "Mais detalhes" do órgão: descrição, imagens que a IA usou (confirmar/corrigir com um toque) e ditado por voz.
  * O que o médico fala é reescrito pela IA no padrão do laudo; relato, texto padronizado e texto final ficam guardados.
  */
-function DetalhesOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos, opcoes, aoRotular, aoAbrirGaleria, aoMudarDescricao, aoFechar }: {
+function DetalhesOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos, opcoes, anotacoes, aoAnotarFoto, aoRotular, aoAbrirGaleria, aoMudarDescricao, aoFechar }: {
   orgao: Orgao;
   exameId: string;
   imagensEnviadas: string[];
   fotos: Foto[];
   rotulos: Record<string, RotuloFoto>;
   opcoes: string[];
+  anotacoes?: MapaAnotacoes;
+  aoAnotarFoto?: (nome: string, orgao?: string) => void;
   aoRotular: (r: RotuloFoto) => void;
   aoAbrirGaleria: (lista: Foto[], indice: number) => void;
   aoMudarDescricao: (texto: string) => void;
@@ -637,7 +669,7 @@ function DetalhesOrgao({ orgao, exameId, imagensEnviadas, fotos, rotulos, opcoes
         <section className="mb-2">
           <h4 className="mb-1 text-sm font-semibold text-slate-700">Imagens deste órgão</h4>
           <ImagensDoOrgao orgao={orgao} exameId={exameId} imagensEnviadas={imagensEnviadas} fotos={fotos} rotulos={rotulos}
-            opcoes={opcoes} aoRotular={aoRotular} aoAbrirGaleria={aoAbrirGaleria} />
+            opcoes={opcoes} anotacoes={anotacoes} aoAnotarFoto={aoAnotarFoto} aoRotular={aoRotular} aoAbrirGaleria={aoAbrirGaleria} />
           {(orgao.imagens ?? []).length === 0 && <p className="mb-2 text-sm text-slate-500">A IA não associou imagens a este órgão.</p>}
           <button type="button" onClick={() => setTodas(!todas)} className="text-sm font-medium text-[#0E4D64] underline">
             {todas ? 'Esconder as outras imagens' : 'Ver as outras imagens do exame (marcar as que mostram este órgão)'}
