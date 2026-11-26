@@ -33,3 +33,4 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.28** — 26/11/2026, 16:32:13 — ajuste na tela de edicao
 - **0.10.29** — 26/11/2026, 17:05:05 — Usabilidade: Pronto vira Assinado; selo Com o mentor na lista; nova analise explicada com custo estimado; aviso de que a correcao ensina a IA; saldo em vez de creditos; prancha explicada
 - **0.10.30** — 26/11/2026, 17:35:44 — atstes pontuasi de tela
+- **0.10.31** — 26/11/2026, 18:36:21 — testes dajustes pontuais

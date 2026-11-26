@@ -8,14 +8,14 @@ type Topico = { id: string; titulo: string; palavras: string; conteudo: ReactNod
 /** Manual do que o AutoLaudoVet já faz, escrito para as clínicas. */
 const TOPICOS: Topico[] = [
   {
-    id: 'primeiro-acesso', titulo: '1. Primeiro acesso, senha e menu da conta', palavras: 'login entrar senha provisória trocar celular menu conta iniciais clínica',
+    id: 'primeiro-acesso', titulo: '1. Primeiro acesso, senha e menu da conta', palavras: 'login entrar senha provisória alterar trocar celular menu conta iniciais clínica perfil crmv recepção',
     conteudo: (
       <>
         <p>Você recebe do administrador da clínica um <b>e-mail</b> e uma <b>senha provisória</b>. No primeiro acesso, o sistema pede para criar a sua senha (mínimo de 8 caracteres).</p>
         <ul>
-          <li>No topo ficam os lugares de trabalho: <b>Exames</b>, <b>Mentoria</b> e, para o administrador, <b>Clínica</b>. No celular, eles ficam no botão ☰.</li>
-          <li>O círculo com as <b>suas iniciais</b> abre o menu da conta: <b>Minha conta</b>, <b>Ajuda</b> e <b>Sair</b>.</li>
-          <li>Para trocar a senha depois: <b>Minha conta → Senha</b>.</li>
+          <li>No topo ficam os lugares de trabalho: <b>Exames</b>, <b>Mentoria</b> (com contador de revisões pendentes quando você é mentor), <b>Clínica</b> (para o administrador) e o <b>sino de avisos</b>. No celular, a navegação fica no botão ☰.</li>
+          <li>O botão com as <b>suas iniciais</b> mostra a clínica atual, o seu perfil (<b>Recepção</b>, <b>Veterinário</b> ou <b>Administrador</b>) e o <b>CRMV</b>, além de abrir <b>Minha conta</b>, <b>Ajuda</b> e <b>Sair da conta</b>.</li>
+          <li>Para trocar a senha depois: <b>Minha conta → Alterar minha senha</b>.</li>
           <li>No celular, atenção à primeira letra maiúscula automática do teclado: a senha diferencia maiúsculas de minúsculas.</li>
           <li>O sistema funciona no navegador do computador e do celular; no celular, use "Adicionar à tela inicial" para abrir como um app.</li>
           <li>Quem atende mais de uma clínica escolhe a clínica no topo da tela.</li>
@@ -72,14 +72,14 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'exame', titulo: '5. Tela do exame: dados e informações adicionais', palavras: 'paciente responsável raça peso castrado jejum suspeita solicitante texto livre ditar obrigatório relatório',
+    id: 'exame', titulo: '5. Tela do exame: dados e informações adicionais', palavras: 'paciente responsável raça peso castrado jejum suspeita solicitante texto livre ditar obrigatório relatório vídeos fotos',
     conteudo: (
       <>
         <ul>
-          <li><b>Fotos:</b> role para o lado ou toque em "Ver todas"; um toque amplia e as setas passam para a próxima.</li>
-          <li><b>Dados do paciente e do exame:</b> corrija o que foi digitado no aparelho (nome, espécie, raça, sexo, castrado, idade, peso), o responsável (nome, WhatsApp, e-mail) e o exame (tipo, jejum, suspeita, clínica e veterinário solicitante com CRMV, histórico).</li>
+          <li><b>Fotos:</b> role para o lado ou toque em <b>Ver todas</b>; um toque amplia e as setas passam para a próxima. O selo <b>✦</b> indica as fotos analisadas pela IA e o selo ciano <b>✎</b> mostra quantas anotações manuais há na imagem.</li>
+          <li><b>Dados do paciente e do exame:</b> toque em <b>✎ Editar dados</b> (no topo) ou em <b>✎ Editar</b> no cartão para corrigir paciente (nome, espécie, raça, sexo, castrado, idade, peso), responsável (nome, WhatsApp, e-mail) e exame (tipo, jejum, suspeita, clínica e veterinário solicitante com CRMV, histórico).</li>
           <li><b>Informações adicionais:</b> escreva ou dite (microfone do teclado) o que souber: suspeita, histórico, o que o responsável relatou. A IA organiza esse texto nos campos vazios e o usa na análise. A clínica pode tornar esse campo <b>obrigatório</b>.</li>
-          <li><b>Relatórios do aparelho (PDF):</b> os relatórios que vieram do pendrive ficam no exame para consulta.</li>
+          <li><b>Vídeos e relatórios do aparelho (PDF):</b> os vídeos e relatórios enviados pelo pendrive ficam guardados na tela do exame para consulta.</li>
           <li><b>Marcar urgente:</b> o exame passa na frente na fila.</li>
           <li>Para gerar o pré-laudo bastam <b>espécie</b> e <b>tipo de exame</b>; os demais campos aparecem como recomendados.</li>
           <li>Se sair com alterações não salvas, o sistema avisa.</li>
@@ -108,24 +108,24 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'referencias', titulo: '7. Medidas e valores de referência', palavras: 'medidas referência acima abaixo faixa normal rim parede',
+    id: 'referencias', titulo: '7. Medidas e valores de referência', palavras: 'medidas referência acima abaixo faixa normal rim parede manual',
     conteudo: (
       <>
-        <p>Na tela do exame, o quadro <b>Medidas do aparelho × referência</b> mostra cada medida ao lado da faixa normal para a espécie e o peso do paciente, com destaque <b>▲ Acima</b> ou <b>▼ Abaixo</b>. Abaixo dele, "Valores de referência" lista todas as referências do paciente (passe o mouse para ver a fonte).</p>
+        <p>Na tela do exame, o quadro <b>Medidas do aparelho × referência</b> reúne tanto as medidas do aparelho quanto as <b>anotadas manualmente nas fotos</b>, ao lado da faixa normal para a espécie e o peso do paciente, com destaque <b>▲ Acima</b> ou <b>▼ Abaixo</b> (e um resumo no topo da revisão quando algo sai da faixa). Abaixo dele, "Valores de referência" lista todas as referências do paciente (passe o mouse para ver a fonte).</p>
         <p>Preencha o <b>peso</b> do paciente: algumas referências mudam conforme o porte.</p>
       </>
     ),
   },
   {
-    id: 'revisao', titulo: '8. Revisão do laudo', palavras: 'revisar normal alterado não visibilizado frase pronta laudo fácil ditado voz falar padronizar detalhes documento diferenciais salvar',
+    id: 'revisao', titulo: '8. Revisão do laudo', palavras: 'revisar normal alterado não visibilizado frase pronta laudo fácil ditado voz falar padronizar detalhes documento como vai ficar por órgão diferenciais salvar',
     conteudo: (
       <>
         <ul>
-          <li>Em cada órgão, escolha <b>Normal</b> (aplica a frase padrão de normalidade), <b>Alterado</b> ou <b>Não visibilizado</b>, e edite o texto.</li>
+          <li>Em cada órgão, escolha <b>Normal</b> (aplica a frase padrão de normalidade), <b>Alterado</b> ou <b>Não visibilizado</b>, e edite o texto. As miniaturas associadas ao órgão já trazem atalhos para <b>anotar (✎)</b>, <b>confirmar (✓)</b> ou <b>corrigir o órgão (✗)</b>.</li>
           <li><b>Frase pronta…:</b> escolha uma frase do banco de frases para o órgão; ela preenche a descrição e a impressão diagnóstica.</li>
-          <li><b>Mais detalhes</b> (em cada órgão): a descrição, as imagens que a IA usou para o órgão e o <b>ditado por voz</b>. Toque em <b>🎤 Falar</b>, diga do seu jeito o que quer registrar e toque em <b>Padronizar texto</b>: a IA reescreve no padrão do laudo, sem acrescentar nada. Confira e toque em <b>Usar no laudo</b>. Cada padronização usa uma pequena parte do saldo; o áudio não é guardado.</li>
+          <li><b>Mais detalhes</b> (em cada órgão): a descrição, todas as imagens do exame para marcar as do órgão e o <b>ditado por voz</b>. Toque em <b>🎤 Falar</b>, diga do seu jeito o que quer registrar e toque em <b>Padronizar texto</b>: a IA reescreve no padrão do laudo, sem acrescentar nada. Confira e toque em <b>Usar no laudo</b>. Cada padronização usa uma pequena parte do saldo; o áudio não é guardado.</li>
           <li>Edite condições técnicas, impressão, diferenciais e recomendações (um por linha). Os <b>diagnósticos diferenciais</b> podem ser ocultados do laudo com a chave "Exibir no laudo".</li>
-          <li><b>Duas visões do mesmo laudo</b>, na chave do topo da revisão: <b>☰ Por órgão</b> (cartões com as ferramentas de cada órgão) e <b>📄 Como vai ficar</b> (o laudo com a cara do PDF, editável direto no texto; ao tocar num órgão aparecem as mesmas ferramentas em cima dele). Trocar de visão não perde nada; o Salvar e o Aprovar e assinar são os mesmos.</li>
+          <li><b>Duas visões do mesmo laudo</b>, na chave do topo da revisão: <b>☰ Por órgão</b> (cartões com as ferramentas de cada órgão; padrão inicial no celular) e <b>📄 Como vai ficar</b> (o laudo com a cara do PDF, editável direto no texto; ao tocar num órgão aparecem situação, <b>Frase pronta…</b> e <b>🎤 Falar · 📷 Fotos</b> em cima dele; no computador o sistema lembra a última visão usada). Trocar de visão não perde nada; o <b>Salvar</b> e o <b>Aprovar e assinar</b> são os mesmos.</li>
           <li><b>Salvar:</b> um botão só guarda o texto do laudo e os dados do exame.</li>
           <li><b>Prévia do PDF</b> mostra como vai ficar (marcado "RASCUNHO").</li>
         </ul>
@@ -139,20 +139,21 @@ const TOPICOS: Topico[] = [
         <ul>
           <li>A prancha reúne <b>as fotos que saem no PDF</b> do laudo. Toque em <b>Escolher fotos</b> para montar: não há limite de fotos.</li>
           <li>O sistema já sugere <b>todas as fotos associadas aos órgãos</b>, na ordem dos órgãos do laudo, e depois as que a IA destacou.</li>
-          <li>Toque em uma foto para incluir ou tirar; <b>Concluir escolha</b> guarda a seleção. No modo documento, use "Tirar da prancha".</li>
+          <li>Toque em uma foto para incluir ou tirar; <b>Concluir escolha</b> guarda a seleção. Na visão <b>📄 Como vai ficar</b>, use <b>Escolher fotos da prancha</b> ou o botão <b>×</b> sobre a foto para tirar da prancha.</li>
           <li>O número de fotos por linha, o fundo da prancha e a exibição das anotações manuais são escolhidos na <b>Aparência do PDF</b>.</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'aprendizado', titulo: '10. Como a IA aprende com a sua revisão', palavras: 'aprender treinar ia corrigir órgão imagem confirmar discordar alerta estilo',
+    id: 'aprendizado', titulo: '10. Como a IA aprende com a sua revisão', palavras: 'aprender treinar ia corrigir órgão imagem confirmar discordar alerta estilo mentor',
     conteudo: (
       <>
-        <p>As suas correções deixam os próximos pré-laudos mais certos:</p>
+        <p>As suas correções ensinam a IA nos próximos exames:</p>
         <ul>
-          <li><b>Imagens do órgão:</b> em "Mais detalhes", toque em <b>É este órgão</b> ou <b>Não é este órgão</b> (e escolha o certo). Em "Ver as outras imagens do exame", marque as que mostram o órgão. A IA passa a evitar a mesma confusão.</li>
-          <li><b>Discordo deste alerta:</b> diga se foi falso alarme, achado diferente ou se as imagens não permitem concluir. Alertas assim passam a ser evitados.</li>
+          <li><b>Imagens do órgão:</b> nas miniaturas de cada órgão (no cartão ou em <b>Mais detalhes</b>), toque em <b>✓</b> para confirmar que é este órgão ou em <b>✗</b> para indicar o órgão certo. Em <b>Mais detalhes → Ver as outras imagens do exame</b>, marque também outras fotos que mostram o órgão.</li>
+          <li><b>Anotações e mentoria:</b> identificar ou medir um órgão em <b>✎ Anotar</b> e os órgãos definidos pelo <b>mentor</b> na revisão (com peso maior) também alimentam o aprendizado.</li>
+          <li><b>Discordo deste alerta:</b> retira o alerta do laudo e registra se foi falso alarme, achado diferente ou se as imagens não permitem concluir, evitando alertas parecidos.</li>
           <li><b>Ditado padronizado:</b> o texto que você usa ensina a IA a escrever no estilo da sua clínica.</li>
         </ul>
         <p>Os dados dos pacientes não são compartilhados: só as correções, de forma resumida, ajudam a melhorar a IA.</p>
@@ -177,26 +178,26 @@ const TOPICOS: Topico[] = [
     conteudo: (
       <>
         <ul>
-          <li><b>Visualizar Laudo em PDF</b> abre o laudo assinado em outra aba, para ver ou imprimir. O arquivo sai com o nome do paciente.</li>
+          <li><b>Visualizar Laudo em PDF</b> abre o laudo assinado em outra aba, para ver ou imprimir, já com o nome do paciente no arquivo (<i>laudo_ultrassonografico_Paciente.pdf</i>).</li>
           <li>O PDF traz o logo e os dados da clínica, a identificação do paciente, os achados, a impressão, a assinatura e a prancha de fotos.</li>
           <li>No rodapé pode haver um <b>código de verificação</b> e um <b>QR code</b>: quem receber o laudo confirma a autenticidade sem precisar de login (a clínica liga ou desliga nas configurações).</li>
-          <li><b>Retificar</b> (veterinário ou administrador): para corrigir um laudo assinado, informe o motivo; a versão anterior fica marcada como retificada e uma nova versão abre para revisar e assinar.</li>
+          <li><b>Retificar</b> (veterinário ou administrador): para corrigir um laudo assinado, informe o motivo; a versão anterior fica marcada como retificada e uma nova versão abre liberando texto, dados e anotações nas fotos para revisar e assinar novamente.</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'envio', titulo: '13. Enviar o laudo (WhatsApp, e-mail, link)', palavras: 'compartilhar whatsapp email link pdf responsável tutor smtp gmail senha de app revogar',
+    id: 'envio', titulo: '13. Enviar o laudo (WhatsApp, e-mail, link)', palavras: 'compartilhar whatsapp email link pdf responsável tutor smtp gmail senha de app revogar envio',
     conteudo: (
       <>
         <p>No laudo assinado, use <b>Compartilhar</b>:</p>
         <ul>
           <li><b>WhatsApp:</b> abre a conversa com a mensagem e o link do laudo (telefone do responsável já preenchido; em branco, você escolhe o contato).</li>
-          <li><b>E-mail:</b> envia o PDF anexado pelo <b>seu próprio e-mail</b>. Configure em Minha conta → Envio de laudos → "E-mail (SMTP próprio)". Em Gmail e Outlook, use uma <b>senha de app</b>; teste com "Enviar teste".</li>
+          <li><b>E-mail:</b> envia o PDF anexado pelo e-mail configurado em <b>Clínica → Dados e funcionamento → Envio de laudos</b> ("E-mail — SMTP próprio", com atalhos para Gmail, Outlook, Yahoo e Hostinger). Em Gmail e Outlook, use uma <b>senha de app</b> e valide antes com o envio de teste.</li>
           <li><b>Copiar link / Baixar PDF.</b></li>
           <li><b>Compartilhar por app:</b> manda o arquivo PDF pelos aplicativos do aparelho. Só aparece quando o acesso é seguro (endereço com <b>https</b>).</li>
-          <li>O link do responsável abre o laudo sem login, vale por um prazo (padrão 30 dias) e pode ser <b>revogado</b> em "Links ativos".</li>
-          <li>Em Minha conta você escolhe quais opções aparecem no Compartilhar e a validade dos links.</li>
+          <li>O link público abre o laudo sem login, vale por um prazo (padrão 30 dias), mostra quantos acessos teve e pode ser <b>revogado</b> em "Links ativos". O histórico de <b>Envios</b> fica registrado logo abaixo.</li>
+          <li>Em <b>Clínica → Dados e funcionamento → Envio de laudos</b> o administrador escolhe quais botões aparecem no Compartilhar e a validade dos links.</li>
         </ul>
       </>
     ),
@@ -218,7 +219,7 @@ const TOPICOS: Topico[] = [
     id: 'excluir', titulo: '15. Excluir um exame', palavras: 'excluir apagar exame remover',
     conteudo: (
       <>
-        <p>O botão <b>Excluir exame</b> fica no fim da tela do exame. Ele apaga o exame por completo: pré-laudos, laudos e os arquivos enviados pelo pendrive. <b>Não tem volta.</b></p>
+        <p>O botão <b>Excluir exame</b> fica no fim da tela do exame. Ele apaga o exame por completo — pré-laudos, laudos e os arquivos enviados pelo pendrive — preservando apenas os aprendizados da IA já registrados. <b>Não tem volta.</b></p>
         <ul>
           <li>O veterinário pode excluir exames ainda sem laudo assinado; exame com laudo assinado, só o <b>administrador da clínica</b>.</li>
           <li>Não dá para excluir enquanto a IA está gerando.</li>
@@ -228,49 +229,48 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'admin-clinica', titulo: '16. Administração da clínica', palavras: 'usuários perfis veterinário administrador logo dados clínica automático manual aparência pdf cores registros atividade obrigatório qr',
+    id: 'admin-clinica', titulo: '16. Administração da clínica', palavras: 'usuários perfis recepção veterinário administrador logo dados clínica automático manual aparência pdf cores registros atividade obrigatório qr envio smtp extrato',
     conteudo: (
       <>
-        <p>Para o <b>administrador da clínica</b>, em <b>Clínica</b> (no topo), nas abas:</p>
+        <p>Para o <b>administrador da clínica</b>, em <b>Clínica</b> (no topo), nas quatro abas:</p>
         <ul>
-          <li><b>Dados e Funcionamento:</b> dados do cabeçalho do laudo e <b>logo</b>; se o pré-laudo é gerado <b>automaticamente</b> ao receber o exame; se as <b>informações adicionais</b> são obrigatórias; e se o laudo mostra o <b>QR code</b> de verificação.</li>
-          <li><b>Aparência do PDF:</b> cores, estilo dos títulos (faixa com fundo, caixa com borda ou texto colorido), cabeçalho, ordem e visibilidade das seções, fotos por linha e exibição de anotações na prancha, posição da assinatura e do QR, texto justificado, rodapé e aviso final. "Voltar ao padrão" desfaz as personalizações.</li>
+          <li><b>Dados e funcionamento:</b> <b>saldo e extrato</b>; dados do cabeçalho do laudo; se o pré-laudo é gerado <b>automaticamente</b> ao receber o exame; se as <b>informações adicionais</b> são obrigatórias; se o laudo mostra o <b>QR code</b> de verificação; <b>logo</b> (centralizado, à esquerda ou à direita); e <b>Envio de laudos</b> (canais do Compartilhar, validade dos links e SMTP).</li>
+          <li><b>Aparência do PDF:</b> cores, estilo dos títulos (faixa com fundo, caixa com borda ou texto colorido), cabeçalho, ordem e visibilidade das seções, prancha (fotos por linha, moldura preta e exibição de anotações manuais), posição da assinatura e do QR, texto justificado, mensagem de retificação, rodapé e aviso final. "Voltar ao padrão" desfaz as personalizações.</li>
           <li><b>Usuários:</b> adicione pessoas (com senha provisória), escolha o perfil (<b>Recepção</b>: cadastra e envia exames; <b>Veterinário</b>: revisa e assina; <b>Administrador</b>: tudo, inclusive as configurações) e desative quem saiu. Ultrassonografistas que atendem outras clínicas usam o mesmo e-mail e senha.</li>
-          <li><b>Registros de atividade:</b> quem fez o quê e quando (exame enviado, análise pedida à IA, laudo assinado e retificado, alerta discordado, exame excluído, usuários, configurações, saldo), com filtro por tipo, data e busca.</li>
+          <li><b>Registros de atividade:</b> quem fez o quê e quando (exame enviado, análise pedida à IA, laudo assinado e retificado, alerta discordado, exame excluído, usuários, configurações, saldo), mostrando no filtro os tipos que já ocorreram, além de busca, período e link para abrir o exame.</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'mentoria', titulo: '17. Mentoria e avisos', palavras: 'mentor mentoria mentorado professor revisão orientação avisos sino notificação',
+    id: 'mentoria', titulo: '17. Mentoria e avisos', palavras: 'mentor mentoria mentorado professor revisão orientação rascunho ensino avisos sino notificação',
     conteudo: (
       <>
         <p>Na <b>Mentoria</b> (no topo da tela), você encontra veterinários experientes, escolhidos pela equipe do {PRODUTO.nome}, para orientar o seu trabalho.</p>
         <ul>
           <li><b>Encontrar um mentor:</b> busque por nome, área (ex.: abdominal, felinos) ou instituição, toque em <b>Pedir mentoria</b> e conte um pouco sobre você.</li>
-          <li>O mentor <b>aceita ou recusa</b>; você recebe o aviso no sino. Enquanto ele não responde, dá para <b>cancelar o pedido</b>.</li>
-          <li>Qualquer um dos dois pode <b>encerrar a mentoria</b> quando quiser.</li>
-          <li><b>Enviar ao mentor:</b> na tela do exame, toque em <b>Enviar ao mentor para revisão</b> e escreva uma mensagem (ex.: "Fiquei em dúvida no baço"). Até o mentor responder, o laudo fica parado (sem editar nem assinar); dá para cancelar a qualquer momento (se o mentor já começou, o que ele fez é descartado e ele é avisado).</li>
-          <li>Quando o mentor termina, você recebe o aviso e o exame mostra <b>"Laudo confirmado pelo mentor"</b> ou <b>"Revisado pelo mentor, com sugestões"</b>, com o parecer, os comentários por órgão e o link para ver o que ele mudou.</li>
-          <li>Laudo já assinado também pode ir ao mentor, <b>para ensino</b>: o laudo assinado não muda.</li>
-          <li><b>Se você é mentor:</b> em <b>Mentoria → Pedidos de revisão</b> estão (o número ao lado de Mentoria, no topo, mostra quantos esperam você) os laudos enviados a você. Confira o texto, a situação de cada órgão e o órgão de cada foto, comente, escreva o parecer e toque em <b>Confirmar sem alterações</b> ou <b>Concluir revisão</b>. Na tela Mentoria, responda os pedidos de mentoria, veja seus mentorados e preencha o seu perfil (áreas, instituição, mini currículo, se aceita novos mentorados e se permite "Revisado por" no laudo).</li>
-          <li><b>Sino (avisos):</b> no topo da tela, mostra os avisos novos; tocar em um aviso leva à tela certa.</li>
+          <li>O mentor <b>aceita ou recusa</b>; você recebe o aviso no sino. Enquanto ele não responde, dá para <b>cancelar o pedido</b>; depois de aceito, qualquer um dos dois pode <b>encerrar a mentoria</b> quando quiser.</li>
+          <li><b>Enviar ao mentor:</b> na tela do exame, toque em <b>🎓 Enviar ao mentor para revisão</b> e escreva sua dúvida (ex.: "Fiquei em dúvida no baço"). Enquanto ele não responde, o exame exibe <b>🎓 Com o mentor</b> na lista e o laudo fica parado (sem editar nem assinar); dá para <b>Cancelar o pedido</b> a qualquer momento (se o mentor já começou, o rascunho dele é descartado e ele recebe o aviso na tela).</li>
+          <li>Quando o mentor termina, você recebe o aviso e o exame mostra <b>"✓ Laudo confirmado pelo mentor"</b> ou <b>"✎ Revisado pelo mentor, com sugestões"</b>, com o parecer, os comentários por órgão e o link <b>Ver a revisão completa</b> mostrando o que mudou em relação ao que você enviou.</li>
+          <li>Laudo já assinado também pode ser enviado com <b>🎓 Enviar ao mentor (para ensino)</b>: o laudo assinado não muda.</li>
+          <li><b>Se você é mentor:</b> em <b>Mentoria → 🎓 Pedidos de revisão de laudos</b> (o número ao lado de Mentoria, no topo, mostra quantos esperam você) ficam os laudos recebidos. Você vê as mesmas miniaturas de cada órgão com as marcações do mentorado e as anotações nas fotos, confere ou corrige o órgão de cada imagem (com atalho <b>Confirmar os órgãos sugeridos</b>), comenta, escreve o parecer e pode <b>Salvar rascunho</b>, <b>Confirmar sem alterações</b> ou <b>Concluir revisão</b>. Em <b>Meu perfil de mentor</b>, preencha áreas, instituição, mini currículo, limite de revisões em aberto, se aceita novos mentorados, se permite "Revisado por" no laudo e se deseja avisos por e-mail.</li>
+          <li><b>Sino (avisos):</b> no topo da tela, mostra quantos avisos não lidos existem, leva à tela certa ao tocar e permite <b>Marcar todos como lidos</b>.</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'anotacoes', titulo: '18. Anotar texto e medidas nas imagens', palavras: 'anotar imagem foto medida régua calibrar escala caixa canto arrastar texto órgão mover cursor amarelo prancha manual',
+    id: 'anotacoes', titulo: '18. Anotar texto e medidas nas imagens', palavras: 'anotar imagem foto medida régua calibrar escala caixa canto arrastar texto órgão mover cursor amarelo prancha manual ocultar mostrar',
     conteudo: (
       <>
         <p>Esqueceu de identificar um órgão ou de registrar uma medida no aparelho? Antes de assinar o laudo (ou ao retificá-lo), você pode anotar qualquer foto no mesmo padrão visual do ultrassom, sem alterar o arquivo original:</p>
         <ul>
-          <li>Abra a foto em tela cheia e toque em <b>✎ Anotar</b> (ou no botão <b>✎</b> da miniatura do órgão na revisão).</li>
+          <li>Abra a foto em tela cheia e toque em <b>✎ Anotar</b> (o campo <b>Órgão</b> começa vazio para evitar vínculo por engano), ou toque no botão <b>✎</b> da miniatura do órgão na revisão (já com esse órgão selecionado).</li>
           <li><b>Medida (2 pontos) com sugestão pela régua:</b> toque no 1º e no 2º ponto da estrutura (cursores amarelos <b>+</b> e <b>×</b> com linha pontilhada). Quando o sistema reconhece a <b>régua lateral</b> da foto — ou quando já há outra medida na imagem ou calibração salva —, o valor em <b>cm</b> já vem <b>sugerido</b>; confira com o aparelho, ajuste o rótulo/órgão e marque se quiser inserir a medida direto na descrição do órgão.</li>
-          <li><b>📐 Calibrar (quando não há régua automática):</b> se o sistema não encontrar a régua sozinho, toque em <b>📐 Calibrar</b>, marque duas divisões da régua da imagem (ex.: 0 e 1 cm) e informe a distância. A escala fica salva para aquele aparelho e tamanho de foto em <b>toda a clínica</b>.</li>
-          <li><b>Posição da caixa das medidas:</b> escolha um dos <b>4 cantos</b> (<b>↖ ↗ ↙ ↘</b>) em <b>Caixa</b> ou <b>arraste</b> o quadro ciano para onde não cubra a imagem (por padrão ele já desvia dos pontos medidos). Textos e pontos também podem ser arrastados, desfeitos (<b>↶ Desfazer</b>) ou limpos (<b>🗑 Limpar</b>).</li>
-          <li><b>Texto e órgão coerente com o laudo:</b> em <b>Texto</b>, escolha uma sugestão (ex.: <i>BAÇO</i>, <i>RIM E</i>, <i>VB</i>) ou digite e toque na foto para posicionar em letras brancas maiúsculas. Ao escrever o nome de um órgão na foto ou escolhê-lo na medida, o sistema pergunta ao salvar se deseja <b>mover a foto para esse órgão</b> no laudo (atualizando também o aprendizado da IA).</li>
-          <li>As anotações aparecem na tela (com botão <b>Anotações</b> para mostrar/ocultar), saem na <b>prancha do PDF</b> (configurável em <b>Aparência do PDF</b>), entram em <b>Medidas do aparelho × referência</b> e vão para a IA em novas análises.</li>
+          <li><b>📐 Calibrar (quando não há régua automática):</b> aparece só quando a régua não é reconhecida sozinha. Toque em duas divisões da régua da imagem (ex.: 0 e 1 cm) e informe a distância: a escala fica salva para aquele aparelho e tamanho de foto em <b>toda a clínica</b>.</li>
+          <li><b>Posição da caixa das medidas:</b> escolha um dos <b>4 cantos</b> (<b>↖ ↗ ↙ ↘</b>) em <b>Caixa</b> ou <b>arraste</b> o quadro ciano livremente na foto (por padrão ele já desvia dos pontos medidos). Textos e pontos também podem ser arrastados, desfeitos (<b>↶ Desfazer</b>) ou limpos (<b>🗑 Limpar</b>).</li>
+          <li><b>Texto e órgão coerente com o laudo:</b> em <b>Texto</b>, escolha uma sugestão (ex.: <i>BAÇO</i>, <i>RIM E</i>, <i>VB</i>) ou digite e toque na foto para posicionar em letras brancas maiúsculas. Escrever o nome de um órgão na foto (ou escolhê-lo na medida) define o órgão da anotação e, ao salvar, o sistema pergunta se deseja <b>mover a foto para esse órgão</b> no laudo (atualizando também o rótulo de aprendizado da IA).</li>
+          <li>As anotações aparecem na tela (com botão <b>👁 Ocultar anotações / 👁 Mostrar anotações</b> na foto ampliada), saem na <b>prancha do PDF</b> (pode ligar ou desligar em <b>Aparência do PDF</b>), entram em <b>Medidas do aparelho × referência</b> e vão para a IA em novas análises.</li>
         </ul>
       </>
     ),

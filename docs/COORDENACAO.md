@@ -66,9 +66,12 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 ## Registro (mais novo em cima)
 
 ### 26/11/2026 — Antigravity (sem deploy — aguardando OK do usuário)
-- **Manual na tela Ajuda** (`plataforma/front/src/paginas/Ajuda.tsx`):
-  - **Tópico 18 (Anotar texto e medidas nas imagens)**: atualizado com sugestão automática de valor pela régua lateral/medidas da foto, calibração `📐 Calibrar` válida para toda a clínica, posição/arraste da caixa das medidas (`↖ ↗ ↙ ↘` ou livre), vínculo com órgão pelo texto na foto e pergunta para mover a foto de órgão no laudo, além do controle de exibição na Aparência do PDF.
-  - **Alinhamento geral do Manual (0.10.29)**: trocado status "Pronto" por **"Assinado"** e citado o selo **"🎓 Com o mentor"** (tópico 3); custo estimado nas duas opções de nova análise à IA (tópico 6); explicação da prancha ("as fotos que vão no PDF") e exibição de anotações manuais (tópicos 9 e 16); "Créditos" ajustado para **"Saldo"** (tópicos 3, 14 e 16).
+- **Revisão completa do Manual na tela Ajuda** (`plataforma/front/src/paginas/Ajuda.tsx`) alinhando todos os 18 tópicos às últimas telas e versões:
+  - **Tópico 1**: contador de revisões em Mentoria, sino no topo, clínica/perfil (**Recepção**, **Veterinário**, **Administrador**)/CRMV no menu da conta e **Minha conta → Alterar minha senha**.
+  - **Tópicos 3, 6 e 14**: status **"Assinado"** (no lugar de Pronto), selo **"🎓 Com o mentor"**, custo estimado nas duas opções de nova análise à IA e **"Saldo"** no lugar de créditos.
+  - **Tópicos 5, 7, 8, 9 e 10**: selos `✦` (IA) e `✎` (anotação) nas fotos, vídeos + PDFs do pendrive, medidas manuais incluídas em **Medidas do aparelho × referência**, atalhos `✎`/`✓`/`✗` direto nas miniaturas de cada órgão, visões **☰ Por órgão** e **📄 Como vai ficar** (com `Escolher fotos da prancha` e `×`), e aprendizado alimentado por anotações e mentores (com peso maior).
+  - **Tópicos 12, 13, 15 e 16**: nome padronizado `laudo_ultrassonografico_Paciente.pdf`, retificação liberando também dados/anotações, **Envio de laudos** corrigido de *Minha conta* para **Clínica → Dados e funcionamento → Envio de laudos** (com acessos dos links e histórico de envios), preservação de aprendizados ao excluir exame, e filtro dinâmico nos **Registros de atividade**.
+  - **Tópicos 17 e 18**: mentoria completa (**🎓 Enviar ao mentor para revisão / para ensino**, rascunho do mentor, miniaturas com marcações do mentorado e anotações, *Confirmar os órgãos sugeridos*, limite de revisões e e-mail no perfil, *Marcar todos como lidos* no sino) e editor de imagens (**Órgão** vazio na foto ampliada / preenchido na miniatura, sugestão pela régua, `📐 Calibrar`, caixa nos 4 cantos ou arrastável, mover foto de órgão e botão `👁 Ocultar/Mostrar anotações`).
 
 ### 26/11/2026 — Claude (versão 0.10.29; a 0.10.28 foi publicada por fora)
 - Situação "Pronto" aparece como **"Assinado"** (`exames.tsx`); selo **"🎓 Com o mentor"** na lista de exames (`comMentor` no
