@@ -14,3 +14,5 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.9** — 25/11/2026, 13:46:16 — Prancha: fotos associadas aos órgãos primeiro, na ordem dos órgãos
 - **0.10.10** — 25/11/2026, 15:42:29 — Registro de exames excluídos (quem, quando, o que havia) e telas Exames excluídos (clínica) e Exclusões (sistema)
 - **0.10.11** — 25/11/2026, 16:17:40 — Registro geral de atividades (exclusão, assinatura, retificação, análise pedida, pendrive, usuários, configurações, créditos) com tela e filtro por tipo
+- **0.10.12** — 26/11/2026, 03:10:34 — Manual do cliente (Ajuda) atualizado com as funções novas
+- **0.10.13** — 26/11/2026, 03:35:06 — Teste do layout no CI: login com espera quando atinge o limite por minuto

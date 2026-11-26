@@ -8,11 +8,12 @@ type Topico = { id: string; titulo: string; palavras: string; conteudo: ReactNod
 /** Manual do que o AutoLaudoVet já faz, escrito para as clínicas. */
 const TOPICOS: Topico[] = [
   {
-    id: 'primeiro-acesso', titulo: '1. Primeiro acesso e senha', palavras: 'login entrar senha provisória trocar celular',
+    id: 'primeiro-acesso', titulo: '1. Primeiro acesso, senha e menu da conta', palavras: 'login entrar senha provisória trocar celular menu conta iniciais clínica',
     conteudo: (
       <>
         <p>Você recebe do administrador da clínica um <b>e-mail</b> e uma <b>senha provisória</b>. No primeiro acesso, o sistema pede para criar a sua senha (mínimo de 8 caracteres).</p>
         <ul>
+          <li>No canto superior, o círculo com as <b>suas iniciais</b> abre o menu rápido: Minha conta, Ajuda e, para o administrador, Configurações da clínica, Usuários e Registros de atividade.</li>
           <li>Para trocar a senha depois: <b>Minha conta → Senha</b>.</li>
           <li>No celular, atenção à primeira letra maiúscula automática do teclado: a senha diferencia maiúsculas de minúsculas.</li>
           <li>O sistema funciona no navegador do computador e do celular; no celular, use "Adicionar à tela inicial" para abrir como um app.</li>
@@ -29,37 +30,55 @@ const TOPICOS: Topico[] = [
         <ul>
           <li><b>Endereço IP:</b> o do servidor (a clínica recebe essa informação na instalação).</li>
           <li><b>Porta:</b> 2345.</li>
-          <li><b>Título AE:</b> o da sua clínica, mostrado na tela <b>Exames</b> enquanto não houver exames e em <b>Clínica</b>.</li>
+          <li><b>Título AE:</b> o da sua clínica, mostrado na tela <b>Exames</b> ("Configurar o ultrassom") e nas configurações da clínica.</li>
         </ul>
         <p>Use o botão de teste de conexão do aparelho (C-ECHO) para conferir. Depois, é só enviar o exame pelo aparelho: ele aparece na lista de Exames em alguns segundos.</p>
       </>
     ),
   },
   {
-    id: 'exames', titulo: '3. Lista de exames e status', palavras: 'lista status fila pendente gerando revisão pronto erro urgente',
+    id: 'exames', titulo: '3. Lista de exames e status', palavras: 'lista status fila pendente gerando revisão pronto erro urgente buscar abd rep smp abdominal',
     conteudo: (
       <>
-        <p>Os exames aparecem por ordem de chegada, com abas por status:</p>
+        <p>Os exames aparecem por ordem de chegada, com abas por status (o número ao lado mostra quantos há em cada uma):</p>
         <ul>
-          <li><b>Aguardando dados:</b> a clínica está no modo manual; complete os dados e toque em "Gerar pré-laudo".</li>
+          <li><b>Aguardando dados:</b> falta alguém completar os dados e tocar em "Gerar pré-laudo" (clínica no modo manual ou com informações adicionais obrigatórias).</li>
           <li><b>Na fila:</b> esperando a vez da IA (urgentes passam na frente).</li>
           <li><b>Gerando:</b> a IA está analisando as imagens.</li>
           <li><b>Aguardando revisão:</b> o pré-laudo está pronto para o veterinário revisar.</li>
           <li><b>Pronto:</b> laudo aprovado e assinado, pode ser enviado.</li>
           <li><b>Erro:</b> a geração falhou (o motivo aparece no exame); toque em "Gerar de novo".</li>
         </ul>
-        <p>A lista se atualiza sozinha. No topo aparece o <b>saldo de créditos</b> para pré-laudos.</p>
+        <p>Use a <b>busca</b> para achar por paciente, responsável, espécie, tipo ou data. O tipo aparece abreviado: <b>ABD</b> (abdominal), <b>REP</b> (reprodução) e <b>SMP</b> (partes pequenas). A lista se atualiza sozinha e mostra o <b>saldo de créditos</b> no topo.</p>
       </>
     ),
   },
   {
-    id: 'exame', titulo: '4. Tela do exame: dados e informações adicionais', palavras: 'paciente responsável raça peso castrado jejum suspeita solicitante texto livre ditar',
+    id: 'pendrive', titulo: '4. Enviar exame pelo pendrive ou pelo celular', palavras: 'pendrive usb pasta enviar exame vídeo mp4 pdf jpg jpeg aparelho exportar celular fotos soltas',
+    conteudo: (
+      <>
+        <p>Use quando o aparelho não enviou o exame por DICOM, para ter as fotos em melhor qualidade e os vídeos, ou para mandar fotos do celular.</p>
+        <p><b>No computador</b> (Exames → <b>+ Enviar exame</b>):</p>
+        <ol className="list-decimal space-y-1 pl-5">
+          <li>No ultrassom, exporte o exame para o pendrive. Ele cria uma pasta por animal (ex.: <b>JADE20261105-083824-3E0C</b>).</li>
+          <li>Toque em <b>Escolher pasta</b> e escolha a pasta do animal (ou o pendrive inteiro, com vários exames), ou em <b>Escolher arquivos soltos</b> para selecionar fotos e PDF.</li>
+          <li>Confira a lista: o sistema lê o relatório PDF do aparelho e preenche paciente, responsável, idade, medidas e comentários. Se faltar o nome do animal, digite.</li>
+          <li>Marque <b>Enviar também os vídeos</b> se quiser guardá-los no exame (eles não vão para a IA). Toque em <b>Enviar</b>.</li>
+        </ol>
+        <p><b>No celular:</b> toque em <b>Escolher fotos e arquivos</b> e selecione de uma vez as fotos (.jpg/.jpeg), o relatório (.pdf) e os vídeos (.mp4). Informe o nome do animal e o tipo do exame.</p>
+        <p>Se a internet cair, envie de novo: continua de onde parou. Se o mesmo exame já veio pelo DICOM, os dois são juntados (sem duplicar); as fotos do pendrive só substituem as do DICOM antes do primeiro pré-laudo.</p>
+      </>
+    ),
+  },
+  {
+    id: 'exame', titulo: '5. Tela do exame: dados e informações adicionais', palavras: 'paciente responsável raça peso castrado jejum suspeita solicitante texto livre ditar obrigatório relatório',
     conteudo: (
       <>
         <ul>
-          <li><b>Fotos:</b> role para o lado ou toque em "Ver todas"; um toque amplia.</li>
-          <li><b>✎ Editar:</b> corrija o que foi digitado no aparelho (nome, espécie, raça, sexo, castrado, idade, peso), o responsável (nome, WhatsApp, e-mail) e o exame (tipo, jejum, suspeita, solicitante com CRMV, histórico). Toque em <b>Salvar</b>.</li>
-          <li><b>Informações adicionais:</b> escreva ou dite (microfone do teclado) o que souber: suspeita, histórico, o que o responsável relatou. A IA organiza esse texto nos campos vazios e o usa na análise.</li>
+          <li><b>Fotos:</b> role para o lado ou toque em "Ver todas"; um toque amplia e as setas passam para a próxima.</li>
+          <li><b>Dados do paciente e do exame:</b> corrija o que foi digitado no aparelho (nome, espécie, raça, sexo, castrado, idade, peso), o responsável (nome, WhatsApp, e-mail) e o exame (tipo, jejum, suspeita, clínica e veterinário solicitante com CRMV, histórico).</li>
+          <li><b>Informações adicionais:</b> escreva ou dite (microfone do teclado) o que souber: suspeita, histórico, o que o responsável relatou. A IA organiza esse texto nos campos vazios e o usa na análise. A clínica pode tornar esse campo <b>obrigatório</b>.</li>
+          <li><b>Relatórios do aparelho (PDF):</b> os relatórios que vieram do pendrive ficam no exame para consulta.</li>
           <li><b>Marcar urgente:</b> o exame passa na frente na fila.</li>
           <li>Para gerar o pré-laudo bastam <b>espécie</b> e <b>tipo de exame</b>; os demais campos aparecem como recomendados.</li>
           <li>Se sair com alterações não salvas, o sistema avisa.</li>
@@ -68,14 +87,19 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'ia', titulo: '5. Pré-laudo com IA', palavras: 'ia gerar atualizar refazer análise completa fotos repetidas referência medidas',
+    id: 'ia', titulo: '6. Pré-laudo com IA e alertas', palavras: 'ia gerar atualizar refazer análise completa nova análise fotos repetidas alerta urgente atenção',
     conteudo: (
       <>
-        <p>A IA analisa as fotos do exame (até 15, sem repetir fotos iguais), os dados do paciente, as medidas do aparelho e os <b>valores de referência</b> da espécie e do peso, e escreve o pré-laudo no padrão brasileiro: condições técnicas, cada órgão (normal, alterado ou não visibilizado), impressão diagnóstica, diferenciais, recomendações e sugestão de fotos para a prancha.</p>
+        <p>A IA analisa as fotos do exame (sem repetir fotos iguais, priorizando as que têm medidas ou anotações do operador), os dados do paciente, as medidas do aparelho e os <b>valores de referência</b> da espécie e do peso. Ela escreve o pré-laudo no padrão brasileiro: condições técnicas, cada órgão (normal, alterado ou não visibilizado), impressão diagnóstica, diferenciais, recomendações e as fotos de cada órgão.</p>
         <ul>
-          <li><b>Atualizar pré-laudo:</b> depois de mudar dados ou o texto livre, a IA ajusta o pré-laudo <b>sem reanalisar as fotos</b> (mais rápido e mais barato). Se chegaram fotos novas, só elas são analisadas.</li>
-          <li><b>Refazer análise completa:</b> a IA olha todas as fotos de novo.</li>
+          <li><b>Pedir nova análise à IA</b> (link na tela do exame), com duas opções:
+            <ul className="list-disc pl-5">
+              <li><b>Atualizar com o que mudou:</b> depois de mudar dados ou as informações adicionais, a IA ajusta o pré-laudo <b>sem reanalisar as fotos</b> (mais rápido e mais barato). Se chegaram fotos novas, só elas são analisadas.</li>
+              <li><b>Refazer análise completa:</b> a IA olha todas as fotos de novo (custo de um pré-laudo novo).</li>
+            </ul>
+          </li>
           <li>Se nada mudou, o sistema avisa e não cobra.</li>
+          <li><b>Alerta:</b> quando a IA vê algo que pede atenção imediata, o pré-laudo mostra um aviso em vermelho (ou amarelo, se a confiança for média ou baixa), com o que ela viu e as fotos. Se discordar, toque em <b>Discordo deste alerta</b> e diga o motivo.</li>
           <li>A IA não inventa órgão que não aparece nas fotos: ele fica como "não visibilizado", com o motivo.</li>
           <li>O pré-laudo é um <b>rascunho</b>: só vale depois da revisão e da assinatura do veterinário.</li>
         </ul>
@@ -83,7 +107,7 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'referencias', titulo: '6. Medidas e valores de referência', palavras: 'medidas referência acima abaixo faixa normal rim parede',
+    id: 'referencias', titulo: '7. Medidas e valores de referência', palavras: 'medidas referência acima abaixo faixa normal rim parede',
     conteudo: (
       <>
         <p>Na tela do exame, o quadro <b>Medidas do aparelho × referência</b> mostra cada medida ao lado da faixa normal para a espécie e o peso do paciente, com destaque <b>▲ Acima</b> ou <b>▼ Abaixo</b>. Abaixo dele, "Valores de referência" lista todas as referências do paciente (passe o mouse para ver a fonte).</p>
@@ -92,83 +116,126 @@ const TOPICOS: Topico[] = [
     ),
   },
   {
-    id: 'revisao', titulo: '7. Revisão e assinatura', palavras: 'revisar normal alterado prancha assinar crmv aprovar',
+    id: 'revisao', titulo: '8. Revisão do laudo', palavras: 'revisar normal alterado não visibilizado frase pronta laudo fácil ditado voz falar padronizar detalhes documento diferenciais salvar',
     conteudo: (
       <>
         <ul>
           <li>Em cada órgão, escolha <b>Normal</b> (aplica a frase padrão de normalidade), <b>Alterado</b> ou <b>Não visibilizado</b>, e edite o texto.</li>
-          <li>Edite condições técnicas, impressão, diferenciais e recomendações (um por linha).</li>
-          <li><b>Escolher fotos:</b> monte a prancha do laudo (quantas fotos quiser; o sistema sugere 8, uma por órgão).</li>
-          <li><b>Salvar revisão</b> guarda o rascunho; <b>Prévia do PDF</b> mostra como vai ficar (marcado "RASCUNHO").</li>
-          <li><b>Aprovar e assinar:</b> só para veterinário com <b>CRMV e UF</b> cadastrados em Minha conta. Depois de assinado, o laudo não pode mais ser editado.</li>
-          <li>Em <b>Minha conta</b> você pode enviar a <b>imagem da sua assinatura</b>, que sai no PDF.</li>
+          <li><b>Frase pronta…:</b> escolha uma frase do banco de frases para o órgão; ela preenche a descrição e a impressão diagnóstica.</li>
+          <li><b>Mais detalhes</b> (em cada órgão): a descrição, as imagens que a IA usou para o órgão e o <b>ditado por voz</b>. Toque em <b>🎤 Falar</b>, diga do seu jeito o que quer registrar e toque em <b>Padronizar texto</b>: a IA reescreve no padrão do laudo, sem acrescentar nada. Confira e toque em <b>Usar no laudo</b>. Cada padronização usa uma pequena parte do saldo; o áudio não é guardado.</li>
+          <li>Edite condições técnicas, impressão, diferenciais e recomendações (um por linha). Os <b>diagnósticos diferenciais</b> podem ser ocultados do laudo com a chave "Exibir no laudo".</li>
+          <li><b>Editar como documento:</b> mostra o laudo como vai sair, para editar direto no texto.</li>
+          <li><b>Salvar:</b> um botão só guarda o texto do laudo e os dados do exame.</li>
+          <li><b>Prévia do PDF</b> mostra como vai ficar (marcado "RASCUNHO").</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'pdf', titulo: '8. PDF, verificação e retificação', palavras: 'pdf qr code verificação autenticidade retificar corrigir',
+    id: 'prancha', titulo: '9. Prancha de fotos', palavras: 'prancha fotos escolher imagens laudo ordem órgãos',
     conteudo: (
       <>
         <ul>
-          <li>O PDF traz o logo e os dados da clínica, a identificação do paciente, os achados, a impressão, a assinatura e a prancha de fotos.</li>
-          <li>No rodapé há um <b>código de verificação</b> e um <b>QR code</b>: quem receber o laudo confirma a autenticidade sem precisar de login.</li>
-          <li><b>Retificar:</b> para corrigir um laudo assinado, informe o motivo; a versão anterior fica marcada como retificada e uma nova versão abre para revisar e assinar.</li>
+          <li>Toque em <b>Escolher fotos</b> para montar a prancha do laudo: não há limite de fotos.</li>
+          <li>O sistema já sugere <b>todas as fotos associadas aos órgãos</b>, na ordem dos órgãos do laudo, e depois as que a IA destacou.</li>
+          <li>Toque em uma foto para incluir ou tirar; <b>Concluir escolha</b> guarda a seleção. No modo documento, use "Tirar da prancha".</li>
+          <li>O número de fotos por linha e o fundo da prancha são escolhidos na Aparência do PDF.</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'envio', titulo: '9. Enviar o laudo (WhatsApp, e-mail, link)', palavras: 'compartilhar whatsapp email link pdf responsável tutor smtp gmail senha de app',
+    id: 'aprendizado', titulo: '10. Como a IA aprende com a sua revisão', palavras: 'aprender treinar ia corrigir órgão imagem confirmar discordar alerta estilo',
+    conteudo: (
+      <>
+        <p>As suas correções deixam os próximos pré-laudos mais certos:</p>
+        <ul>
+          <li><b>Imagens do órgão:</b> em "Mais detalhes", toque em <b>É este órgão</b> ou <b>Não é este órgão</b> (e escolha o certo). Em "Ver as outras imagens do exame", marque as que mostram o órgão. A IA passa a evitar a mesma confusão.</li>
+          <li><b>Discordo deste alerta:</b> diga se foi falso alarme, achado diferente ou se as imagens não permitem concluir. Alertas assim passam a ser evitados.</li>
+          <li><b>Ditado padronizado:</b> o texto que você usa ensina a IA a escrever no estilo da sua clínica.</li>
+        </ul>
+        <p>Os dados dos pacientes não são compartilhados: só as correções, de forma resumida, ajudam a melhorar a IA.</p>
+      </>
+    ),
+  },
+  {
+    id: 'assinatura', titulo: '11. Aprovar e assinar', palavras: 'assinar crmv aprovar uf assinatura digitalizada veterinário',
+    conteudo: (
+      <>
+        <ul>
+          <li><b>Aprovar e assinar</b> fica na barra da revisão. Antes de assinar, o sistema pede para você confirmar que conferiu tudo com as imagens.</li>
+          <li>Só pode assinar o <b>veterinário</b> com <b>CRMV e UF</b> cadastrados em <b>Minha conta → Dados profissionais</b>.</li>
+          <li>Em <b>Minha conta</b> você também envia a <b>imagem da sua assinatura</b>, que sai no PDF.</li>
+          <li>Depois de assinado, o laudo não pode mais ser editado (veja Retificar).</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'pdf', titulo: '12. PDF, verificação e retificação', palavras: 'pdf qr code verificação autenticidade retificar corrigir visualizar imprimir',
+    conteudo: (
+      <>
+        <ul>
+          <li><b>Visualizar Laudo em PDF</b> abre o laudo assinado em outra aba, para ver ou imprimir. O arquivo sai com o nome do paciente.</li>
+          <li>O PDF traz o logo e os dados da clínica, a identificação do paciente, os achados, a impressão, a assinatura e a prancha de fotos.</li>
+          <li>No rodapé pode haver um <b>código de verificação</b> e um <b>QR code</b>: quem receber o laudo confirma a autenticidade sem precisar de login (a clínica liga ou desliga nas configurações).</li>
+          <li><b>Retificar</b> (veterinário ou administrador): para corrigir um laudo assinado, informe o motivo; a versão anterior fica marcada como retificada e uma nova versão abre para revisar e assinar.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'envio', titulo: '13. Enviar o laudo (WhatsApp, e-mail, link)', palavras: 'compartilhar whatsapp email link pdf responsável tutor smtp gmail senha de app revogar',
     conteudo: (
       <>
         <p>No laudo assinado, use <b>Compartilhar</b>:</p>
         <ul>
-          <li><b>WhatsApp:</b> abre a conversa com a mensagem e o link do laudo (telefone do responsável já preenchido).</li>
-          <li><b>E-mail:</b> envia o PDF anexado pelo <b>seu próprio e-mail</b>. Configure em Minha conta → Envio de laudos → "Seu e-mail de saída (SMTP)". Em Gmail e Outlook, use uma <b>senha de app</b>; teste com "Enviar teste".</li>
-          <li><b>Copiar link / Baixar PDF;</b> no celular, "Enviar PDF" manda o arquivo pelo compartilhar do aparelho.</li>
-          <li>O link do responsável abre o laudo sem login, vale por um prazo (padrão 30 dias) e pode ser <b>revogado</b>.</li>
-          <li>Em Minha conta você escolhe quais opções aparecem no Compartilhar.</li>
+          <li><b>WhatsApp:</b> abre a conversa com a mensagem e o link do laudo (telefone do responsável já preenchido; em branco, você escolhe o contato).</li>
+          <li><b>E-mail:</b> envia o PDF anexado pelo <b>seu próprio e-mail</b>. Configure em Minha conta → Envio de laudos → "E-mail (SMTP próprio)". Em Gmail e Outlook, use uma <b>senha de app</b>; teste com "Enviar teste".</li>
+          <li><b>Copiar link / Baixar PDF.</b></li>
+          <li><b>Compartilhar por app:</b> manda o arquivo PDF pelos aplicativos do aparelho. Só aparece quando o acesso é seguro (endereço com <b>https</b>).</li>
+          <li>O link do responsável abre o laudo sem login, vale por um prazo (padrão 30 dias) e pode ser <b>revogado</b> em "Links ativos".</li>
+          <li>Em Minha conta você escolhe quais opções aparecem no Compartilhar e a validade dos links.</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'creditos', titulo: '10. Créditos para pré-laudos', palavras: 'saldo créditos recarga extrato cobrança custo',
+    id: 'creditos', titulo: '14. Créditos para pré-laudos', palavras: 'saldo créditos recarga extrato cobrança custo',
     conteudo: (
       <>
-        <p>Cada pré-laudo gerado pela IA usa créditos da clínica, de acordo com o tamanho do exame. Atualizações sem fotos custam menos; <b>erro e "nada mudou" não cobram</b>.</p>
+        <p>Cada pré-laudo gerado pela IA usa créditos da clínica, de acordo com o tamanho do exame. Atualizações sem fotos e padronizações de ditado custam menos; <b>erro e "nada mudou" não cobram</b>.</p>
         <ul>
-          <li>O saldo e a estimativa de quantos pré-laudos ele rende aparecem na tela <b>Exames</b>.</li>
-          <li>O administrador da clínica vê o <b>extrato</b> em <b>Clínica</b>, e cada pré-laudo mostra o valor cobrado.</li>
+          <li>O saldo e a estimativa de quantos pré-laudos ele rende aparecem na tela <b>Exames</b>; com saldo baixo, aparece um aviso.</li>
+          <li>O administrador da clínica vê o <b>extrato</b> nas configurações da clínica, e cada pré-laudo mostra o valor cobrado.</li>
           <li>Sem saldo, o pré-laudo não é gerado. Para recarregar, fale com o suporte.</li>
         </ul>
       </>
     ),
   },
   {
-    id: 'pendrive', titulo: '12. Enviar exame pelo pendrive', palavras: 'pendrive usb manual pasta enviar exame vídeo mp4 pdf aparelho exportar',
+    id: 'excluir', titulo: '15. Excluir um exame', palavras: 'excluir apagar exame remover',
     conteudo: (
       <>
-        <p>Use quando o aparelho não enviou o exame por DICOM, ou para ter as fotos em melhor qualidade e os vídeos.</p>
-        <ol className="list-decimal space-y-1 pl-5">
-          <li>No ultrassom, exporte o exame para o pendrive. Ele cria uma pasta por animal (ex.: <b>JADE20261105-083824-3E0C</b>).</li>
-          <li>No computador, abra <b>Exames → Enviar exame do pendrive</b> e escolha a pasta do animal (ou o pendrive inteiro, com vários exames).</li>
-          <li>Confira a lista: o sistema lê o relatório PDF do aparelho e preenche paciente, responsável, idade, medidas e comentários. Se faltar o nome, digite.</li>
-          <li>Marque <b>Enviar também os vídeos</b> se quiser guardá-los no exame (eles não vão para a IA). Clique em <b>Enviar</b>.</li>
-        </ol>
-        <p>Se a internet cair, envie de novo: o que já chegou não é reenviado. Se o mesmo exame já veio pelo DICOM, os dois são juntados (sem duplicar); as fotos do pendrive só substituem as do DICOM antes do primeiro pré-laudo.</p>
+        <p>O botão <b>Excluir exame</b> fica no fim da tela do exame. Ele apaga o exame por completo: pré-laudos, laudos e os arquivos enviados pelo pendrive. <b>Não tem volta.</b></p>
+        <ul>
+          <li>O veterinário pode excluir exames ainda sem laudo assinado; exame com laudo assinado, só o <b>administrador da clínica</b>.</li>
+          <li>Não dá para excluir enquanto a IA está gerando.</li>
+          <li>Toda exclusão fica guardada nos Registros de atividade (quem excluiu, quando e o que havia).</li>
+        </ul>
       </>
     ),
   },
   {
-    id: 'admin-clinica', titulo: '11. Administração da clínica', palavras: 'usuários perfis veterinário administrador logo dados clínica automático manual',
+    id: 'admin-clinica', titulo: '16. Administração da clínica', palavras: 'usuários perfis veterinário administrador logo dados clínica automático manual aparência pdf cores registros atividade obrigatório qr',
     conteudo: (
       <>
-        <p>Para o <b>administrador da clínica</b>:</p>
+        <p>Para o <b>administrador da clínica</b>, em <b>Configurações da clínica</b>:</p>
         <ul>
+          <li><b>Dados e Funcionamento:</b> dados do cabeçalho do laudo e <b>logo</b>; se o pré-laudo é gerado <b>automaticamente</b> ao receber o exame; se as <b>informações adicionais</b> são obrigatórias; e se o laudo mostra o <b>QR code</b> de verificação.</li>
+          <li><b>Aparência do PDF:</b> cores, estilo dos títulos (faixa com fundo, caixa com borda ou texto colorido), cabeçalho, ordem e visibilidade das seções, fotos por linha na prancha, posição da assinatura e do QR, texto justificado, rodapé e aviso final. "Voltar ao padrão" desfaz as personalizações.</li>
           <li><b>Usuários:</b> adicione pessoas (com senha provisória), escolha o perfil (Usuário, Veterinário, Administrador) e desative quem saiu. Ultrassonografistas que atendem outras clínicas usam o mesmo e-mail e senha.</li>
-          <li><b>Clínica:</b> dados do cabeçalho do laudo, <b>logo</b>, e se o pré-laudo é gerado <b>automaticamente</b> ao receber o exame ou <b>manualmente</b>.</li>
+          <li><b>Registros de atividade:</b> quem fez o quê e quando (exame enviado, análise pedida à IA, laudo assinado e retificado, alerta discordado, exame excluído, usuários, configurações, créditos), com filtro por tipo, data e busca.</li>
         </ul>
       </>
     ),

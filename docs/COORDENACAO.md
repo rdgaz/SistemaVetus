@@ -17,7 +17,7 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 
 | Agente | Desde | Tarefa | Arquivos |
 |---|---|---|---|
-| — | — | (nenhuma tarefa em andamento) | — |
+| Antigravity | 26/11 | Clínicas de teste (`Clinica.Teste`): isolamento de correções da IA, financeiro/cobrança com filtro e registros | `Dados/Entidades.cs`, nova migração `20261126034000_ClinicaTeste.cs`, `VetusDbModelSnapshot.cs`, `Servicos/Ia/Aprendizados.cs`, `Servicos/Cobranca.cs`, `Endpoints/AdminEndpoints.cs`, `Endpoints/CobrancaEndpoints.cs`, `Endpoints/ExameEndpoints.cs`, `Endpoints/RegistrosEndpoints.cs`, `paginas/AdminClinicas.tsx`, `paginas/AdminCobranca.tsx`, `paginas/Financeiro.tsx`, `paginas/Registros.tsx` |
 
 ---
 
@@ -36,10 +36,27 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
   com "Atualizar com o que mudou" e "Refazer análise completa".
 - **Pendente de decisão**: banco de frases e padrão de escrita por clínica (proposta: o atual vira da Gabriela; clínicas novas
   com padrão neutro e importação de .docx).
+- **Pendente de decisão**: aprendizado de imagens e marcações vermelhas nas alterações — ver
+  [PLANO-TREINAMENTO-IMAGENS.md](PLANO-TREINAMENTO-IMAGENS.md).
 
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (versão 0.10.13)
+- CI: `tests/layout.js` falhava em "veterinário não altera / pode ver o layout" porque o login do veterinário batia no
+  limite de 10 logins por minuto por IP (429) depois dos outros testes. Ganhou o mesmo `entrar()` com espera de 60 s e nova
+  tentativa dos demais testes. Só teste; a API não mudou.
+
+### 26/11/2026 — Claude (versão 0.10.12)
+- Manual do cliente (`paginas/Ajuda.tsx`) atualizado com o que mudou até a 0.10.11: menu da conta, envio pelo celular e
+  arquivos soltos, informações adicionais obrigatórias, nova análise (duas opções), alertas e "Discordo", frase pronta,
+  ditado e padronização, editar como documento, prancha sem limite, como a IA aprende, Salvar único, excluir exame,
+  Aparência do PDF e Registros de atividade. Tópicos renumerados (1 a 16).
+
+### 26/11/2026 — Claude (sem deploy)
+- Criado `docs/PLANO-TREINAMENTO-IMAGENS.md`: como o aprendizado de imagens funciona hoje e as etapas propostas
+  (rótulos automáticos, OCR das anotações, gabarito, casos parecidos, modelo próprio) e as marcações vermelhas. Só documento.
 
 ### 25/11/2026 — Claude (versão 0.10.11)
 - **Registro geral de atividades** substitui o registro só de exclusões: tabela `registros_atividade` (migração

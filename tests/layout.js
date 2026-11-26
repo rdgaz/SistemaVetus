@@ -22,17 +22,26 @@ class Navegador {
     const tipo = r.headers.get('content-type') || '';
     return { status: r.status, tipo, dados: tipo.includes('json') ? await r.json() : Buffer.from(await r.arrayBuffer()) };
   }
+  /** Login. O sistema limita 10 tentativas por minuto por IP (no CI os testes rodam em sequência): se barrar (429), espera e tenta de novo. */
+  async entrar(email, senha) {
+    for (let i = 0; ; i++) {
+      const r = await this.req('POST', '/api/auth/entrar', { email, senha });
+      if (r.status !== 429 || i >= 2) return r;
+      console.log('  ...limite de logins por minuto atingido; aguardando 60 s');
+      await new Promise((ok) => setTimeout(ok, 60000));
+    }
+  }
 }
 
 (async () => {
   const adm = new Navegador();
-  ok((await adm.req('POST', '/api/auth/entrar', { email: ADMIN_EMAIL, senha: ADMIN_SENHA })).status === 200, 'administrador do sistema entra');
+  ok((await adm.entrar(ADMIN_EMAIL, ADMIN_SENHA)).status === 200, 'administrador do sistema entra');
   const n = Date.now();
   const email = `adm.layout.${n}@teste.local`;
   const c = await adm.req('POST', '/api/admin/clinicas', { nome: `Clínica Layout ${n}`, administrador: { nome: 'Ana', email } });
   const nav = new Navegador();
   const prov = c.dados.administrador.senhaProvisoria;
-  await nav.req('POST', '/api/auth/entrar', { email, senha: prov });
+  await nav.entrar(email, prov);
   await nav.req('PUT', '/api/auth/senha', { senhaAtual: prov, novaSenha: `Senha-${n}` });
   nav.clinica = c.dados.id;
 
@@ -79,7 +88,7 @@ class Navegador {
   // só o administrador da clínica altera
   const vet = await nav.req('POST', '/api/clinica/usuarios', { nome: 'Vera', email: `vet.layout.${n}@teste.local`, perfil: 'Veterinario', crmv: '1', crmvUf: 'sp' });
   const v = new Navegador();
-  await v.req('POST', '/api/auth/entrar', { email: `vet.layout.${n}@teste.local`, senha: vet.dados.senhaProvisoria });
+  await v.entrar(`vet.layout.${n}@teste.local`, vet.dados.senhaProvisoria);
   v.clinica = c.dados.id;
   ok((await v.req('PUT', '/api/clinica/layout', modelo)).status === 403, 'veterinário não altera o layout');
   ok((await v.req('GET', '/api/clinica/layout')).status === 200, 'veterinário pode ver o layout');
