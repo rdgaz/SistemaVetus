@@ -70,9 +70,20 @@ public static class AnotacaoEndpoints
             existente.UsuarioNome = u.Nome;
             existente.AtualizadoEm = DateTime.UtcNow;
 
-            // se a anotação identifica o órgão e a foto ainda não tem rótulo manual, já grava o rótulo de treino automaticamente
-            if (DesenhoAnotacao.InferirOrgaoRotulo(itens) is { } orgaoInferido &&
-                !await db.RotulosImagem.AnyAsync(x => x.ExameId == id && x.Foto == foto))
+            // a anotação identifica o órgão: grava o rótulo de treino; se a foto já tinha rótulo com outro órgão, vale a última
+            // escolha (correção quando a IA tinha dito outro órgão)
+            var rotuloAtual = await db.RotulosImagem.FirstOrDefaultAsync(x => x.ExameId == id && x.Foto == foto);
+            if (DesenhoAnotacao.InferirOrgaoRotulo(itens) is { } orgaoEscolhido && rotuloAtual is not null
+                && !string.Equals(rotuloAtual.OrgaoCorreto, orgaoEscolhido, StringComparison.OrdinalIgnoreCase))
+            {
+                rotuloAtual.OrgaoCorreto = orgaoEscolhido;
+                rotuloAtual.Tipo = rotuloAtual.OrgaoIa is not null && !string.Equals(rotuloAtual.OrgaoIa, orgaoEscolhido, StringComparison.OrdinalIgnoreCase)
+                    ? "correcao" : "confirmacao";
+                rotuloAtual.UsuarioId = u.Id;
+                rotuloAtual.UsuarioNome = u.Nome;
+                rotuloAtual.CriadoEm = DateTime.UtcNow;
+            }
+            if (DesenhoAnotacao.InferirOrgaoRotulo(itens) is { } orgaoInferido && rotuloAtual is null)
             {
                 var versao = await db.Laudos.Where(l => l.ExameId == id).MaxAsync(l => (int?)l.Versao) ?? 0;
                 db.RotulosImagem.Add(new RotuloImagem

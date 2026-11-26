@@ -607,3 +607,20 @@ public class RevisaoMentor
     public DateTime? ConcluidaEm { get; set; }
     public DateTime? CanceladaEm { get; set; }
 }
+
+/// <summary>
+/// Escala das fotos (pixels por cm) calibrada por toque na régua da imagem, quando a régua não é detectada sozinha.
+/// Vale para a clínica inteira, por aparelho e tamanho de imagem (decisão do usuário em 26/11/2026).
+/// </summary>
+public class CalibracaoImagem
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ClinicaId { get; set; }
+    public string Equipamento { get; set; } = "";
+    public int Largura { get; set; }
+    public int Altura { get; set; }
+    public decimal PxPorCm { get; set; }
+    public Guid UsuarioId { get; set; }
+    public string UsuarioNome { get; set; } = "";
+    public DateTime AtualizadoEm { get; set; } = DateTime.UtcNow;
+}

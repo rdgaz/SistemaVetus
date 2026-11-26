@@ -19,7 +19,9 @@ public record ItemAnotacao(
     double Y2 = 0,
     decimal? Valor = null,
     string? Rotulo = null,
-    string? Orgao = null);
+    string? Orgao = null,
+    // tipo "quadro": onde fica a caixa das medidas (se, sd, ie, id = cantos; livre = X/Y do canto superior esquerdo da caixa)
+    string? Canto = null);
 
 /// <summary>
 /// Valida, converte e desenha (em memória, com SkiaSharp) as anotações manuais no padrão visual do aparelho de ultrassom:
@@ -77,9 +79,37 @@ public static class DesenhoAnotacao
                     X1: Clamp(it.X1), Y1: Clamp(it.Y1), X2: Clamp(it.X2), Y2: Clamp(it.Y2),
                     Valor: Math.Round(it.Valor.Value, 2), Rotulo: rot, Orgao: orgao));
             }
+            else if (tipo == "quadro")
+            {
+                var canto = (it.Canto ?? "").Trim().ToLowerInvariant();
+                if (canto is not ("se" or "sd" or "ie" or "id" or "livre")) return ([], "Posição da caixa de medidas inválida.");
+                limpos.RemoveAll(x => x.Tipo == "quadro"); // uma posição por foto: vale a última
+                limpos.Add(canto == "livre"
+                    ? new ItemAnotacao("quadro", X: Math.Clamp(double.IsFinite(it.X) ? it.X : 0.7, 0, 0.98), Y: Math.Clamp(double.IsFinite(it.Y) ? it.Y : 0.8, 0, 0.98), Canto: "livre")
+                    : new ItemAnotacao("quadro", Canto: canto));
+            }
             else return ([], "Tipo de anotação inválido.");
         }
         return (limpos, null);
+    }
+
+    /// <summary>
+    /// Canto da caixa quando o veterinário não escolheu: inferior direito (padrão do aparelho), a não ser que ele cubra um ponto
+    /// de medida; aí o primeiro canto livre (inferior esquerdo, superior direito, superior esquerdo). Igual à regra da tela.
+    /// </summary>
+    public static string CantoAutomatico(IEnumerable<ItemAnotacao> medidas)
+    {
+        var pontos = medidas.SelectMany(m => new[] { (m.X1, m.Y1), (m.X2, m.Y2) }).ToList();
+        static bool Cobre(string c, (double X, double Y) p) => c switch
+        {
+            "id" => p.X > 0.72 && p.Y > 0.78,
+            "ie" => p.X < 0.28 && p.Y > 0.78,
+            "sd" => p.X > 0.72 && p.Y < 0.22,
+            _ => p.X < 0.28 && p.Y < 0.22,
+        };
+        foreach (var c in new[] { "id", "ie", "sd", "se" })
+            if (!pontos.Any(p => Cobre(c, p))) return c;
+        return "id";
     }
 
     /// <summary>Infere o rótulo de órgão para treino a partir do órgão informado ou do texto escrito na foto.</summary>
@@ -275,11 +305,20 @@ public static class DesenhoAnotacao
             var largQuadro = largMax + padX * 2;
             var altQuadro = linhas.Count * altLinha + padY * 1.6f;
             var margem = 12f * escala;
-            var ret = new SKRect(
-                Math.Max(margem, largCanvas - largQuadro - margem),
-                Math.Max(margem, altCanvas - altQuadro - margem),
-                largCanvas - margem,
-                altCanvas - margem);
+            var quadro = itens.LastOrDefault(x => x.Tipo == "quadro");
+            var canto = quadro?.Canto ?? CantoAutomatico(medidas);
+            float esq, topo;
+            if (canto == "livre")
+            {
+                esq = Limitar((float)(quadro!.X * largCanvas), margem, largCanvas - largQuadro - margem);
+                topo = Limitar((float)(quadro.Y * altCanvas), margem, altCanvas - altQuadro - margem);
+            }
+            else
+            {
+                esq = canto is "se" or "ie" ? margem : Math.Max(margem, largCanvas - largQuadro - margem);
+                topo = canto is "se" or "sd" ? margem : Math.Max(margem, altCanvas - altQuadro - margem);
+            }
+            var ret = new SKRect(esq, topo, esq + largQuadro, topo + altQuadro);
 
             using var pFundo = new SKPaint { Color = new SKColor(0, 10, 18, 195), IsAntialias = true, Style = SKPaintStyle.Fill };
             using var pBorda = new SKPaint { Color = ciano, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = Math.Max(1.3f, 1.7f * escala) };

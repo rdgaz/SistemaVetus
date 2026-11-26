@@ -47,6 +47,8 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 - **Menus (cada coisa num lugar só)**: topo = lugares de trabalho (Exames, Mentoria com contador de revisões, Clínica, Sistema ▾);
   menu da conta = Minha conta, Ajuda, Sair; configurações da clínica em abas (Dados e funcionamento, Aparência do PDF, Usuários,
   Registros de atividade). Tela nova da clínica entra como aba; tela nova do sistema entra no menu Sistema ▾.
+- **Medidas no editor de imagens** (implementado nas versões 0.10.23–0.10.24; calibração vale para a clínica inteira; mover foto pergunta sempre): sugestão de medida sem IA (régua da foto, calibração por toque), posição da caixa das medidas e órgão do
+  editor coerente com o laudo — ver [PLANO-MEDIDAS-ANOTACAO.md](PLANO-MEDIDAS-ANOTACAO.md). Mexe no editor do Antigravity.
 - **Prancha**: sem limite de fotos; sugestão = todas as fotos associadas aos órgãos, na ordem dos órgãos, depois as que a IA destacou.
 - **Revisão**: um botão "Salvar" (texto do laudo + dados do exame) e "Aprovar e assinar" na barra; nova análise à IA num link
   com "Atualizar com o que mudou" e "Refazer análise completa".
@@ -60,6 +62,24 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (versões 0.10.23 e 0.10.24)
+- **Editor de imagens** (plano em `docs/PLANO-MEDIDAS-ANOTACAO.md`; a 0.10.23 foi publicada por fora com este código):
+  - teste da régua: `ferramentas/teste-regua.py` achou a escala em 35 de 35 fotos reais do Mindray Vetus E7;
+  - caixa das medidas com posição (item `quadro`: cantos ou livre, arrastável), na tela e no PDF
+    (`DesenhoAnotacao.CantoAutomatico`);
+  - órgão coerente: ao salvar, pergunta "Mover esta foto para X?" (`Revisao.moverFotoParaOrgao`); o rótulo segue a última escolha;
+  - sugestão de medida sem IA (`src/regua.ts`): régua da imagem, outras medidas da foto ou calibração por toque (tabela
+    `calibracoes_imagem`, migração `20261126103341_CalibracaoImagem`, `Endpoints/CalibracaoEndpoints.cs`, vale para a clínica);
+  - barra do editor com altura fixa (a foto pulava entre o 1º e o 2º toque);
+  - 0.10.24: aberto pela foto ampliada, o órgão começa vazio (antes vinha "Fígado" sem o veterinário perceber) e o texto de órgão
+    escrito na foto (BAÇO, RIM E, VB…) define o órgão (`orgaoDoTexto`).
+- `tests/anotacoes.js`: caixa, calibração e rótulo que acompanha a última escolha.
+
+### 26/11/2026 — Claude (sem deploy)
+- Criado `docs/PLANO-MEDIDAS-ANOTACAO.md`: sugestão de medida sem IA, posição da caixa das medidas e órgão do editor coerente
+  com o laudo. Só documento. O último CI (commit `ca5b190`) falhou em "Build das imagens"; a imagem da plataforma constrói sem
+  erro localmente (sem cache): provável falha passageira de rede, rodar de novo no GitHub.
 
 ### 26/11/2026 — Claude (versão 0.10.22)
 - **Menus sem repetição** (`App.tsx`): topo Exames · Mentoria (contador de revisões pendentes do mentor) · Clínica · Sistema ▾

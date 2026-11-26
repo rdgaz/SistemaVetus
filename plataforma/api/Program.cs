@@ -193,6 +193,7 @@ AnotacaoEndpoints.Mapear(app);
 RegistrosEndpoints.Mapear(app);
 MentoriaEndpoints.Mapear(app);
 RevisaoMentorEndpoints.Mapear(app);
+CalibracaoEndpoints.Mapear(app);
 InternoEndpoints.Mapear(app);
 
 app.MapFallback("/api/{**resto}", () => Erros.NaoEncontrado("Rota não encontrada."));

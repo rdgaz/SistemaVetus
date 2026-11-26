@@ -271,6 +271,18 @@ export function ExameDetalhe() {
   const aoSalvarAnotacao = async (nomeFoto: string, itens: ItemAnotacao[], inserirNoOrgao?: { orgao: string; trecho: string }) => {
     setD((atual) => (atual ? { ...atual, anotacoes: { ...(atual.anotacoes ?? {}), [nomeFoto]: itens } } : atual));
     if (inserirNoOrgao && revisaoCtl) revisaoCtl.inserirTrechoOrgao(inserirNoOrgao.orgao, inserirNoOrgao.trecho);
+    // órgão escolhido no editor diferente do órgão em que a foto está no laudo: pergunta se move (decisão do usuário: perguntar sempre)
+    const escolhido = [...itens].reverse().find((it) => it.tipo !== 'quadro' && it.orgao)?.orgao;
+    if (escolhido && revisaoCtl && revisaoCtl.orgaosNomes.includes(escolhido)) {
+      const atuais = revisaoCtl.orgaosDaFoto(nomeFoto);
+      if (!atuais.includes(escolhido)) {
+        const onde = atuais.length ? `está em ${atuais.join(', ')}` : 'não está em nenhum órgão';
+        if (confirm(`No laudo, esta foto ${onde}. Mover esta foto para ${escolhido}?`)) {
+          if (revisaoCtl.moverFotoParaOrgao(nomeFoto, escolhido)) setAviso(`Foto movida para ${escolhido}. Toque em Salvar para guardar no laudo.`);
+          else setAviso('Esta foto não foi analisada pela IA, então não aparece nas miniaturas dos órgãos; o órgão ficou só na anotação.');
+        }
+      }
+    }
     // atualiza medidasComparadas em segundo plano sem apagar textos em edição na Revisao
     try {
       const novo = await api<Detalhe>('GET', `/api/exames/${d.id}`);
@@ -592,6 +604,7 @@ export function ExameDetalhe() {
           itensIniciais={anotacoes[anotando.foto.nome] ?? []}
           orgaoSugerido={anotando.orgao}
           orgaosDisponiveis={revisaoCtl?.orgaosNomes ?? d.laudo?.conteudo.orgaos.map((o) => o.orgao) ?? []}
+          equipamento={d.equipamento}
           aoSalvar={aoSalvarAnotacao}
           aoFechar={() => setAnotando(null)}
         />

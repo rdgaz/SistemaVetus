@@ -28,6 +28,7 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
     public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
     public DbSet<RevisaoMentor> RevisoesMentor => Set<RevisaoMentor>();
     public DbSet<AnotacaoImagem> AnotacoesImagem => Set<AnotacaoImagem>();
+    public DbSet<CalibracaoImagem> CalibracoesImagem => Set<CalibracaoImagem>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -328,6 +329,15 @@ public class VetusDb(DbContextOptions<VetusDb> options) : DbContext(options)
             e.Property(x => x.MotivoRetificacao).HasMaxLength(1000);
             e.Property(x => x.DadosEntrada).HasColumnType("jsonb");
             e.Property(x => x.HashesFotos).HasColumnType("jsonb");
+        });
+
+        b.Entity<CalibracaoImagem>(e =>
+        {
+            e.ToTable("calibracoes_imagem");
+            e.HasIndex(x => new { x.ClinicaId, x.Equipamento, x.Largura, x.Altura }).IsUnique();
+            e.Property(x => x.Equipamento).HasMaxLength(120);
+            e.Property(x => x.PxPorCm).HasPrecision(8, 2);
+            e.Property(x => x.UsuarioNome).HasMaxLength(200);
         });
 
         b.Entity<AnotacaoImagem>(e =>

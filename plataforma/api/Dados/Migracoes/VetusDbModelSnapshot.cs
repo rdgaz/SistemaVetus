@@ -69,6 +69,49 @@ namespace Vetus.Api.Dados.Migracoes
                     b.ToTable("anotacoes_imagem", (string)null);
                 });
 
+            modelBuilder.Entity("Vetus.Api.Dados.CalibracaoImagem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Altura")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ClinicaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Equipamento")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("Largura")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("PxPorCm")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UsuarioNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicaId", "Equipamento", "Largura", "Altura")
+                        .IsUnique();
+
+                    b.ToTable("calibracoes_imagem", (string)null);
+                });
+
             modelBuilder.Entity("Vetus.Api.Dados.Clinica", b =>
                 {
                     b.Property<Guid>("Id")

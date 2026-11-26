@@ -73,6 +73,10 @@ export type ControleRevisao = {
   motivoNaoAssina: string | null;
   orgaosNomes: string[];
   inserirTrechoOrgao: (orgao: string, trecho: string) => void;
+  /** órgãos do laudo em que a foto está (pelas fotos que a IA associou) */
+  orgaosDaFoto: (foto: string) => string[];
+  /** tira a foto dos outros órgãos e põe neste (primeira das miniaturas); false se a foto não foi enviada à IA */
+  moverFotoParaOrgao: (foto: string, orgao: string) => boolean;
 };
 
 export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, mascaras, anotacoes, aoMudar, aoAbrirFoto, aoAbrirGaleria, aoAnotarFoto, dados, registrar }: {
@@ -171,6 +175,22 @@ export function Revisao({ exameId, conteudoInicial, imagensEnviadas, fotos, masc
       motivoNaoAssina: !perfilAssina ? 'Somente veterinário pode assinar.'
         : !temCrmv ? 'Para assinar, cadastre o seu CRMV e a UF em "Minha conta".' : null,
       orgaosNomes: c.orgaos.map((o) => o.orgao),
+      orgaosDaFoto: (foto: string) => {
+        const n = imagensEnviadas.indexOf(foto) + 1;
+        return n > 0 ? c.orgaos.filter((o) => (o.imagens ?? []).includes(n)).map((o) => o.orgao) : [];
+      },
+      moverFotoParaOrgao: (foto: string, orgaoNome: string) => {
+        const n = imagensEnviadas.indexOf(foto) + 1;
+        if (n === 0 || !c.orgaos.some((o) => o.orgao === orgaoNome)) return false;
+        setC((atual) => ({
+          ...atual,
+          orgaos: atual.orgaos.map((o) => {
+            const sem = (o.imagens ?? []).filter((x) => x !== n);
+            return o.orgao === orgaoNome ? { ...o, imagens: [n, ...sem] } : { ...o, imagens: sem };
+          }),
+        }));
+        return true;
+      },
       inserirTrechoOrgao: (orgaoNome: string, trecho: string) => {
         setC((atual) => ({
           ...atual,

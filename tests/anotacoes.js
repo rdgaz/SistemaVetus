@@ -121,6 +121,33 @@ const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP/////////////////////
   ok(previaPrompt.texto.includes('0.55') || previaPrompt.texto.includes('0,55'), 'medida manual aparece nos dados enviados à IA');
   ok(previaPrompt.fotos.some((f) => f.includes('BAÇO') && f.includes('0,55 cm')), 'anotação da foto aparece na descrição da imagem para a IA');
 
+  // 5b) Posição da caixa das medidas (item "quadro"; o PDF mais abaixo é gerado com a caixa solta)
+  ok((await clinTeste.nav.req('PUT', urlAnot, { itens: [...itensSalvar, { tipo: 'quadro', canto: 'meio' }] })).status === 400, 'posição da caixa inválida: recusada');
+  const comCanto = await clinTeste.nav.req('PUT', urlAnot, { itens: [...itensSalvar, { tipo: 'quadro', canto: 'se' }, { tipo: 'quadro', canto: 'sd' }] });
+  const quadros = comCanto.dados.itens.filter((x) => x.tipo === 'quadro');
+  ok(comCanto.status === 200 && quadros.length === 1 && quadros[0].canto === 'sd', 'caixa das medidas no canto escolhido (vale a última)');
+  const solta = await clinTeste.nav.req('PUT', urlAnot, { itens: [...itensSalvar, { tipo: 'quadro', canto: 'livre', x: 0.4, y: 1.7 }] });
+  const q = solta.dados.itens.find((x) => x.tipo === 'quadro');
+  ok(solta.status === 200 && q.canto === 'livre' && q.x === 0.4 && q.y <= 0.98, 'caixa solta: posição guardada e limitada à foto');
+  ok((await clinTeste.nav.req('GET', `/api/exames/${exameId}`)).dados.medidas.filter((m) => m.origem === 'manual').length === 2,
+    'a posição da caixa não vira medida');
+
+  // 5c) Órgão escolhido no editor: o rótulo de aprendizado acompanha a última escolha
+  await clinTeste.nav.req('PUT', urlAnot, { itens: [{ tipo: 'texto', x: 0.1, y: 0.1, texto: 'FÍGADO', orgao: 'Fígado' }, ...itensSalvar.slice(1), { tipo: 'quadro', canto: 'livre', x: 0.4, y: 0.5 }] });
+  const rotMudou = (await clinTeste.nav.req('GET', `/api/exames/${exameId}/rotulos`)).dados.rotulos.find((r) => r.foto === fotoNome);
+  ok(rotMudou && rotMudou.orgaoCorreto === 'Fígado', 'trocar o órgão no editor atualiza o rótulo da foto (vale a última escolha)');
+
+  // 5d) Calibração da escala (vale para a clínica inteira, por aparelho e tamanho de imagem)
+  const cal = { equipamento: 'Mindray Vetus E7', largura: 1590, altura: 920, pxPorCm: 129.04 };
+  ok((await navUsr.req('PUT', '/api/clinica/calibracao', cal)).status === 403, 'perfil Usuário não calibra a escala');
+  ok((await clinTeste.nav.req('PUT', '/api/clinica/calibracao', { ...cal, pxPorCm: 1 })).status === 400, 'escala absurda: recusada');
+  ok((await clinTeste.nav.req('PUT', '/api/clinica/calibracao', cal)).status === 200, 'veterinário/administrador calibra a escala');
+  const lidaCal = await navUsr.req('GET', '/api/clinica/calibracao?equipamento=Mindray%20Vetus%20E7&largura=1590&altura=920');
+  ok(lidaCal.status === 200 && lidaCal.dados.pxPorCm === 129.04, 'qualquer perfil da clínica usa a calibração');
+  ok((await navUsr.req('GET', '/api/clinica/calibracao?equipamento=Outro&largura=1590&altura=920')).dados.pxPorCm === null, 'outro aparelho: sem calibração');
+  ok((await clinReal.nav.req('GET', '/api/clinica/calibracao?equipamento=Mindray%20Vetus%20E7&largura=1590&altura=920')).dados.pxPorCm === null,
+    'outra clínica não usa a calibração desta');
+
   // 6) Gerar pré-laudo simulado, testar PDF com SkiaSharp e bloqueio pós-assinatura
   await clinTeste.nav.req('POST', `/api/exames/${exameId}/gerar`, { tipoExame: 'abdominal' });
   let prontoRevisao = null;

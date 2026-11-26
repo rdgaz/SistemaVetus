@@ -33,6 +33,7 @@ public class RegistroAtividades(VetusDb db)
         ["revisao_mentor_enviada"] = "Laudo enviado ao mentor",
         ["revisao_mentor_cancelada"] = "Revisão do mentor cancelada",
         ["revisao_mentor_concluida"] = "Revisão do mentor concluída",
+        ["escala_calibrada"] = "Escala das fotos calibrada",
         ["imagem_anotada"] = "Imagem anotada",
     };
 
