@@ -3,7 +3,8 @@
 export type Perfil = 'Usuario' | 'Veterinario' | 'AdministradorClinica';
 
 export const nomePerfil: Record<Perfil, string> = {
-  Usuario: 'Usuário',
+  // "Usuário" confundia com qualquer pessoa do sistema; quem não laudar é recepção/auxiliar
+  Usuario: 'Recepção',
   Veterinario: 'Veterinário',
   AdministradorClinica: 'Administrador da clínica',
 };

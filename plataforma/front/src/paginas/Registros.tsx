@@ -10,7 +10,7 @@ type Registro = {
 };
 type Resposta = { tipos: Record<string, string>; registros: Registro[] };
 
-const nomePerfil: Record<string, string> = { AdministradorClinica: 'administrador', Veterinario: 'veterinário', Usuario: 'usuário', Sistema: 'administrador do sistema' };
+const nomePerfil: Record<string, string> = { AdministradorClinica: 'administrador', Veterinario: 'veterinário', Usuario: 'recepção', Sistema: 'administrador do sistema' };
 const corTipo: Record<string, string> = {
   exame_excluido: 'bg-red-100 text-red-800', laudo_assinado: 'bg-emerald-100 text-emerald-800', laudo_retificado: 'bg-amber-100 text-amber-900',
   analise_solicitada: 'bg-sky-100 text-sky-900', alerta_discordado: 'bg-amber-100 text-amber-900',
@@ -27,6 +27,8 @@ export function Registros({ sistema = false }: { sistema?: boolean }) {
   const [de, setDe] = useState('');
   const [ate, setAte] = useState('');
   const [busca, setBusca] = useState('');
+  // tipos que aparecem nos registros (lidos sem filtro): o filtro só mostra o que existe
+  const [tiposUsados, setTiposUsados] = useState<Set<string> | null>(null);
   const [incluirTestes, setIncluirTestes] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function Registros({ sistema = false }: { sistema?: boolean }) {
     if (sistema && incluirTestes) params.incluirTestes = 'true';
     const q = new URLSearchParams(params).toString();
     api<Resposta>('GET', `${sistema ? '/api/admin/registros' : '/api/clinica/registros'}${q ? `?${q}` : ''}`)
-      .then((x) => { setR(x); setErro(''); }).catch((e) => setErro(e.message));
+      .then((x) => { setR(x); setErro(''); if (!tipo) setTiposUsados(new Set(x.registros.map((g) => g.tipo))); }).catch((e) => setErro(e.message));
   }, [sistema, tipo, de, ate, incluirTestes]);
 
   const visiveis = (r?.registros ?? []).filter((x) =>
@@ -50,7 +52,7 @@ export function Registros({ sistema = false }: { sistema?: boolean }) {
       {erro && <Aviso>{erro}</Aviso>}
       <Cartao>
         <div className="mb-3 flex flex-wrap gap-1.5">
-          {[['', 'Todos'], ...Object.entries(r?.tipos ?? {})].map(([v, t]) => (
+          {[['', 'Todos'], ...Object.entries(r?.tipos ?? {}).filter(([v]) => v === tipo || !tiposUsados || tiposUsados.has(v))].map(([v, t]) => (
             <button key={v} type="button" onClick={() => setTipo(v)}
               className={`min-h-9 rounded-full border px-3 text-xs font-medium ${tipo === v ? 'border-[#0E4D64] bg-[#0E4D64] text-white' : 'border-slate-300 bg-white text-slate-700'}`}>{t}</button>
           ))}

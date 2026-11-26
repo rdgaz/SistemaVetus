@@ -89,7 +89,7 @@ public static class ClinicaEndpoints
 
             db.Vinculos.Add(new Vinculo { Usuario = u, ClinicaId = clinicaId, Perfil = perfil });
             await db.SaveChangesAsync();
-            await registros.Gravar(http, "usuario_criado", $"{u.Nome} ({u.Email}) adicionado à clínica como {perfil}");
+            await registros.Gravar(http, "usuario_criado", $"{u.Nome} ({u.Email}) adicionado à clínica como {NomePerfil(perfil)}");
             return Results.Created($"/api/clinica/usuarios/{u.Id}", new
             {
                 usuarioId = u.Id, u.Nome, u.Email, perfil,
@@ -117,9 +117,17 @@ public static class ClinicaEndpoints
             if (r.IdentidadePropria is { } propria) v.IdentidadePropria = propria;
             var alvo = await db.Usuarios.Where(x => x.Id == usuarioId).Select(x => new { x.Nome, x.Email }).FirstAsync();
             await registros.Adicionar(http, "usuario_alterado",
-                $"{alvo.Nome} ({alvo.Email}): {(novoAtivo ? "ativo" : "desativado")}, perfil {novoPerfil}");
+                $"{alvo.Nome} ({alvo.Email}): {(novoAtivo ? "ativo" : "desativado")}, perfil {NomePerfil(novoPerfil)}");
             await db.SaveChangesAsync();
             return Results.NoContent();
         }).ExigirClinica(Perfil.AdministradorClinica);
     }
+
+    /// <summary>Nome do perfil como aparece na tela (o perfil Usuario é a recepção).</summary>
+    private static string NomePerfil(Perfil p) => p switch
+    {
+        Perfil.AdministradorClinica => "administrador",
+        Perfil.Veterinario => "veterinário",
+        _ => "recepção",
+    };
 }

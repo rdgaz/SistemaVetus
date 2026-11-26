@@ -40,6 +40,8 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 - **Padrão do laudo (Gabriela Peil)**: órgãos na ordem Fígado, Vesícula Biliar, Estômago, Alças Intestinais, Pâncreas, Baço,
   Rins (uma linha), Adrenais, Vesícula Urinária, reprodutor, Linfonodos; descrição sem repetir o nome do órgão; medidas em cm
   com vírgula; "Peristaltismo presente e evolutivo"; sem "(castrado/castrada)" no sexo.
+- **Lint fora do trabalho dos agentes** (pedido do usuário, 26/11/2026): os agentes não rodam o lint (gasta tokens); ele roda no
+  `.bat` de deploy e no GitHub. Para rodar à mão: `lint.bat` na raiz (`lint.bat front` ou `lint.bat api`).
 - **Lint e segurança (CI)**: antes do build Docker roda o lint — front: `npm run lint` (Biome, `plataforma/front/biome.json`;
   regras que o código antigo ainda descumpre estão como aviso, o resto é erro) e `tsc`; API: `dotnet build -warnaserror` e
   `dotnet format analyzers`. Código novo não deve criar avisos novos. Testes de segurança em `tests/seguranca.js` (sempre por
@@ -62,6 +64,11 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (versão 0.10.26; a 0.10.25 foi publicada por fora)
+- Usabilidade: perfil Usuario aparece como **Recepção** (`api.ts`, `Registros.tsx`, textos dos registros em `ClinicaEndpoints.cs`);
+  filtro dos Registros só com os tipos que existem; nome da clínica no menu da conta; "📐 Calibrar" só quando a régua não é achada.
+- `lint.bat` na raiz para o usuário rodar o lint à mão; os agentes deixam de rodar o lint (regra 5 do `AGENTS.md`).
 
 ### 26/11/2026 — Claude (versões 0.10.23 e 0.10.24)
 - **Editor de imagens** (plano em `docs/PLANO-MEDIDAS-ANOTACAO.md`; a 0.10.23 foi publicada por fora com este código):

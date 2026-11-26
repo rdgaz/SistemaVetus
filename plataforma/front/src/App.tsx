@@ -267,6 +267,7 @@ function Layout() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-semibold text-slate-900">{usuario!.nome}</div>
                     <div className="truncate text-xs text-slate-500">{usuario!.email}</div>
+                    {clinica && <div className="mt-0.5 truncate text-xs font-medium text-slate-700">{clinica.nome}</div>}
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {clinica && (
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">

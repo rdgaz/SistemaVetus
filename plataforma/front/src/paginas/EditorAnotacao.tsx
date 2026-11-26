@@ -524,6 +524,7 @@ export function EditorAnotacao({
           >
             𝐓 Texto
           </button>
+          {(modo === 'calibrar' || (tamanho && !escalaRegua)) && (
           <button
             type="button"
             onClick={() => { setModo('calibrar'); setPonto1(null); setPendente(null); }}
@@ -534,6 +535,7 @@ export function EditorAnotacao({
           >
             📐 Calibrar
           </button>
+          )}
         </div>
 
         <button

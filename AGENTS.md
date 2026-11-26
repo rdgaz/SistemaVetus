@@ -66,7 +66,8 @@ Especificação: [docs/ESPECIFICACAO.md](docs/ESPECIFICACAO.md). Versões: [docs
    `docker compose up --build` direto para publicar.
 4. **Testes**: rodam numa cópia isolada (projeto `vetusteste`, outras portas), nunca no banco do usuário. Depois de testar,
    derrube a cópia com `down -v` e confira que a stack do usuário (`vetus-plataforma`, `vetus-postgres`) está no ar.
-5. **Antes de dizer que terminou**: `dotnet build` na API e `npx tsc --noEmit` no front sem erros.
+5. **Antes de dizer que terminou**: `dotnet build` na API e `npx tsc --noEmit` no front sem erros. **Não rodar o lint** durante o
+   trabalho (gasta tokens): ele roda no deploy (`C:Gitdeploy-autolaudovet.bat`) e no GitHub; o usuário roda `lint.bat` (raiz) quando quiser.
 6. **DICOM é outro projeto**: não suba, pare, depure nem encerre o receptor DICOM nem o processo na porta 2345.
 7. **Dados do usuário** (exames, laudos, clínicas): não apague nem altere sem o usuário pedir explicitamente.
 8. Prompt da IA é segredo do produto: só o **administrador do sistema** vê (tela "IA (sistema)").

@@ -27,3 +27,5 @@ Uma linha por deploy (a versão aparece no rodapé e na Ajuda).
 - **0.10.22** — 26/11/2026, 07:06:35 — Menus sem repeticao: topo com Exames, Mentoria (com contador) e Clinica; menu Sistema; menu da conta so com Minha conta, Ajuda e Sair; Registros como aba da clinica
 - **0.10.23** — 26/11/2026, 14:16:11 — ajuste no editor de imagens
 - **0.10.24** — 26/11/2026, 15:36:38 — Editor de imagens: orgao comeca vazio quando aberto pela foto ampliada e vem do texto escrito na foto (BACO, RIM E, VB...)
+- **0.10.25** — 26/11/2026, 15:49:48 — ajuste na tela de edição de imagens
+- **0.10.26** — 26/11/2026, 15:57:04 — Usabilidade: perfil Usuario aparece como Recepcao; filtro dos registros so com tipos que existem; clinica no menu da conta; Calibrar so quando a regua nao e achada

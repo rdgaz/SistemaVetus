@@ -235,7 +235,7 @@ const TOPICOS: Topico[] = [
         <ul>
           <li><b>Dados e Funcionamento:</b> dados do cabeçalho do laudo e <b>logo</b>; se o pré-laudo é gerado <b>automaticamente</b> ao receber o exame; se as <b>informações adicionais</b> são obrigatórias; e se o laudo mostra o <b>QR code</b> de verificação.</li>
           <li><b>Aparência do PDF:</b> cores, estilo dos títulos (faixa com fundo, caixa com borda ou texto colorido), cabeçalho, ordem e visibilidade das seções, fotos por linha na prancha, posição da assinatura e do QR, texto justificado, rodapé e aviso final. "Voltar ao padrão" desfaz as personalizações.</li>
-          <li><b>Usuários:</b> adicione pessoas (com senha provisória), escolha o perfil (Usuário, Veterinário, Administrador) e desative quem saiu. Ultrassonografistas que atendem outras clínicas usam o mesmo e-mail e senha.</li>
+          <li><b>Usuários:</b> adicione pessoas (com senha provisória), escolha o perfil (<b>Recepção</b>: cadastra e envia exames; <b>Veterinário</b>: revisa e assina; <b>Administrador</b>: tudo, inclusive as configurações) e desative quem saiu. Ultrassonografistas que atendem outras clínicas usam o mesmo e-mail e senha.</li>
           <li><b>Registros de atividade:</b> quem fez o quê e quando (exame enviado, análise pedida à IA, laudo assinado e retificado, alerta discordado, exame excluído, usuários, configurações, créditos), com filtro por tipo, data e busca.</li>
         </ul>
       </>
