@@ -1,0 +1,135 @@
+# Produção do AutoLaudoVet na VPS (Hostinger, srv2204829). Ver docs/PRODUCAO.md.
+#
+# Aqui nada é construído: as imagens vêm prontas do ghcr.io, publicadas pelo GitHub Actions depois de todos os testes.
+# Na VPS fica em /opt/vetus/producao, com o .env (segredos, permissão 600, nunca no Git).
+#   Atualizar:  docker compose pull && docker compose up -d
+#
+# Segurança:
+# - Só o Caddy (80/443) e o receptor (2345/2762) ficam expostos. Banco e API não têm porta aberta para fora.
+# - Rede própria com endereço fixo do Caddy: a API só confia nos cabeçalhos X-Forwarded-* vindos dele (VETUS_PROXY_IP).
+# - Containers sem privilégios extras (no-new-privileges, cap_drop) e com memória limitada.
+
+name: vetus
+
+x-endurecido: &endurecido
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+networks:
+  vetus:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+services:
+  # Porta de entrada HTTPS: certificado automático (Let's Encrypt) para app.autolaudovet.tech
+  caddy:
+    <<: *endurecido
+    image: caddy:2-alpine
+    container_name: vetus-caddy
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/vetus/acme:/srv/acme:ro   # desafio HTTP do certbot para o certificado do receptor (dicom.)
+      - caddy-dados:/data
+      - caddy-config:/config
+    networks:
+      vetus:
+        ipv4_address: 172.30.0.10
+    mem_limit: 256m
+    depends_on:
+      - plataforma
+
+  # Plataforma: API .NET + telas do portal numa imagem só
+  plataforma:
+    <<: *endurecido
+    image: ghcr.io/rdgaz/vetus-plataforma:${VERSAO_PLATAFORMA:-latest}
+    container_name: vetus-plataforma
+    cap_drop: [ALL]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      ConnectionStrings__Vetus: Host=postgres;Database=vetus;Username=vetus;Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      VETUS_DADOS_DIR: /data
+      VETUS_URL_PUBLICA: https://app.autolaudovet.tech
+      VETUS_PROXY_IP: 172.30.0.10
+      VETUS_SMTP_PERMITIR_REDE_INTERNA: "false"
+      INGESTAO_HABILITADA: "true"
+      IA_SIMULADA: "false"
+      TZ: America/Sao_Paulo
+    volumes:
+      - vetus-chaves:/keys          # chaves do cookie de login (migradas: as sessões continuam valendo)
+      - vetus-dados:/data:ro        # exames antigos gravados pelo receptor no caminho antigo (só leitura)
+      - vetus-pendrive:/pendrive    # exames do pendrive e da API de ingestão
+    networks: [vetus]
+    mem_limit: 2g
+
+  postgres:
+    <<: *endurecido
+    image: postgres:17-alpine
+    container_name: vetus-postgres
+    environment:
+      POSTGRES_DB: vetus
+      POSTGRES_USER: vetus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      TZ: America/Sao_Paulo
+    # sem "ports": o banco só existe dentro da rede do Docker
+    volumes:
+      - vetus-banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vetus -d vetus"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [vetus]
+    mem_limit: 1g
+
+  # Receptor DICOM (repositório vetus-receptor-dicom-claud): entrega os exames pela API de ingestão (rede interna)
+  receptor:
+    <<: *endurecido
+    image: ghcr.io/rdgaz/vetus-receptor-dicom-claud:${VERSAO_RECEPTOR:-latest}
+    container_name: vetus-receptor-nuvem
+    cap_drop: [ALL]
+    env_file: .env.receptor
+    environment:
+      DATA_DIR: /data
+      DICOM_PORT: "2345"
+      DICOM_PORTA_TLS: "2762"
+      TLS_CERT: /certs/fullchain.pem
+      TLS_CHAVE: /certs/privkey.pem
+      PLATAFORMA_URL: http://plataforma:8080
+      TZ: America/Sao_Paulo
+    ports:
+      - "2345:2345"   # DICOM sem TLS (aparelhos antigos)
+      - "2762:2762"   # DICOM com TLS (dicom.autolaudovet.tech)
+    volumes:
+      - /opt/vetus/dados/receptor:/data
+      - /opt/vetus/certs:/certs:ro
+    networks: [vetus]
+    mem_limit: 768m
+    depends_on:
+      - plataforma
+
+volumes:
+  vetus-banco:
+    name: vetus-banco
+  vetus-dados:
+    name: vetus-dados
+  vetus-pendrive:
+    name: vetus-pendrive
+  vetus-chaves:
+    name: vetus-chaves
+  caddy-dados:
+    name: vetus-caddy-dados
+  caddy-config:
+    name: vetus-caddy-config

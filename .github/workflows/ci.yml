@@ -5,9 +5,17 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      publicar:
+        description: "Publicar a imagem da plataforma em ghcr.io (produção na VPS; só com aprovação do responsável)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+
+env:
+  IMAGEM_PLATAFORMA: ghcr.io/rdgaz/vetus-plataforma
 
 jobs:
   # 1) Lint: roda antes de qualquer imagem Docker (o build só começa se passar)
@@ -223,3 +231,41 @@ jobs:
       - name: Derrubar compose
         if: always()
         run: docker compose down -v
+
+  # 5) Publicação da plataforma em ghcr.io: só manual (Actions -> Validar containers -> Run workflow -> publicar),
+  #    e só depois de lint, segredos/dependências, CodeQL e todos os testes de ponta a ponta passarem.
+  #    A VPS só baixa esta imagem (docker compose pull); nunca constrói nada. Ver docs/PRODUCAO.md.
+  publicar:
+    name: Publicar imagem da plataforma (manual)
+    needs: [lint, seguranca-codigo, codeql, containers]
+    if: github.event_name == 'workflow_dispatch' && inputs.publicar && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versão (plataforma/front/package.json)
+        id: versao
+        run: echo "v=$(node -p "require('./plataforma/front/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e envio (latest + versão + commit)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./plataforma
+          push: true
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          tags: |
+            ${{ env.IMAGEM_PLATAFORMA }}:latest
+            ${{ env.IMAGEM_PLATAFORMA }}:${{ steps.versao.outputs.v }}
+            ${{ env.IMAGEM_PLATAFORMA }}:${{ github.sha }}

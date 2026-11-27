@@ -169,6 +169,23 @@ if (args.Length >= 2 && args[0] == "--redefinir-senha")
     return 0;
 }
 
+// Atrás do proxy HTTPS (Caddy, na VPS): sem isto, todo acesso parece vir do IP do proxy (o limite de logins valeria para
+// todos juntos e um robô bloquearia a clínica) e o cookie de login sairia sem "Secure". Só confiamos no IP do proxy
+// informado em VETUS_PROXY_IP; vazio (testes locais, CI) = não lê os cabeçalhos X-Forwarded-* (ninguém consegue forjar o IP).
+if (cfg["VETUS_PROXY_IP"] is { Length: > 0 } ipProxy)
+{
+    var opcoesProxy = new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto,
+        ForwardLimit = 1,
+    };
+    opcoesProxy.KnownIPNetworks.Clear();
+    opcoesProxy.KnownProxies.Clear();
+    opcoesProxy.KnownProxies.Add(System.Net.IPAddress.Parse(ipProxy));
+    app.UseForwardedHeaders(opcoesProxy);
+}
+
 app.UseCabecalhosSeguranca(); // antes de tudo: vale também para as telas e arquivos estáticos
 app.UseDefaultFiles();
 app.UseStaticFiles(); // telas (React compiladas em wwwroot)

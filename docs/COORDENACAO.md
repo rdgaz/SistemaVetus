@@ -17,7 +17,7 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 
 | Agente | Desde | Tarefa | Arquivos |
 |---|---|---|---|
-| — | — | (nenhuma tarefa em andamento) | — |
+| Claude Code (sessão do receptor) | 26/11/2026 | Produção na VPS: imagem da plataforma no ghcr.io, compose de produção com Caddy, proxy confiável na API | `.github/workflows/ci.yml`, `plataforma/api/Program.cs`, `producao/` (novo), `docs/PRODUCAO.md` (novo) |
 
 ---
 

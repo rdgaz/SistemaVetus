@@ -1,0 +1,34 @@
+# Caddy: porta de entrada HTTPS do AutoLaudoVet na VPS. Certificado automático (Let's Encrypt), HTTP vira HTTPS.
+
+# Portal das clínicas
+app.autolaudovet.tech {
+	encode zstd gzip
+
+	header {
+		# o navegador só volta a este endereço por HTTPS (1 ano)
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	reverse_proxy plataforma:8080 {
+		# a API só confia nestes cabeçalhos porque vêm do IP fixo do Caddy (VETUS_PROXY_IP)
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+# Receptor DICOM: só serve o desafio do certbot (renovação do certificado da porta 2762). "http://" = sem HTTPS aqui,
+# para o Caddy não tentar emitir outro certificado para este nome; qualquer outro caminho responde 404.
+http://dicom.autolaudovet.tech {
+	handle /.well-known/acme-challenge/* {
+		root * /srv/acme
+		file_server
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Qualquer outro nome ou acesso direto pelo IP: recusa
+:80, :443 {
+	respond 404
+}
