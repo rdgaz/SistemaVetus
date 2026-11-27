@@ -103,16 +103,50 @@ export function Compartilhar({ exameId, paciente, tutor, telefone, emailTutor, c
     registrar('pdf');
   };
 
-  // celular: manda o próprio arquivo PDF pela tela de compartilhar do aparelho
+  // celular: manda o próprio arquivo PDF pela tela de compartilhar do aparelho.
+  // O PDF é baixado antes do toque: o navegador só abre o compartilhar se for chamado logo no clique
+  // (depois de esperar o download, o Chrome do Android recusa com "Permission denied").
   const podeCompartilharArquivo = typeof navigator !== 'undefined' && 'canShare' in navigator;
-  const compartilharArquivo = () => executar(async () => {
-    const r = await fetch(`/api/exames/${exameId}/laudo.pdf`, { credentials: 'same-origin' });
-    const arquivo = new File([await r.blob()], nomePdf, { type: 'application/pdf' });
-    if (!navigator.canShare?.({ files: [arquivo] })) throw new Error('Este aparelho não permite compartilhar arquivos.');
-    await navigator.share({ files: [arquivo], title: `Laudo Ultrassonográfico ${paciente}`, text: mensagem });
-    await registrar('pdf', 'compartilhar do aparelho');
-    return 'PDF compartilhado.';
-  });
+  const [arquivoPdf, setArquivoPdf] = useState<File | null>(null);
+  const [pdfIndisponivel, setPdfIndisponivel] = useState(false);
+  const compartilharPdf = !!pref?.pdf && podeCompartilharArquivo;
+  useEffect(() => {
+    if (!compartilharPdf) return;
+    let ativo = true;
+    fetch(`/api/exames/${exameId}/laudo.pdf`, { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error())))
+      .then((b) => {
+        const f = new File([b], nomePdf, { type: 'application/pdf' });
+        if (!ativo) return;
+        if (navigator.canShare?.({ files: [f] })) setArquivoPdf(f); else setPdfIndisponivel(true);
+      })
+      .catch(() => { if (ativo) setPdfIndisponivel(true); });
+    return () => { ativo = false; };
+  }, [compartilharPdf, exameId, nomePdf]);
+  const compartilharArquivo = () => {
+    if (pdfIndisponivel) {
+      setOk('');
+      setErro('Este aparelho não permite compartilhar o PDF. Use "Baixar PDF" e envie pelo app.');
+      return;
+    }
+    if (!arquivoPdf) {
+      setErro('');
+      setOk('Preparando o PDF... toque de novo em alguns segundos.');
+      return;
+    }
+    // chamado direto no clique, sem esperar nada antes
+    const envio = navigator.share({ files: [arquivoPdf], title: `Laudo Ultrassonográfico ${paciente}`, text: mensagem });
+    executar(async () => {
+      try {
+        await envio;
+      } catch (x) {
+        if ((x as Error).name === 'AbortError') return 'Compartilhamento cancelado.';
+        throw new Error('O aparelho não deixou compartilhar o PDF. Use "Baixar PDF" e envie pelo app.');
+      }
+      await registrar('pdf', 'compartilhar do aparelho');
+      return 'PDF compartilhado.';
+    });
+  };
 
   const revogar = (l: Link) => {
     if (!confirm('Revogar este link? Quem tiver o link não conseguirá mais abrir o laudo.')) return;

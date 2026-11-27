@@ -69,6 +69,11 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 
 ## Registro (mais novo em cima)
 
+### 27/11/2026 — Claude (versão 0.10.33)
+- "Compartilhar por app" no celular dava "Permission denied": o `navigator.share` era chamado depois de baixar o PDF e o
+  Chrome do Android perdia o toque. Agora o PDF é baixado quando o cartão abre e o compartilhar sai direto no clique;
+  cancelar não vira erro e o envio só é registrado se der certo (`paginas/Compartilhar.tsx`).
+
 ### 26/11/2026 — Claude (sessão do receptor): produção na VPS
 - **Produção mudou para a VPS** (`https://app.autolaudovet.tech`, ver [PRODUCAO.md](PRODUCAO.md)): Caddy + plataforma +
   postgres + receptor em `/opt/vetus/producao`, imagens do ghcr.io (publicação manual no CI, depois de todos os testes).
