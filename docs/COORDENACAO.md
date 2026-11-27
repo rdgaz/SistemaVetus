@@ -17,13 +17,15 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 
 | Agente | Desde | Tarefa | Arquivos |
 |---|---|---|---|
-| Claude Code (sessão do receptor) | 26/11/2026 | Produção na VPS: imagem da plataforma no ghcr.io, compose de produção com Caddy, proxy confiável na API | `.github/workflows/ci.yml`, `plataforma/api/Program.cs`, `producao/` (novo), `docs/PRODUCAO.md` (novo) |
+| — | — | (nenhuma tarefa em andamento) | — |
 
 ---
 
 ## Decisões (padrões combinados com o usuário)
 
-- **Deploy**: sempre por `node ferramentas/deploy.js --nota "..."`, que sobe a versão (ver `docs/VERSOES.md`); só plataforma + banco.
+- **Deploy**: a versão sobe por `node ferramentas/deploy.js --nota "..."` (ver `docs/VERSOES.md`). **Produção é a VPS**
+  (26/11/2026): commit/push → Actions "publicar" → `docker compose pull plataforma && docker compose up -d plataforma` na VPS
+  (ver [PRODUCAO.md](PRODUCAO.md)). O Docker local é só desenvolvimento e teste.
 - **DICOM**: o receptor é outro projeto; nenhum dos dois agentes mexe nele nesta frente.
 - **Prompt da IA**: visível só ao administrador do sistema (tela "IA (sistema)"); clínicas não veem.
 - **Aprendizados da IA**: discordâncias de alertas e órgãos confundidos valem para todas as clínicas (priorizando a própria);
@@ -66,6 +68,14 @@ As regras completas estão em [AGENTS.md](../AGENTS.md).
 ---
 
 ## Registro (mais novo em cima)
+
+### 26/11/2026 — Claude (sessão do receptor): produção na VPS
+- **Produção mudou para a VPS** (`https://app.autolaudovet.tech`, ver [PRODUCAO.md](PRODUCAO.md)): Caddy + plataforma +
+  postgres + receptor em `/opt/vetus/producao`, imagens do ghcr.io (publicação manual no CI, depois de todos os testes).
+- **Migrados só os dados da Gabriela Peil** (clínica 1, `VETUS_C0001`) e o usuário Administrador; clínicas de teste e seus
+  usuários, aprendizados e registros ficaram só no PC. **O Docker do PC deixou de ser produção** (plataforma parada).
+- API: `VETUS_PROXY_IP` (cabeçalhos X-Forwarded-* só do IP do Caddy): limite de logins pelo IP real e cookie `Secure`.
+- Backup diário do banco e semanal dos arquivos (`producao/backup.sh`, cron na VPS).
 
 ### 26/11/2026 — Claude (versão 0.10.32)
 - **API de ingestão v1** (etapa 1 do `PLANO-INGESTAO.md`; contrato em `docs/API-INGESTAO.md`): `/api/ingestao/v1` com `parear`,

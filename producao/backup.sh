@@ -20,7 +20,7 @@ if [ "$(date +%u)" = 7 ] || [ "${1:-}" = "--arquivos" ]; then
   docker run --rm \
     -v vetus-dados:/v/dados:ro -v vetus-pendrive:/v/pendrive:ro -v vetus-chaves:/v/chaves:ro \
     -v "$DESTINO/arquivos":/saida alpine \
-    tar -czf "/saida/arquivos-$DIA.tar.gz" -C /v .
+    sh -c "tar -czf /saida/arquivos-$DIA.tar.gz -C /v . && chown $(id -u):$(id -g) /saida/arquivos-$DIA.tar.gz && chmod 600 /saida/arquivos-$DIA.tar.gz"
   find "$DESTINO/arquivos" -name 'arquivos-*.tar.gz' -mtime +28 -delete
 fi
 
